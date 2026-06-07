@@ -155,6 +155,15 @@ results and replay protocol use friendly names. If a stale sequential
 connection still owns a name, the runner retries with a short internal suffix
 and normalizes that fallback back to the display name in returned replay text.
 
+`python3 -m rollmons.sandbox --boss PATH --runs N` is the live boss-testing
+path. It discovers the selected boss through the boss loader, creates a fresh
+six-round pool draft for every run, uses normal team assembly and the shared
+existence pre-flight, then calls `battle_runner.run_battle()`. It reports a
+boss win/loss/tie tally and writes each hosted-player replay page to a
+temporary, untracked directory. `N=1` and the default `N=10` are both
+supported. This sandbox requires the live stack; the matrix inspector and
+draft harness remain pure.
+
 Run the development harness with:
 
 ```bash
