@@ -8,6 +8,7 @@ from rollmons.legality_matrix import (
     DEFAULT_RANDBATS_PATH,
     FORME_DEBUT_GENERATION_OVERRIDES,
     LEGENDARY_BST_THRESHOLD,
+    LEGENDARY_BST_EXCLUSIONS,
     MIN_CELL_SIZE,
     SpeciesMetadata,
     build_legality_data,
@@ -83,8 +84,11 @@ def test_modern_type_and_debut_generation_placements(legality_data):
 
 def test_legendary_is_strictly_bst_above_600(legality_data):
     assert LEGENDARY_BST_THRESHOLD == 600
+    assert LEGENDARY_BST_EXCLUSIONS == {"slaking", "regigigas"}
     assert legality_data.species["slaking"].base_stat_total == 670
-    assert legality_data.species["slaking"].legendary
+    assert not legality_data.species["slaking"].legendary
+    assert legality_data.species["regigigas"].base_stat_total == 670
+    assert not legality_data.species["regigigas"].legendary
     assert legality_data.species["arceusfairy"].base_stat_total == 720
     assert legality_data.species["arceusfairy"].legendary
 
@@ -96,7 +100,11 @@ def test_legendary_is_strictly_bst_above_600(legality_data):
     assert not legality_data.species["articuno"].legendary
 
     assert all(
-        metadata.legendary == (metadata.base_stat_total > 600)
+        metadata.legendary
+        == (
+            metadata.base_stat_total > 600
+            and metadata.species_id not in LEGENDARY_BST_EXCLUSIONS
+        )
         for metadata in legality_data.species.values()
     )
 

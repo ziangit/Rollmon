@@ -65,11 +65,13 @@ selection primitive. Its data sources are:
   `a9caa4c`. All other atoms derive generation from National Dex boundaries.
 
 The project intentionally defines legendary as `BST > 600`, regardless of
-Pokedex lore tags. Exactly-600 pseudo-legendaries and mythicals such as Mew,
-Jirachi, and Victini are normal atoms by design. Do not change this back to a
-tag-based definition. Valid cells contain at least four atoms. Legendary
-selection weight must remain strictly positive so thin legendary-heavy cells
-cannot soft-lock.
+Pokedex lore tags, except for `LEGENDARY_BST_EXCLUSIONS`: Slaking (`Truant`)
+and Regigigas (`Slow Start`). Their ability-suppressed stat-balls make raw BST
+overstate competitive power. Exactly-600 pseudo-legendaries and mythicals such
+as Mew, Jirachi, and Victini are normal atoms by design. Do not change this
+back to a tag-based definition. Valid cells contain at least four atoms.
+Legendary selection weight must remain strictly positive so thin
+legendary-heavy cells cannot soft-lock.
 
 `rollmons/draft.py` implements the six-round headless draft state machine. Each
 offer contains a valid cell, its complete undrafted candidate list, and one
@@ -98,9 +100,11 @@ It keeps local single-user draft sessions in memory and exposes the complete
 18x9 pool inspector plus start/state/pick/skip draft endpoints. The static SPA
 under `rollmons/web_static/` renders that engine state, including BST,
 engine-calculated suggestion probability, the most-observed representative
-randbats set and role count, and the fixed player assembly spread. It does not
-implement matrix filtering, dedupe, cell guards, weighted suggestions,
-probability calculation, or team assembly in JavaScript.
+randbats set and role count, and the fixed player assembly spread. Draft cards
+use a light PokePaste/Showdown-teambuilder layout with the real level 100,
+Serious, flat-85 EV, and implicit-31 IV assembly data. It does not implement
+matrix filtering, dedupe, cell guards, weighted suggestions, probability
+calculation, or team assembly in JavaScript.
 
 Run the development harness with:
 
@@ -108,8 +112,15 @@ Run the development harness with:
 uvicorn rollmons.web_app:app --reload --port 8080
 ```
 
-Open `http://127.0.0.1:8080`. The harness intentionally uses names and CSS type
-chips only, with no hosted or vendored sprite dependency.
+Open `http://127.0.0.1:8080`. For development only, the harness hotlinks
+Pokemon sprites and the item-icon sheet from `play.pokemonshowdown.com`, using
+the same `home-centered` sprite IDs and item `spritenum` coordinates as the
+Showdown client. Showdown's code is open source, but the community- and
+Nintendo-derived image assets do not have established redistribution terms.
+Hotlink for display; do not download, vendor, or commit these assets. This
+keeps the licensing and self-hosting decision deferred, like the hosted replay
+player. Text, type chips, sets, probabilities, and controls remain functional
+when images fail.
 
 ## Integration Landmines
 

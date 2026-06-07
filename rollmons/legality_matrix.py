@@ -39,6 +39,10 @@ TYPES = (
 GENERATIONS = tuple(range(1, 10))
 DEFAULT_LEGENDARY_WEIGHT = 0.25
 LEGENDARY_BST_THRESHOLD = 600
+LEGENDARY_BST_EXCLUSIONS = {
+    "slaking",  # Truant suppresses the stat-ball; raw BST overstates competitive power.
+    "regigigas",  # Slow Start suppresses the stat-ball; raw BST overstates competitive power.
+}
 MIN_CELL_SIZE = 4
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -241,8 +245,12 @@ def build_legality_data(
             base_stat_total=base_stat_total,
             # "Legendary" is deliberately a competitive-power category, not
             # Pokedex lore: exactly-600 mythicals and pseudo-legendaries are
-            # normal atoms, while every atom above 600 is down-weighted.
-            legendary=base_stat_total > LEGENDARY_BST_THRESHOLD,
+            # normal atoms. Slaking and Regigigas are explicit ability-based
+            # exceptions because their raw BST overstates competitive power.
+            legendary=(
+                base_stat_total > LEGENDARY_BST_THRESHOLD
+                and species_id not in LEGENDARY_BST_EXCLUSIONS
+            ),
         )
 
     return LegalityData(

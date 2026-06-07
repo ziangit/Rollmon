@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import random
+import re
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from rollmons.draft import Draft, DraftError, DraftOffer
 from rollmons.legality_matrix import (
+    DEFAULT_POKEDEX_PATH,
     GENERATIONS,
     TYPES,
     LegalityData,
@@ -33,6 +36,106 @@ from rollmons.team_assembly import (
 )
 
 STATIC_DIR = Path(__file__).resolve().parent / "web_static"
+SHOWDOWN_ASSET_ROOT = "https://play.pokemonshowdown.com/sprites"
+SHOWDOWN_ITEM_ICON_SIZE = 24
+
+# These spritenums are the items present in the checked-in randbats snapshot.
+# They come from Showdown's official /data/items.js. The client renders each
+# 24x24 cell from itemicons-sheet.png using this number.
+SHOWDOWN_ITEM_SPRITE_NUMBERS = {
+    "": 0,
+    "adamantcrystal": 741,
+    "airballoon": 6,
+    "assaultvest": 581,
+    "boosterenergy": 745,
+    "chestoberry": 65,
+    "choiceband": 68,
+    "choicescarf": 69,
+    "choicespecs": 70,
+    "cornerstonemask": 758,
+    "custapberry": 86,
+    "dracoplate": 105,
+    "dreadplate": 110,
+    "earthplate": 117,
+    "eviolite": 130,
+    "expertbelt": 132,
+    "fistplate": 143,
+    "flameorb": 145,
+    "flameplate": 146,
+    "focussash": 151,
+    "griseouscore": 743,
+    "hearthflamemask": 760,
+    "heavydutyboots": 715,
+    "icicleplate": 220,
+    "insectplate": 223,
+    "ironplate": 225,
+    "leftovers": 242,
+    "leppaberry": 244,
+    "lifeorb": 249,
+    "lightball": 251,
+    "lightclay": 252,
+    "loadeddice": 751,
+    "lumberry": 262,
+    "lustrousglobe": 742,
+    "lustrousorb": 265,
+    "magnet": 273,
+    "meadowplate": 282,
+    "mindplate": 291,
+    "pixieplate": 610,
+    "powerherb": 358,
+    "rockyhelmet": 417,
+    "rustedshield": 699,
+    "rustedsword": 698,
+    "scopelens": 429,
+    "silkscarf": 444,
+    "silverpowder": 447,
+    "sitrusberry": 448,
+    "skyplate": 450,
+    "souldew": 459,
+    "splashplate": 463,
+    "spookyplate": 464,
+    "stoneplate": 477,
+    "throatspray": 713,
+    "toxicorb": 515,
+    "toxicplate": 516,
+    "weaknesspolicy": 609,
+    "wellspringmask": 759,
+    "whiteherb": 535,
+    "widelens": 537,
+    "zapplate": 572,
+}
+
+
+# DEV-ONLY hotlinks: Showdown's code is open source, but its community- and
+# Nintendo-derived sprite assets do not have established redistribution terms.
+# Display them remotely; do not download, vendor, or commit them.
+def _showdown_id(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", value.lower())
+
+
+def _showdown_sprite_id(metadata: SpeciesMetadata, pokedex_entry: dict) -> str:
+    base_id = _showdown_id(str(pokedex_entry.get("baseSpecies", metadata.name)))
+    forme_id = ""
+    if base_id != metadata.species_id:
+        forme_id = f"-{_showdown_id(str(pokedex_entry.get('forme', '')))}"
+    sprite_id = f"{base_id}{forme_id}"
+    if sprite_id.endswith("totem"):
+        sprite_id = sprite_id[:-5]
+    if sprite_id in {"greninja-bond", "rockruff-dusk"}:
+        sprite_id = sprite_id.split("-", 1)[0]
+    return sprite_id.rstrip("-")
+
+
+def _item_icon_payload(item_id: str) -> dict | None:
+    if not item_id:
+        return None
+    sprite_number = SHOWDOWN_ITEM_SPRITE_NUMBERS[item_id]
+    return {
+        "url": f"{SHOWDOWN_ASSET_ROOT}/itemicons-sheet.png?v1",
+        "left": -(sprite_number % 16) * SHOWDOWN_ITEM_ICON_SIZE,
+        "top": -(sprite_number // 16) * SHOWDOWN_ITEM_ICON_SIZE,
+        "size": SHOWDOWN_ITEM_ICON_SIZE,
+    }
 
 
 class StartDraftRequest(BaseModel):
@@ -52,7 +155,11 @@ class DraftSession:
     team_export: str | None = None
 
 
-def _species_payload(metadata: SpeciesMetadata, random_battle_sets) -> dict:
+def _species_payload(
+    metadata: SpeciesMetadata,
+    random_battle_sets,
+    pokedex,
+) -> dict:
     representative = representative_random_battle_set(
         metadata.species_id,
         random_battle_sets,
@@ -64,12 +171,17 @@ def _species_payload(metadata: SpeciesMetadata, random_battle_sets) -> dict:
         "debut_generation": metadata.debut_generation,
         "base_stat_total": metadata.base_stat_total,
         "legendary": metadata.legendary,
+        "sprite_url": (
+            f"{SHOWDOWN_ASSET_ROOT}/home-centered/"
+            f"{_showdown_sprite_id(metadata, pokedex[metadata.species_id])}.png"
+        ),
         "randbats_set": {
             "item": representative.item,
             "ability": representative.ability,
             "moves": list(representative.moves),
             "observed_count": representative.observed_count,
             "role_count": len(random_battle_sets[metadata.species_id]),
+            "item_icon": _item_icon_payload(representative.item),
         },
         "assembly_spread": {
             "level": FIXED_LEVEL,
@@ -84,6 +196,7 @@ def _offer_payload(
     offer: DraftOffer | None,
     legality_data: LegalityData,
     random_battle_sets,
+    pokedex,
 ) -> dict | None:
     if offer is None:
         return None
@@ -98,6 +211,7 @@ def _offer_payload(
         candidate = _species_payload(
             legality_data.species[species_id],
             random_battle_sets,
+            pokedex,
         )
         candidate["selection_probability"] = offer.selection_probabilities[species_id]
         payload["candidates"].append(candidate)
@@ -108,6 +222,7 @@ def create_app() -> FastAPI:
     legality_data = build_legality_data()
     all_cells = build_all_cells(legality_data.species)
     random_battle_sets = load_random_battle_sets()
+    pokedex = json.loads(DEFAULT_POKEDEX_PATH.read_text(encoding="utf-8"))
     sessions: dict[str, DraftSession] = {}
     app = FastAPI(title="rollmons draft harness")
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -131,6 +246,7 @@ def create_app() -> FastAPI:
                 _species_payload(
                     legality_data.species[species_id],
                     random_battle_sets,
+                    pokedex,
                 )
                 for species_id in draft.picks
             ],
@@ -138,6 +254,7 @@ def create_app() -> FastAPI:
                 draft.current_offer,
                 legality_data,
                 random_battle_sets,
+                pokedex,
             ),
             "skips_remaining": draft.skips_remaining,
             "team_export": session.team_export,
@@ -164,6 +281,7 @@ def create_app() -> FastAPI:
                             _species_payload(
                                 legality_data.species[species_id],
                                 random_battle_sets,
+                                pokedex,
                             )
                             for species_id in eligible
                         ],

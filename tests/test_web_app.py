@@ -59,6 +59,12 @@ async def test_matrix_endpoint_exposes_all_cells_and_known_placements(client):
     )
     assert clefable["base_stat_total"] == 483
     assert clefable["randbats_set"]["moves"]
+    assert clefable["sprite_url"].startswith(
+        "https://play.pokemonshowdown.com/sprites/home-centered/"
+    )
+    assert clefable["randbats_set"]["item_icon"]["url"].startswith(
+        "https://play.pokemonshowdown.com/sprites/itemicons-sheet.png"
+    )
     assert clefable["assembly_spread"]["level"] == 100
     assert set(clefable["assembly_spread"]["ivs"].values()) == {31}
 
@@ -120,3 +126,19 @@ async def test_backend_rejects_non_fixed_level(client):
 
     assert response.status_code == 422
     assert "only fixed level 100" in response.json()["detail"]
+
+
+@pytest.mark.anyio
+async def test_bst_exclusions_are_not_marked_legendary_in_api(client):
+    matrix = (await client.get("/api/matrix")).json()
+    pokemon = {
+        item["id"]: item
+        for cell in matrix["cells"]
+        for item in cell["pokemon"]
+        if item["id"] in {"slaking", "regigigas"}
+    }
+
+    assert pokemon["slaking"]["base_stat_total"] == 670
+    assert pokemon["regigigas"]["base_stat_total"] == 670
+    assert not pokemon["slaking"]["legendary"]
+    assert not pokemon["regigigas"]["legendary"]
