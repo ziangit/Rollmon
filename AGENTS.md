@@ -140,6 +140,12 @@ Serious, flat-85 EV, and implicit-31 IV assembly data. It does not implement
 matrix filtering, dedupe, cell guards, weighted suggestions, probability
 calculation, or team assembly in JavaScript.
 
+The module does not import `battle_runner` or poke-engine while serving pure
+matrix/draft routes. The live runner/config imports occur only when the battle
+endpoint is invoked. `make harness` bootstraps `.venv/pure` from
+`requirements-pure.txt`, so a fresh clone can run the inspector and draft
+without Rust, poke-engine, Node, or Showdown.
+
 After a six-round draft completes, the harness exposes one live integration
 action. It loads the Ash boss, performs an existence-only species/move check
 against foul-play's checked-in Gen 9 data, calls `battle_runner.run_battle()`,
@@ -167,7 +173,7 @@ draft harness remain pure.
 Run the development harness with:
 
 ```bash
-make dev
+make harness
 ```
 
 Run the complete local draft-to-battle stack with:
@@ -450,8 +456,9 @@ thin), with only four empty cells excluded. The six-round draft and level-100
 team assembly are implemented in
 `rollmons/draft.py` and `rollmons/team_assembly.py`. The first authored boss and
 one real post-draft battle path are built, including structured results and a
-hosted replay embed. Ten-battle orchestration, gauntlet results, and additional
-boss authoring remain unbuilt.
+hosted replay embed. Contributor boss/set validation and the N-battle
+pool-draft sandbox are built. Ten-battle orchestration, gauntlet results,
+ranked-stat ingestion, and additional authored boss teams remain unbuilt.
 
 ## Roadmap
 

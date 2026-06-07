@@ -7,19 +7,10 @@ import os
 import random
 import re
 import uuid
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
-from battle_runner import (
-    BattleEntityNotFoundError,
-    BattleResult,
-    BattleRunnerConfig,
-    BattleRunnerError,
-    result_as_dict,
-    run_battle,
-    verify_team_entities_exist,
-)
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -35,6 +26,10 @@ from rollmons.legality_matrix import (
     SpeciesMetadata,
     build_all_cells,
     build_legality_data,
+)
+from rollmons.submissions import (
+    BattleEntityNotFoundError,
+    verify_team_entities_exist,
 )
 from rollmons.team_assembly import (
     DEFAULT_IVS,
@@ -169,13 +164,15 @@ class DraftSession:
     draft: Draft
     assembly_rng: random.Random
     team_export: str | None = None
-    battle_result: BattleResult | None = None
+    battle_result: Any | None = None
 
 
-def _battle_config_from_environment() -> BattleRunnerConfig:
+def _battle_config_from_environment():
+    from battle_runner import BattleRunnerConfig
+
     log_dir = os.environ.get("ROLLMONS_SHOWDOWN_LOG_DIR")
     if not log_dir:
-        raise BattleRunnerError(
+        raise RuntimeError(
             "ROLLMONS_SHOWDOWN_LOG_DIR must point to the Showdown battle-log root"
         )
     return BattleRunnerConfig(
@@ -188,6 +185,12 @@ def _battle_config_from_environment() -> BattleRunnerConfig:
         search_parallelism=int(os.environ.get("ROLLMONS_SEARCH_PARALLELISM", "1")),
         search_threads=int(os.environ.get("ROLLMONS_SEARCH_THREADS", "1")),
     )
+
+
+def _run_live_battle(*args, **kwargs):
+    from battle_runner import run_battle
+
+    return run_battle(*args, **kwargs)
 
 
 def _species_payload(
@@ -256,10 +259,8 @@ def _offer_payload(
 
 def create_app(
     *,
-    battle_fn: Callable[[str, str, BattleRunnerConfig], BattleResult] = run_battle,
-    battle_config_factory: Callable[[], BattleRunnerConfig] = (
-        _battle_config_from_environment
-    ),
+    battle_fn: Callable[..., Any] = _run_live_battle,
+    battle_config_factory: Callable[[], Any] = _battle_config_from_environment,
 ) -> FastAPI:
     legality_data = build_legality_data()
     all_cells = build_all_cells(legality_data.species)
@@ -301,7 +302,7 @@ def create_app(
             "skips_remaining": draft.skips_remaining,
             "team_export": session.team_export,
             "battle_result": (
-                result_as_dict(session.battle_result)
+                asdict(session.battle_result)
                 if session.battle_result is not None
                 else None
             ),
@@ -428,7 +429,7 @@ def create_app(
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except BattleEntityNotFoundError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        except (BattleRunnerError, OSError, ValueError) as exc:
+        except (RuntimeError, OSError, ValueError) as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         return serialize_session(session_id, session)
 
