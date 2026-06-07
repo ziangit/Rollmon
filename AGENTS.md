@@ -195,6 +195,9 @@ If self-hosting proceeds, limit sprites to the draft pool and omit audio.
 
 - Touch foul-play internals as little as possible.
 - Put custom behavior in our driver code behind one battle-runner boundary.
+- Push project work only to the `origin` remote
+  (`https://github.com/ziangit/rollmons.git`). The `upstream` foul-play remote is
+  fetch-only and must never receive project commits.
 - Prefer wrappers and monkeypatches to internal edits.
 - Document any unavoidable foul-play edit as an explicit maintenance cost.
 - Verify integrations by running them: an MCTS decision must return, a battle
