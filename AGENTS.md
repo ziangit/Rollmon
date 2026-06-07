@@ -25,8 +25,7 @@ Our game-specific code should eventually live outside its internals.
 - Battles use Generation 9 mechanics with no Terastallization, Dynamax, Mega
   Evolution, or Z-Moves.
 - Battles use a self-hosted, permissive custom format with Species Clause on,
-  tier banlists off, Tera and Dynamax disabled, and a fixed level of either 50
-  or 100. The final fixed level is not yet locked.
+  tier banlists off, Tera and Dynamax disabled, and a fixed level of 100.
 - Movesets are borrowed from Generation 9 random-battle data and re-statted at
   the fixed level as an authoring step. foul-play does not derive fixed custom
   teams automatically from random-battle data.
@@ -68,6 +67,26 @@ The module treats `Mythical`, `Sub-Legendary`, and `Restricted Legendary` tags
 as legendary and inherits base-species tags for formes, matching the Showdown
 Dex result. Valid cells contain at least four atoms. Legendary selection weight
 must remain strictly positive so thin legendary-heavy cells cannot soft-lock.
+
+`rollmons/draft.py` implements the six-round headless draft state machine. Each
+offer contains a valid cell, its complete undrafted candidate list, and one
+legendary-weighted suggested pick. The suggestion is a soft nudge only: the
+chooser may select any offered candidate, so legendary Pokemon remain fully
+draftable. Species identity is deduplicated globally across both types, and the
+default draft has one bounded cell skip.
+
+`rollmons/team_assembly.py` selects each drafted atom's randbats set weighted by
+its observed count and emits a six-member Showdown export at level 100. It
+preserves the recorded item, ability, and moves. Nearly all source records have
+four moves; Ditto deliberately preserves its source-defined single
+`Transform`.
+
+Player-team stats intentionally use `Serious` nature, 85 EVs in each of the six
+stats (the legal 510 total cap), and omitted IV lines so Showdown defaults to
+31. This exactly matches foul-play's own randbats parser, keeping assembled
+player teams stat-identical to what the AI was validated piloting. The spread
+is neutral and source-consistent, not optimized or a placeholder. Separately
+authored boss teams may use optimized spreads.
 
 ## Integration Landmines
 
@@ -316,16 +335,16 @@ standard Showdown replay player with no rejected lines or JavaScript errors.
 
 The pure legality matrix is implemented in `rollmons/legality_matrix.py`: 508
 randbats atoms produce 101 valid type-generation cells after the more-than-three
-filter. Draft flow, team assembly, orchestration, bosses, and frontend remain
-unbuilt.
+filter. The six-round draft and level-100 team assembly are implemented in
+`rollmons/draft.py` and `rollmons/team_assembly.py`. Orchestration, bosses, and
+frontend remain unbuilt.
 
 ## Roadmap
 
 1. Stabilize and containerize the existing battle-runner configuration without
    expanding its one-battle API.
-2. Build draft and team assembly, exporting fixed-level Showdown teams.
-3. Build the orchestrator: draft, run ten battles, and tally results, using
+2. Build the orchestrator: draft, run ten battles, and tally results, using
    stub boss clients first.
-4. Build the draft UI, results display, and replay viewer, using the hosted
+3. Build the draft UI, results display, and replay viewer, using the hosted
    player temporarily.
-5. Author boss teams and tune difficulty after playtesting.
+4. Author boss teams and tune difficulty after playtesting.
