@@ -16,6 +16,7 @@ from rollmons.legality_matrix import (
 
 TEAM_SIZE = 6
 DEFAULT_SKIP_COUNT = 1
+THIN_CELL_MAX_CANDIDATES = 2
 
 
 class DraftRandomSource(Protocol):
@@ -46,6 +47,10 @@ class NoSkipsRemainingError(DraftError):
     pass
 
 
+class ThinRerollUnavailableError(DraftError):
+    pass
+
+
 class DraftPoolExhaustedError(DraftError):
     pass
 
@@ -58,6 +63,7 @@ class DraftOffer:
     suggested_species: str
     selection_probabilities: dict[str, float]
     skips_remaining: int
+    thin_reroll_available: bool
 
 
 class Draft:
@@ -129,6 +135,17 @@ class Draft:
         self._current_offer = self._roll_offer(exclude_cell=previous_cell)
         return self._current_offer
 
+    def use_thin_reroll(self) -> DraftOffer:
+        if self.complete or self._current_offer is None:
+            raise DraftCompleteError("draft is already complete")
+        if not self._current_offer.thin_reroll_available:
+            raise ThinRerollUnavailableError(
+                "thin-cell reroll requires an offer with 1-2 candidates"
+            )
+        previous_cell = self._current_offer.cell
+        self._current_offer = self._roll_offer(exclude_cell=previous_cell)
+        return self._current_offer
+
     def _undrafted_candidates(self, cell: Cell) -> tuple[str, ...]:
         drafted = set(self._picks)
         return tuple(
@@ -174,4 +191,5 @@ class Draft:
             suggested_species=suggested,
             selection_probabilities=probabilities,
             skips_remaining=self._skips_remaining,
+            thin_reroll_available=len(candidates) <= THIN_CELL_MAX_CANDIDATES,
         )

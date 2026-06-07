@@ -43,6 +43,7 @@ async def test_frontend_and_static_assets_are_served(client):
     assert javascript.status_code == 200
     assert "/api/matrix" in javascript.text
     assert "battlePanel.scrollIntoView" in javascript.text
+    assert "thinRerollDraft" in javascript.text
     assert stylesheet.status_code == 200
 
 
@@ -53,12 +54,16 @@ async def test_matrix_endpoint_exposes_all_cells_and_known_placements(client):
     assert response.status_code == 200
     matrix = response.json()
     assert matrix["atom_count"] == 508
-    assert matrix["included_cell_count"] == 101
+    assert matrix["included_cell_count"] == 158
     assert len(matrix["cells"]) == 18 * 9
-    assert sum(cell["included"] for cell in matrix["cells"]) == 101
+    assert sum(cell["included"] for cell in matrix["cells"]) == 158
+    assert sum(cell["state"] == "normal" for cell in matrix["cells"]) == 125
+    assert sum(cell["state"] == "thin" for cell in matrix["cells"]) == 33
+    assert sum(cell["state"] == "excluded" for cell in matrix["cells"]) == 4
 
     fairy_gen1 = find_cell(matrix, "fairy", 1)
-    assert not fairy_gen1["included"]
+    assert fairy_gen1["included"]
+    assert fairy_gen1["state"] == "thin"
     clefable = next(
         pokemon for pokemon in fairy_gen1["pokemon"] if pokemon["id"] == "clefable"
     )

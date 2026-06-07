@@ -18,7 +18,8 @@ Our game-specific code should eventually live outside its internals.
 
 - Draft labels use current/modern typing and generation of debut. The generation
   number is cosmetic metadata only; all battles use one battle generation.
-- Show only `(type, generation)` cells with more than three eligible Pokemon.
+- Include every nonempty `(type, generation)` cell. Cells with 1-2 undrafted
+  candidates are thin and grant an optional reroll separate from the manual skip.
 - Legendary Pokemon are down-weighted, not banned.
 - A species or forme is a draftable atom if it has a `gen9randombattle` set.
   Its type is its current type and its generation is its debut generation.
@@ -80,9 +81,10 @@ Pokedex lore tags, except for `LEGENDARY_BST_EXCLUSIONS`: Slaking (`Truant`)
 and Regigigas (`Slow Start`). Their ability-suppressed stat-balls make raw BST
 overstate competitive power. Exactly-600 pseudo-legendaries and mythicals such
 as Mew, Jirachi, and Victini are normal atoms by design. Do not change this
-back to a tag-based definition. Valid cells contain at least four atoms.
-Legendary selection weight must remain strictly positive so thin
-legendary-heavy cells cannot soft-lock.
+back to a tag-based definition. Every nonempty cell is valid; cells with 1-2
+undrafted candidates expose a free optional reroll for that offer. Legendary
+selection weight must remain strictly positive so thin legendary-heavy cells
+cannot soft-lock.
 
 `rollmons/draft.py` implements the six-round headless draft state machine. Each
 offer contains a valid cell, its complete undrafted candidate list, and one
@@ -91,7 +93,9 @@ chooser may select any offered candidate, so legendary Pokemon remain fully
 draftable. The offer also exposes the selector's normalized probability for
 each candidate; consumers must display this engine value rather than
 recomputing weights. Species identity is deduplicated globally across both
-types, and the default draft has one bounded cell skip.
+types, the slot-machine guard excludes cells with no undrafted candidates, and
+the default draft has one bounded cell skip. Thin-cell rerolls do not consume
+that skip.
 
 `rollmons/team_assembly.py` selects each drafted atom's randbats set weighted by
 its observed count and emits a six-member Showdown export at level 100. It
@@ -413,8 +417,9 @@ The earlier 299-line random-battle replay fixture still animates through the
 standard Showdown replay player with no rejected lines or JavaScript errors.
 
 The pure legality matrix is implemented in `rollmons/legality_matrix.py`: 508
-randbats atoms produce 101 valid type-generation cells after the more-than-three
-filter. The six-round draft and level-100 team assembly are implemented in
+randbats atoms produce 158 nonempty type-generation cells (125 normal and 33
+thin), with only four empty cells excluded. The six-round draft and level-100
+team assembly are implemented in
 `rollmons/draft.py` and `rollmons/team_assembly.py`. The first authored boss and
 one real post-draft battle path are built, including structured results and a
 hosted replay embed. Ten-battle orchestration, gauntlet results, and additional

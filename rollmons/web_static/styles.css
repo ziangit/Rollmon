@@ -31,7 +31,7 @@ h1 { margin-bottom: .4rem; }
 }
 
 nav { display: flex; gap: .5rem; }
-.tab, .primary, .skip-button, .pick-button {
+.tab, .primary, .skip-button, .thin-reroll-button, .pick-button {
   border: 0;
   border-radius: .45rem;
   cursor: pointer;
@@ -40,6 +40,7 @@ nav { display: flex; gap: .5rem; }
 .tab { background: #27344d; color: white; }
 .tab.active, .primary { background: #4f8cff; color: white; }
 .skip-button { background: #f0b429; color: #1d2733; }
+.thin-reroll-button { background: #5d46c7; color: white; }
 button:disabled { cursor: not-allowed; opacity: .45; }
 
 main { padding: 2rem 3rem 4rem; }
@@ -61,6 +62,7 @@ main { padding: 2rem 3rem 4rem; }
 }
 .swatch.included { background: #d9f7df; border: 1px solid #67a875; }
 .swatch.excluded { background: #e4e8ed; border: 1px solid #bac2cc; }
+.swatch.thin { background: #ddd7ff; border: 1px solid #816de0; }
 
 .matrix-layout {
   display: grid;
@@ -93,10 +95,26 @@ main { padding: 2rem 3rem 4rem; }
   background: #e4e8ed;
   color: #4d5968;
 }
-.matrix-cell.included {
+.matrix-cell.normal {
   border-color: #67a875;
   background: #d9f7df;
   color: #21472b;
+  font-weight: 700;
+}
+.matrix-cell.thin {
+  background: #eeeaff;
+  border-color: #9b8ae8;
+}
+.offer-actions {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.thin-note {
+  margin: .25rem 0 0;
+  color: #5d46c7;
   font-weight: 700;
 }
 .matrix-cell.selected { outline: 3px solid #4f8cff; }

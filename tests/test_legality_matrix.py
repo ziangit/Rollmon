@@ -42,7 +42,7 @@ def test_atom_count_matches_gen9_randbats_source(legality_data):
     assert set(legality_data.atoms) == set(source)
 
 
-def test_cells_with_three_or_fewer_species_are_excluded():
+def test_matrix_includes_nonempty_cells_and_excludes_only_empty_cells():
     species = {
         f"small{index}": metadata(f"small{index}", ("fire",), 1) for index in range(3)
     }
@@ -55,8 +55,9 @@ def test_cells_with_three_or_fewer_species_are_excluded():
 
     matrix = build_matrix(species)
 
-    assert ("fire", 1) not in matrix
+    assert len(matrix[("fire", 1)]) == 3
     assert len(matrix[("water", 1)]) == MIN_CELL_SIZE
+    assert ("grass", 1) not in matrix
 
 
 def test_modern_type_and_debut_generation_placements(legality_data):
@@ -64,7 +65,7 @@ def test_modern_type_and_debut_generation_placements(legality_data):
     assert clefable.types == ("fairy",)
     assert clefable.debut_generation == 1
     assert cells_for_species(clefable) == (("fairy", 1),)
-    assert ("fairy", 1) not in legality_data.matrix
+    assert "clefable" in legality_data.matrix[("fairy", 1)]
 
     charizard = legality_data.species["charizard"]
     assert charizard.types == ("fire", "flying")
@@ -175,7 +176,7 @@ def test_three_of_four_legendary_cell_never_soft_locks():
 def test_every_included_real_cell_can_return_a_pick(legality_data):
     rng = random.Random(99)
     for cell, eligible in legality_data.matrix.items():
-        assert len(eligible) >= MIN_CELL_SIZE
+        assert len(eligible) >= 1
         assert (
             select_species(
                 cell,

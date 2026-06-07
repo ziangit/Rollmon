@@ -43,7 +43,7 @@ LEGENDARY_BST_EXCLUSIONS = {
     "slaking",  # Truant suppresses the stat-ball; raw BST overstates competitive power.
     "regigigas",  # Slow Start suppresses the stat-ball; raw BST overstates competitive power.
 }
-MIN_CELL_SIZE = 4
+MIN_CELL_SIZE = 1
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RANDBATS_PATH = REPO_ROOT / "rollmons" / "data" / "gen9randombattle.json"
@@ -171,7 +171,7 @@ def build_matrix(
     *,
     min_cell_size: int = MIN_CELL_SIZE,
 ) -> dict[Cell, tuple[str, ...]]:
-    """Build valid cells, excluding every cell below ``min_cell_size``."""
+    """Build draftable cells, excluding every cell below ``min_cell_size``."""
 
     if min_cell_size < 1:
         raise ValueError("min_cell_size must be positive")

@@ -96,9 +96,9 @@ function renderMatrix() {
         item => item.type === type && item.generation === generation
       );
       const button = document.createElement("button");
-      button.className = `matrix-cell ${cell.included ? "included" : ""}`;
+      button.className = `matrix-cell ${cell.state}`;
       button.dataset.cell = `${type}-${generation}`;
-      button.innerHTML = `${cell.eligible_count}<small>${cell.included ? "included" : "excluded"}</small>`;
+      button.innerHTML = `${cell.eligible_count}<small>${cell.state}</small>`;
       button.addEventListener("click", () => renderCell(cell, button));
       grid.appendChild(button);
     }
@@ -120,7 +120,13 @@ function renderCell(cell, button) {
     : "<p>No randbats atoms occupy this cell.</p>";
   detail.innerHTML = `
     <h3>${cell.type} · Gen ${cell.generation}</h3>
-    <p><strong>${cell.eligible_count}</strong> eligible · ${cell.included ? "Included in rolls" : "Excluded from rolls"}</p>
+    <p><strong>${cell.eligible_count}</strong> eligible · ${
+      cell.state === "excluded"
+        ? "Excluded from rolls"
+        : cell.state === "thin"
+          ? "Thin: draftable with a reroll"
+          : "Included in rolls"
+    }</p>
     ${pokemon}`;
 }
 
@@ -159,17 +165,25 @@ function renderDraft(draft) {
   battlePanel.classList.add("hidden");
   document.querySelector("#battle-result-panel").classList.add("hidden");
   status.innerHTML = `<strong>Round ${draft.offer.round_number}/6</strong> · ${draft.offer.candidates.length} undrafted candidates`;
+  const thinReroll = draft.offer.thin_reroll_available
+    ? `<button id="thin-reroll" class="thin-reroll-button">Thin cell — reroll available</button>`
+    : "";
   offerRoot.innerHTML = `
     <div class="offer-heading">
       <div>
         <p class="eyebrow">Current cell</p>
         <h3>${draft.offer.cell.type} · Gen ${draft.offer.cell.generation}</h3>
+        ${draft.offer.thin_reroll_available ? "<p class=\"thin-note\">Only 1–2 undrafted choices remain.</p>" : ""}
       </div>
-      <button id="skip-draft" class="skip-button" ${draft.skips_remaining ? "" : "disabled"}>
-        Skip (${draft.skips_remaining})
-      </button>
+      <div class="offer-actions">
+        ${thinReroll}
+        <button id="skip-draft" class="skip-button" ${draft.skips_remaining ? "" : "disabled"}>
+          Skip (${draft.skips_remaining})
+        </button>
+      </div>
     </div>`;
   document.querySelector("#skip-draft").addEventListener("click", skipDraft);
+  document.querySelector("#thin-reroll")?.addEventListener("click", thinRerollDraft);
   candidates.innerHTML = draft.offer.candidates.map(pokemon => {
     const suggested = pokemon.id === draft.offer.suggested_species;
     return `
@@ -220,6 +234,13 @@ async function pickSpecies(speciesId) {
 
 async function skipDraft() {
   renderDraft(await api(`/api/drafts/${state.sessionId}/skip`, {method: "POST"}));
+}
+
+async function thinRerollDraft() {
+  renderDraft(await api(
+    `/api/drafts/${state.sessionId}/thin-reroll`,
+    {method: "POST"},
+  ));
 }
 
 function escapeHtml(value) {

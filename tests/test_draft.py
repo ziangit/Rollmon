@@ -7,6 +7,7 @@ from rollmons.draft import (
     DraftCompleteError,
     NoSkipsRemainingError,
     TEAM_SIZE,
+    ThinRerollUnavailableError,
 )
 from rollmons.legality_matrix import LegalityData, SpeciesMetadata, build_legality_data
 
@@ -109,6 +110,40 @@ def test_skip_rerolls_cell_and_is_bounded():
     assert replacement.skips_remaining == 0
     with pytest.raises(NoSkipsRemainingError):
         draft.use_skip()
+
+
+def test_thin_landing_offers_free_reroll_without_consuming_skip():
+    species = {
+        species_id: SpeciesMetadata(
+            species_id=species_id,
+            name=species_id,
+            types=("fire",) if species_id == "thin" else ("water",),
+            debut_generation=1,
+            base_stat_total=500,
+            legendary=False,
+        )
+        for species_id in ("thin", "two", "three", "four", "five", "six", "seven")
+    }
+    data = LegalityData(
+        atoms=tuple(species),
+        species=species,
+        matrix={
+            ("fire", 1): ("thin",),
+            ("water", 1): tuple(
+                species_id for species_id in species if species_id != "thin"
+            ),
+        },
+    )
+    draft = Draft(data, rng=FirstChoiceRng(), skip_count=1)
+
+    assert draft.current_offer.thin_reroll_available
+    replacement = draft.use_thin_reroll()
+
+    assert replacement.cell == ("water", 1)
+    assert not replacement.thin_reroll_available
+    assert draft.skips_remaining == 1
+    with pytest.raises(ThinRerollUnavailableError):
+        draft.use_thin_reroll()
 
 
 def test_offer_exposes_full_candidate_list_and_soft_suggestion():

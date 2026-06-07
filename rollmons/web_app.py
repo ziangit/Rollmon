@@ -241,6 +241,7 @@ def _offer_payload(
         "candidates": [],
         "suggested_species": offer.suggested_species,
         "skips_remaining": offer.skips_remaining,
+        "thin_reroll_available": offer.thin_reroll_available,
     }
     for species_id in offer.candidates:
         candidate = _species_payload(
@@ -322,6 +323,13 @@ def create_app(
                         "type": pokemon_type,
                         "generation": generation,
                         "included": cell in legality_data.matrix,
+                        "state": (
+                            "excluded"
+                            if not eligible
+                            else "thin"
+                            if len(eligible) <= 2
+                            else "normal"
+                        ),
                         "eligible_count": len(eligible),
                         "pokemon": [
                             _species_payload(
@@ -384,6 +392,15 @@ def create_app(
         session = get_session(session_id)
         try:
             session.draft.use_skip()
+        except DraftError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return serialize_session(session_id, session)
+
+    @app.post("/api/drafts/{session_id}/thin-reroll")
+    def thin_reroll(session_id: str):
+        session = get_session(session_id)
+        try:
+            session.draft.use_thin_reroll()
         except DraftError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         return serialize_session(session_id, session)
