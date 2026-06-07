@@ -25,3 +25,10 @@ def load_boss_team(boss_id: str) -> str:
     if not team_export:
         raise BossTeamError(f"boss team is empty: {boss_id}")
     return team_export
+
+
+def boss_display_name(boss_id: str) -> str:
+    path = BOSS_TEAM_PATHS.get(boss_id)
+    if path is None:
+        raise BossTeamError(f"unknown boss: {boss_id}")
+    return path.stem.replace("-", " ").replace("_", " ").title()

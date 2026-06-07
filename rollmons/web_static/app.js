@@ -271,7 +271,7 @@ html, body { margin: 0; padding: 0; font-family: Verdana, sans-serif; }
 function renderBattleResult(result) {
   const label = result.winner === "tie"
     ? "Tie"
-    : `${result.winner === "player" ? "Drafted team" : "Ash"} wins`;
+    : `${result.winner === "player" ? result.player_name : result.boss_name} wins`;
   document.querySelector("#battle-result").textContent =
     `${label} in ${result.turns} turns`;
   document.querySelector("#battle-id").textContent = result.battle_id;

@@ -114,7 +114,7 @@ Authored bosses live as Showdown export text under `rollmons/bosses/`.
 `rollmons/boss_loader.py` maps stable boss IDs to those files and returns the
 export string expected by `battle_runner.run_battle()`. `ash.txt` is the first
 thematic, intentionally suboptimal boss team; all six members explicitly set
-level 100.
+level 100. The boss display name derives from the file stem.
 
 `rollmons/web_app.py` is a thin FastAPI transport over the game-layer modules.
 It keeps local single-user draft sessions in memory and exposes the complete
@@ -135,6 +135,12 @@ and returns winner, turns, battle ID, and replay protocol. The browser embeds
 the self-hosted server, `logchallenges = true`, a readable
 `ROLLMONS_SHOWDOWN_LOG_DIR`, and the gen9-no-Tera engine. Matrix inspection and
 drafting remain usable without any live battle stack.
+
+Live battles request the clean Showdown usernames `Player` (configurable with
+`ROLLMONS_PLAYER_NAME`) and the boss file's display name, so both structured
+results and replay protocol use friendly names. If a stale sequential
+connection still owns a name, the runner retries with a short internal suffix
+and normalizes that fallback back to the display name in returned replay text.
 
 Run the development harness with:
 

@@ -25,7 +25,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from rollmons.boss_loader import BossTeamError, load_boss_team
+from rollmons.boss_loader import BossTeamError, boss_display_name, load_boss_team
 from rollmons.draft import Draft, DraftError, DraftOffer
 from rollmons.legality_matrix import (
     DEFAULT_POKEDEX_PATH,
@@ -412,6 +412,7 @@ def create_app(
             raise HTTPException(status_code=409, detail="draft is not complete")
         try:
             boss_team = load_boss_team(request.boss_id)
+            boss_name = boss_display_name(request.boss_id)
             verify_team_entities_exist(
                 player=session.team_export,
                 boss=boss_team,
@@ -420,6 +421,8 @@ def create_app(
                 session.team_export,
                 boss_team,
                 battle_config_factory(),
+                player_name=os.environ.get("ROLLMONS_PLAYER_NAME", "Player"),
+                boss_name=boss_name,
             )
         except BossTeamError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc

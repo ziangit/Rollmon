@@ -168,8 +168,17 @@ async def test_completed_draft_can_delegate_one_battle_and_return_replay(tmp_pat
         showdown_log_dir=tmp_path,
     )
 
-    def fake_run_battle(player_team, boss_team, received_config):
-        calls.append((player_team, boss_team, received_config))
+    def fake_run_battle(
+        player_team,
+        boss_team,
+        received_config,
+        *,
+        player_name,
+        boss_name,
+    ):
+        calls.append(
+            (player_team, boss_team, received_config, player_name, boss_name)
+        )
         return expected_result
 
     test_app = create_app(
@@ -207,13 +216,17 @@ async def test_completed_draft_can_delegate_one_battle_and_return_replay(tmp_pat
         "turns": 12,
         "battle_id": "battle-gen9customgame-42",
         "replay_log": ["|turn|12", "|win|RollmonsPlayer"],
+        "player_name": "Player",
+        "boss_name": "Boss",
     }
     assert len(calls) == 1
-    player_team, boss_team, received_config = calls[0]
+    player_team, boss_team, received_config, player_name, boss_name = calls[0]
     assert player_team.count("Level: 100") == 6
     assert boss_team.count("Level: 100") == 6
     assert "Pikachu @ Light Ball" in boss_team
     assert received_config.battle_format == PERMISSIVE_GEN9_FORMAT
+    assert player_name == "Player"
+    assert boss_name == "Ash"
 
 
 @pytest.mark.anyio
