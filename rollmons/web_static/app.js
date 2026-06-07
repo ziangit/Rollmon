@@ -151,6 +151,7 @@ function renderDraft(draft) {
     exportPanel.classList.remove("hidden");
     battlePanel.classList.remove("hidden");
     if (draft.battle_result) renderBattleResult(draft.battle_result);
+    else battlePanel.scrollIntoView({behavior: "smooth", block: "center"});
     return;
   }
 

@@ -138,6 +138,18 @@ Run the development harness with:
 make dev
 ```
 
+Run the complete local draft-to-battle stack with:
+
+```bash
+make live SHOWDOWN_DIR=/path/to/pokemon-showdown
+```
+
+`scripts/run_live_harness.py` validates the external checkout, enables
+`logchallenges`, creates its log root, starts Showdown and Uvicorn, opens the
+browser, and owns cleanup for both process groups. It may auto-detect a single
+nearby Showdown installation and runs `npm install` there if local Node
+dependencies are absent. It does not build or upgrade poke-engine.
+
 Open `http://127.0.0.1:8080`. For development only, the harness hotlinks
 Pokemon sprites and the item-icon sheet from `play.pokemonshowdown.com`, using
 the same `home-centered` sprite IDs and item `spritenum` coordinates as the

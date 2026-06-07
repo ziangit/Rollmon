@@ -280,6 +280,11 @@ pre {
   margin-bottom: 0;
   color: #596575;
 }
+#battle-panel {
+  margin-bottom: 1rem;
+  border-color: #4f8cff;
+  box-shadow: 0 0 0 2px rgba(79, 140, 255, .12);
+}
 .battle-result-panel {
   margin-top: 1rem;
 }

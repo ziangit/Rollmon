@@ -37,8 +37,12 @@ async def test_frontend_and_static_assets_are_served(client):
     assert index.status_code == 200
     assert "18 × 9 legality matrix" in index.text
     assert "Interactive six-round draft" in index.text
+    assert index.text.index('id="battle-panel"') < index.text.index(
+        'id="team-export-panel"'
+    )
     assert javascript.status_code == 200
     assert "/api/matrix" in javascript.text
+    assert "battlePanel.scrollIntoView" in javascript.text
     assert stylesheet.status_code == 200
 
 
