@@ -13,12 +13,14 @@ from rollmons.legality_matrix import (
     DEFAULT_POKEDEX_PATH,
     DEFAULT_RANDBATS_PATH,
 )
+from rollmons.submissions import SubmissionError, parse_showdown_export
 
 FIXED_LEVEL = 100
 NEUTRAL_NATURE = "Serious"
 NEUTRAL_EVS = 85
 DEFAULT_IVS = 31
 STATS = ("HP", "Atk", "Def", "SpA", "SpD", "Spe")
+SETS_DIR = Path(__file__).resolve().parent / "sets"
 
 
 class TeamRandomSource(Protocol):
@@ -138,12 +140,38 @@ def _export_member(name: str, set_: RandomBattleSet) -> str:
     return "\n".join(lines)
 
 
+def load_set_override(
+    species_id: str,
+    *,
+    sets_dir: str | Path = SETS_DIR,
+) -> str | None:
+    path = Path(sets_dir) / f"{species_id}.txt"
+    if not path.is_file():
+        return None
+    try:
+        export_text = path.read_text(encoding="utf-8").strip()
+        members = parse_showdown_export(
+            export_text,
+            expected_members=1,
+            source=str(path),
+        )
+    except (OSError, SubmissionError) as exc:
+        raise TeamAssemblyError(f"invalid set override for {species_id}: {exc}") from exc
+    if members[0]["species"] != species_id:
+        raise TeamAssemblyError(
+            f"set override {path} contains {members[0]['species']}, "
+            f"expected {species_id}"
+        )
+    return export_text
+
+
 def assemble_team(
     drafted_species: Sequence[str],
     *,
     rng: TeamRandomSource | None = None,
     randbats_path: str | Path = DEFAULT_RANDBATS_PATH,
     pokedex_path: str | Path = DEFAULT_POKEDEX_PATH,
+    sets_dir: str | Path = SETS_DIR,
 ) -> str:
     """Return a six-member, fixed-level Showdown export string."""
 
@@ -156,6 +184,10 @@ def assemble_team(
     pokedex = _load_json(pokedex_path)
     members = []
     for species_id in drafted_species:
+        override = load_set_override(species_id, sets_dir=sets_dir)
+        if override is not None:
+            members.append(override)
+            continue
         entry = pokedex.get(species_id)
         if not isinstance(entry, dict):
             raise TeamAssemblyError(f"unknown species: {species_id}")

@@ -10,6 +10,7 @@ from rollmons.team_assembly import (
     STATS,
     TeamAssemblyError,
     assemble_team,
+    load_set_override,
     load_random_battle_sets,
     representative_random_battle_set,
     select_random_battle_set,
@@ -108,3 +109,23 @@ def test_team_assembly_rejects_wrong_size_and_duplicates():
         assemble_team(DRAFTED_TEAM[:5])
     with pytest.raises(TeamAssemblyError, match="Species Clause"):
         assemble_team(("charizard",) * 6)
+
+
+def test_species_override_replaces_randbats_set(tmp_path):
+    override = """Charizard @ Choice Specs
+Ability: Blaze
+Level: 100
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+- Flamethrower
+- Air Slash
+- Dragon Pulse
+- Focus Blast
+"""
+    (tmp_path / "charizard.txt").write_text(override, encoding="utf-8")
+
+    export = assemble_team(DRAFTED_TEAM, rng=RecordingRng(), sets_dir=tmp_path)
+
+    assert load_set_override("charizard", sets_dir=tmp_path) == override.strip()
+    assert export.split("\n\n")[0] == override.strip()
+    assert "Serious Nature" not in export.split("\n\n")[0]

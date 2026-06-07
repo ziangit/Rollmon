@@ -103,6 +103,12 @@ preserves the recorded item, ability, and moves. Nearly all source records have
 four moves; Ditto deliberately preserves its source-defined single
 `Transform`.
 
+Contributor overrides live under `rollmons/sets/` as one standard Showdown
+export block per normalized species-ID filename. Assembly uses an override for
+that drafted species when present and otherwise retains randbats selection.
+Overrides never create custom player teams; all player teams still originate
+from a six-round pool draft.
+
 Player-team stats intentionally use `Serious` nature, 85 EVs in each of the six
 stats (the legal 510 total cap), and omitted IV lines so Showdown defaults to
 31. This exactly matches foul-play's own randbats parser, keeping assembled
@@ -111,10 +117,17 @@ is neutral and source-consistent, not optimized or a placeholder. Separately
 authored boss teams may use optimized spreads.
 
 Authored bosses live as Showdown export text under `rollmons/bosses/`.
-`rollmons/boss_loader.py` maps stable boss IDs to those files and returns the
+`rollmons/boss_loader.py` discovers stable boss IDs from those files and returns the
 export string expected by `battle_runner.run_battle()`. `ash.txt` is the first
 thematic, intentionally suboptimal boss team; all six members explicitly set
 level 100. The boss display name derives from the file stem.
+
+`rollmons/submissions.py` wraps the existing foul-play Showdown export parser
+for both six-member boss files and single-member set overrides. Its existence
+pre-flight reads checked-in species and move JSON directly and applies no
+tier, learnset, or obtainability legality. Contributors run
+`python3 -m rollmons.validate_submission {boss,set} PATH`; this pure command
+does not require Showdown, Rust, poke-engine, or a running battle stack.
 
 `rollmons/web_app.py` is a thin FastAPI transport over the game-layer modules.
 It keeps local single-user draft sessions in memory and exposes the complete
