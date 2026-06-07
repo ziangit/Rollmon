@@ -54,7 +54,13 @@ async def test_matrix_endpoint_exposes_all_cells_and_known_placements(client):
 
     fairy_gen1 = find_cell(matrix, "fairy", 1)
     assert not fairy_gen1["included"]
-    assert "clefable" in {pokemon["id"] for pokemon in fairy_gen1["pokemon"]}
+    clefable = next(
+        pokemon for pokemon in fairy_gen1["pokemon"] if pokemon["id"] == "clefable"
+    )
+    assert clefable["base_stat_total"] == 483
+    assert clefable["randbats_set"]["moves"]
+    assert clefable["assembly_spread"]["level"] == 100
+    assert set(clefable["assembly_spread"]["ivs"].values()) == {31}
 
     fire_gen1 = find_cell(matrix, "fire", 1)
     flying_gen1 = find_cell(matrix, "flying", 1)
@@ -79,8 +85,14 @@ async def test_api_driven_six_round_draft_completes_with_level_100_export(client
 
     while not state["complete"]:
         candidates = {item["id"] for item in state["offer"]["candidates"]}
+        probabilities = {
+            item["id"]: item["selection_probability"]
+            for item in state["offer"]["candidates"]
+        }
         suggested = state["offer"]["suggested_species"]
         assert suggested in candidates
+        assert set(probabilities) == candidates
+        assert sum(probabilities.values()) == pytest.approx(1)
         assert not candidates.intersection(item["id"] for item in state["team"])
         picked = await client.post(
             f"/api/drafts/{session_id}/pick",

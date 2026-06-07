@@ -57,23 +57,28 @@ selection primitive. Its data sources are:
 
 - `rollmons/data/gen9randombattle.json`: the checked-in 508-atom Generation 9
   random-battle set snapshot. Presence in this file defines draftability.
-- `data/pokedex.json`: Showdown-derived current types, National Dex numbers,
-  formes, base-species links, and legendary tags.
+- `data/pokedex.json`: Showdown-derived current types, six base stats, National
+  Dex numbers, formes, and base-species links. BST is the sum of the six
+  `baseStats` values in this file.
 - `FORME_DEBUT_GENERATION_OVERRIDES`: 33 forme debut generations verified
   against Pokemon Showdown `Dex.species.get(id).gen` at Showdown commit
   `a9caa4c`. All other atoms derive generation from National Dex boundaries.
 
-The module treats `Mythical`, `Sub-Legendary`, and `Restricted Legendary` tags
-as legendary and inherits base-species tags for formes, matching the Showdown
-Dex result. Valid cells contain at least four atoms. Legendary selection weight
-must remain strictly positive so thin legendary-heavy cells cannot soft-lock.
+The project intentionally defines legendary as `BST > 600`, regardless of
+Pokedex lore tags. Exactly-600 pseudo-legendaries and mythicals such as Mew,
+Jirachi, and Victini are normal atoms by design. Do not change this back to a
+tag-based definition. Valid cells contain at least four atoms. Legendary
+selection weight must remain strictly positive so thin legendary-heavy cells
+cannot soft-lock.
 
 `rollmons/draft.py` implements the six-round headless draft state machine. Each
 offer contains a valid cell, its complete undrafted candidate list, and one
 legendary-weighted suggested pick. The suggestion is a soft nudge only: the
 chooser may select any offered candidate, so legendary Pokemon remain fully
-draftable. Species identity is deduplicated globally across both types, and the
-default draft has one bounded cell skip.
+draftable. The offer also exposes the selector's normalized probability for
+each candidate; consumers must display this engine value rather than
+recomputing weights. Species identity is deduplicated globally across both
+types, and the default draft has one bounded cell skip.
 
 `rollmons/team_assembly.py` selects each drafted atom's randbats set weighted by
 its observed count and emits a six-member Showdown export at level 100. It
@@ -91,9 +96,11 @@ authored boss teams may use optimized spreads.
 `rollmons/web_app.py` is a thin FastAPI transport over the game-layer modules.
 It keeps local single-user draft sessions in memory and exposes the complete
 18x9 pool inspector plus start/state/pick/skip draft endpoints. The static SPA
-under `rollmons/web_static/` renders that engine state; it does not implement
-matrix filtering, dedupe, cell guards, weighted suggestions, or team assembly
-in JavaScript.
+under `rollmons/web_static/` renders that engine state, including BST,
+engine-calculated suggestion probability, the most-observed representative
+randbats set and role count, and the fixed player assembly spread. It does not
+implement matrix filtering, dedupe, cell guards, weighted suggestions,
+probability calculation, or team assembly in JavaScript.
 
 Run the development harness with:
 

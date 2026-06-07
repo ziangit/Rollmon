@@ -136,7 +136,7 @@ main { padding: 2rem 3rem 4rem; }
 }
 .candidate-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: .75rem;
 }
 .candidate-card {
@@ -150,6 +150,30 @@ main { padding: 2rem 3rem 4rem; }
   background: #fffaf0;
 }
 .candidate-card h4 { margin: 0 0 .35rem; }
+.probability {
+  margin: .7rem 0;
+  border-radius: .35rem;
+  padding: .45rem;
+  background: #edf4ff;
+}
+.candidate-card.legendary .probability {
+  background: #fff0ba;
+}
+.set-details {
+  margin-top: .75rem;
+  border-top: 1px solid #d0d7df;
+  padding-top: .7rem;
+  font-size: .82rem;
+}
+.set-details p { margin-bottom: .55rem; }
+.set-details dl {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: .25rem .5rem;
+  margin: 0 0 .7rem;
+}
+.set-details dt { color: #667384; font-weight: 700; }
+.set-details dd { margin: 0; }
 .pick-button {
   width: 100%;
   margin-top: .65rem;

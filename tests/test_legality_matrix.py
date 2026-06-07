@@ -7,12 +7,14 @@ from rollmons.legality_matrix import (
     DEFAULT_POKEDEX_PATH,
     DEFAULT_RANDBATS_PATH,
     FORME_DEBUT_GENERATION_OVERRIDES,
+    LEGENDARY_BST_THRESHOLD,
     MIN_CELL_SIZE,
     SpeciesMetadata,
     build_legality_data,
     build_matrix,
     cells_for_species,
     select_species,
+    selection_probabilities,
 )
 
 
@@ -21,12 +23,13 @@ def legality_data():
     return build_legality_data()
 
 
-def metadata(species_id, types, generation, *, legendary=False):
+def metadata(species_id, types, generation, *, legendary=False, bst=500):
     return SpeciesMetadata(
         species_id=species_id,
         name=species_id,
         types=types,
         debut_generation=generation,
+        base_stat_total=bst,
         legendary=legendary,
     )
 
@@ -78,12 +81,48 @@ def test_modern_type_and_debut_generation_placements(legality_data):
     assert "raichualola" in legality_data.matrix[("psychic", 7)]
 
 
-def test_legendary_tags_are_inherited_by_formes(legality_data):
-    assert legality_data.species["articuno"].legendary
-    assert legality_data.species["articunogalar"].legendary
+def test_legendary_is_strictly_bst_above_600(legality_data):
+    assert LEGENDARY_BST_THRESHOLD == 600
+    assert legality_data.species["slaking"].base_stat_total == 670
+    assert legality_data.species["slaking"].legendary
+    assert legality_data.species["arceusfairy"].base_stat_total == 720
     assert legality_data.species["arceusfairy"].legendary
-    assert "Sub-Legendary" in legality_data.species["articunogalar"].legendary_tags
-    assert "Mythical" in legality_data.species["arceusfairy"].legendary_tags
+
+    assert legality_data.species["dragonite"].base_stat_total == 600
+    assert not legality_data.species["dragonite"].legendary
+    assert legality_data.species["mew"].base_stat_total == 600
+    assert not legality_data.species["mew"].legendary
+    assert legality_data.species["articuno"].base_stat_total == 580
+    assert not legality_data.species["articuno"].legendary
+
+    assert all(
+        metadata.legendary == (metadata.base_stat_total > 600)
+        for metadata in legality_data.species.values()
+    )
+
+
+def test_selector_probabilities_use_the_same_positive_legendary_weight():
+    cell = ("normal", 3)
+    species = {
+        "ordinary": metadata("ordinary", ("normal",), 3, bst=500),
+        "slaking": metadata(
+            "slaking",
+            ("normal",),
+            3,
+            bst=670,
+            legendary=True,
+        ),
+    }
+    probabilities = selection_probabilities(
+        cell,
+        {cell: tuple(species)},
+        species,
+        legendary_weight=0.25,
+    )
+
+    assert probabilities == pytest.approx({"ordinary": 0.8, "slaking": 0.2})
+    assert sum(probabilities.values()) == pytest.approx(1)
+    assert probabilities["slaking"] > 0
 
 
 def test_legendary_selection_is_down_weighted_deterministically():

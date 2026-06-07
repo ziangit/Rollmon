@@ -1,7 +1,7 @@
 """Build the rollmons type-by-debut-generation draft legality matrix.
 
 Draftable atoms come from the checked-in Generation 9 random-battle set data.
-Current types and legendary tags come from the checked-in Showdown-derived
+Current types and base stats come from the checked-in Showdown-derived
 Pokedex. Forme debut overrides were verified against Pokemon Showdown's
 ``Dex.species.get(id).gen``.
 """
@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import random
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Protocol, Sequence
@@ -38,8 +37,8 @@ TYPES = (
     "water",
 )
 GENERATIONS = tuple(range(1, 10))
-LEGENDARY_TAGS = frozenset({"Mythical", "Restricted Legendary", "Sub-Legendary"})
 DEFAULT_LEGENDARY_WEIGHT = 0.25
+LEGENDARY_BST_THRESHOLD = 600
 MIN_CELL_SIZE = 4
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -106,8 +105,8 @@ class SpeciesMetadata:
     name: str
     types: tuple[str, ...]
     debut_generation: int
+    base_stat_total: int
     legendary: bool
-    legendary_tags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -123,10 +122,6 @@ def _load_json(path: str | Path) -> dict:
     if not isinstance(data, dict):
         raise LegalityDataError(f"expected a JSON object in {path}")
     return data
-
-
-def _to_id(value: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", value.lower())
 
 
 def _generation_from_national_dex_number(number: int) -> int:
@@ -148,21 +143,13 @@ def _debut_generation(species_id: str, entry: Mapping[str, object]) -> int:
     return _generation_from_national_dex_number(number)
 
 
-def _legendary_tags(
-    species_id: str,
-    entry: Mapping[str, object],
-    pokedex: Mapping[str, Mapping[str, object]],
-) -> tuple[str, ...]:
-    tags = set(entry.get("tags", ()))
-    base_species = entry.get("baseSpecies")
-    if isinstance(base_species, str):
-        base_entry = pokedex.get(_to_id(base_species))
-        if base_entry is None:
-            raise LegalityDataError(
-                f"{species_id} references missing base species {base_species}"
-            )
-        tags.update(base_entry.get("tags", ()))
-    return tuple(sorted(LEGENDARY_TAGS.intersection(tags)))
+def _base_stat_total(species_id: str, entry: Mapping[str, object]) -> int:
+    base_stats = entry.get("baseStats")
+    if not isinstance(base_stats, dict) or len(base_stats) != 6:
+        raise LegalityDataError(f"{species_id} has incomplete base stat data")
+    if not all(isinstance(value, int) for value in base_stats.values()):
+        raise LegalityDataError(f"{species_id} has non-integer base stat data")
+    return sum(base_stats.values())
 
 
 def _validate_no_battle_only_mechanics(
@@ -245,14 +232,17 @@ def build_legality_data(
         if not isinstance(raw_types, list) or not raw_types:
             raise LegalityDataError(f"{species_id} has no current type data")
         types = tuple(str(pokemon_type).lower() for pokemon_type in raw_types)
-        tags = _legendary_tags(species_id, entry, pokedex)
+        base_stat_total = _base_stat_total(species_id, entry)
         species[species_id] = SpeciesMetadata(
             species_id=species_id,
             name=str(entry.get("name", species_id)),
             types=types,
             debut_generation=_debut_generation(species_id, entry),
-            legendary=bool(tags),
-            legendary_tags=tags,
+            base_stat_total=base_stat_total,
+            # "Legendary" is deliberately a competitive-power category, not
+            # Pokedex lore: exactly-600 mythicals and pseudo-legendaries are
+            # normal atoms, while every atom above 600 is down-weighted.
+            legendary=base_stat_total > LEGENDARY_BST_THRESHOLD,
         )
 
     return LegalityData(
@@ -262,15 +252,14 @@ def build_legality_data(
     )
 
 
-def select_species(
+def selection_probabilities(
     cell: Cell,
     matrix: Mapping[Cell, Sequence[str]],
     species: Mapping[str, SpeciesMetadata],
     *,
-    rng: RandomSource | None = None,
     legendary_weight: float = DEFAULT_LEGENDARY_WEIGHT,
-) -> str:
-    """Select one eligible atom, down-weighting but never banning legendaries."""
+) -> dict[str, float]:
+    """Return the selector's normalized probability for every eligible atom."""
 
     if legendary_weight <= 0:
         raise ValueError("legendary_weight must be greater than zero")
@@ -286,5 +275,32 @@ def select_species(
         raise LegalityDataError(
             f"cell {cell} references unknown species {exc.args[0]}"
         ) from exc
+    total_weight = sum(weights)
+    return {
+        species_id: weight / total_weight
+        for species_id, weight in zip(eligible, weights, strict=True)
+    }
+
+
+def select_species(
+    cell: Cell,
+    matrix: Mapping[Cell, Sequence[str]],
+    species: Mapping[str, SpeciesMetadata],
+    *,
+    rng: RandomSource | None = None,
+    legendary_weight: float = DEFAULT_LEGENDARY_WEIGHT,
+) -> str:
+    """Select one eligible atom, down-weighting but never banning legendaries."""
+
+    probabilities = selection_probabilities(
+        cell,
+        matrix,
+        species,
+        legendary_weight=legendary_weight,
+    )
     random_source = rng or random
-    return random_source.choices(eligible, weights, k=1)[0]
+    return random_source.choices(
+        tuple(probabilities),
+        tuple(probabilities.values()),
+        k=1,
+    )[0]

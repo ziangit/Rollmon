@@ -23,6 +23,30 @@ function chips(pokemon) {
   return `${types}${legendary}`;
 }
 
+function displayId(value) {
+  return value.replaceAll("-", " ").replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function setDetails(pokemon) {
+  const set = pokemon.randbats_set;
+  const roles = set.role_count > 1
+    ? `${set.role_count} observed roles; showing the most common`
+    : "1 observed role";
+  return `
+    <div class="set-details">
+      <p><strong>Representative randbats set</strong><br><small>${roles}</small></p>
+      <dl>
+        <dt>Item</dt><dd>${displayId(set.item)}</dd>
+        <dt>Ability</dt><dd>${displayId(set.ability)}</dd>
+        <dt>Moves</dt><dd>${set.moves.map(displayId).join(", ")}</dd>
+      </dl>
+      <p><strong>Assembly spread</strong><br>
+        Level ${pokemon.assembly_spread.level} · ${pokemon.assembly_spread.nature}<br>
+        85 EVs in every stat · 31 IVs in every stat
+      </p>
+    </div>`;
+}
+
 function renderMatrix() {
   const grid = document.querySelector("#matrix-grid");
   grid.innerHTML = `<div class="grid-label">Type</div>` +
@@ -54,7 +78,7 @@ function renderCell(cell, button) {
   const pokemon = cell.pokemon.length
     ? `<ol class="pokemon-list">${cell.pokemon.map(item => `
         <li>
-          <strong>${item.name}</strong> · Gen ${item.debut_generation}<br>
+          <strong>${item.name}</strong> · Gen ${item.debut_generation} · BST ${item.base_stat_total}<br>
           ${chips(item)}
         </li>`).join("")}</ol>`
     : "<p>No randbats atoms occupy this cell.</p>";
@@ -107,10 +131,12 @@ function renderDraft(draft) {
   candidates.innerHTML = draft.offer.candidates.map(pokemon => {
     const suggested = pokemon.id === draft.offer.suggested_species;
     return `
-      <article class="candidate-card ${suggested ? "suggested" : ""}">
+      <article class="candidate-card ${suggested ? "suggested" : ""} ${pokemon.legendary ? "legendary" : ""}">
         <h4>${pokemon.name}</h4>
-        <p>Gen ${pokemon.debut_generation}${suggested ? " · Suggested" : ""}</p>
+        <p>Gen ${pokemon.debut_generation} · BST ${pokemon.base_stat_total}${suggested ? " · Suggested" : ""}</p>
         <div>${chips(pokemon)}</div>
+        <p class="probability"><strong>${(pokemon.selection_probability * 100).toFixed(2)}%</strong> suggestion probability</p>
+        ${setDetails(pokemon)}
         <button class="pick-button" data-species="${pokemon.id}">Pick</button>
       </article>`;
   }).join("");

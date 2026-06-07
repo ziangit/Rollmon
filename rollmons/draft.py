@@ -11,6 +11,7 @@ from rollmons.legality_matrix import (
     Cell,
     LegalityData,
     select_species,
+    selection_probabilities,
 )
 
 TEAM_SIZE = 6
@@ -55,6 +56,7 @@ class DraftOffer:
     cell: Cell
     candidates: tuple[str, ...]
     suggested_species: str
+    selection_probabilities: dict[str, float]
     skips_remaining: int
 
 
@@ -159,10 +161,17 @@ class Draft:
             rng=self._rng,
             legendary_weight=self._legendary_weight,
         )
+        probabilities = selection_probabilities(
+            cell,
+            {cell: candidates},
+            self._legality_data.species,
+            legendary_weight=self._legendary_weight,
+        )
         return DraftOffer(
             round_number=len(self._picks) + 1,
             cell=cell,
             candidates=candidates,
             suggested_species=suggested,
+            selection_probabilities=probabilities,
             skips_remaining=self._skips_remaining,
         )

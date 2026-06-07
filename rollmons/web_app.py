@@ -21,7 +21,16 @@ from rollmons.legality_matrix import (
     build_all_cells,
     build_legality_data,
 )
-from rollmons.team_assembly import FIXED_LEVEL, assemble_team
+from rollmons.team_assembly import (
+    DEFAULT_IVS,
+    FIXED_LEVEL,
+    NEUTRAL_EVS,
+    NEUTRAL_NATURE,
+    STATS,
+    assemble_team,
+    load_random_battle_sets,
+    representative_random_battle_set,
+)
 
 STATIC_DIR = Path(__file__).resolve().parent / "web_static"
 
@@ -43,38 +52,62 @@ class DraftSession:
     team_export: str | None = None
 
 
-def _species_payload(metadata: SpeciesMetadata) -> dict:
+def _species_payload(metadata: SpeciesMetadata, random_battle_sets) -> dict:
+    representative = representative_random_battle_set(
+        metadata.species_id,
+        random_battle_sets,
+    )
     return {
         "id": metadata.species_id,
         "name": metadata.name,
         "types": list(metadata.types),
         "debut_generation": metadata.debut_generation,
+        "base_stat_total": metadata.base_stat_total,
         "legendary": metadata.legendary,
-        "legendary_tags": list(metadata.legendary_tags),
+        "randbats_set": {
+            "item": representative.item,
+            "ability": representative.ability,
+            "moves": list(representative.moves),
+            "observed_count": representative.observed_count,
+            "role_count": len(random_battle_sets[metadata.species_id]),
+        },
+        "assembly_spread": {
+            "level": FIXED_LEVEL,
+            "nature": NEUTRAL_NATURE,
+            "evs": {stat: NEUTRAL_EVS for stat in STATS},
+            "ivs": {stat: DEFAULT_IVS for stat in STATS},
+        },
     }
 
 
 def _offer_payload(
     offer: DraftOffer | None,
     legality_data: LegalityData,
+    random_battle_sets,
 ) -> dict | None:
     if offer is None:
         return None
-    return {
+    payload = {
         "round_number": offer.round_number,
         "cell": {"type": offer.cell[0], "generation": offer.cell[1]},
-        "candidates": [
-            _species_payload(legality_data.species[species_id])
-            for species_id in offer.candidates
-        ],
+        "candidates": [],
         "suggested_species": offer.suggested_species,
         "skips_remaining": offer.skips_remaining,
     }
+    for species_id in offer.candidates:
+        candidate = _species_payload(
+            legality_data.species[species_id],
+            random_battle_sets,
+        )
+        candidate["selection_probability"] = offer.selection_probabilities[species_id]
+        payload["candidates"].append(candidate)
+    return payload
 
 
 def create_app() -> FastAPI:
     legality_data = build_legality_data()
     all_cells = build_all_cells(legality_data.species)
+    random_battle_sets = load_random_battle_sets()
     sessions: dict[str, DraftSession] = {}
     app = FastAPI(title="rollmons draft harness")
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -95,10 +128,17 @@ def create_app() -> FastAPI:
             if draft.complete
             else draft.current_offer.round_number,
             "team": [
-                _species_payload(legality_data.species[species_id])
+                _species_payload(
+                    legality_data.species[species_id],
+                    random_battle_sets,
+                )
                 for species_id in draft.picks
             ],
-            "offer": _offer_payload(draft.current_offer, legality_data),
+            "offer": _offer_payload(
+                draft.current_offer,
+                legality_data,
+                random_battle_sets,
+            ),
             "skips_remaining": draft.skips_remaining,
             "team_export": session.team_export,
         }
@@ -121,7 +161,10 @@ def create_app() -> FastAPI:
                         "included": cell in legality_data.matrix,
                         "eligible_count": len(eligible),
                         "pokemon": [
-                            _species_payload(legality_data.species[species_id])
+                            _species_payload(
+                                legality_data.species[species_id],
+                                random_battle_sets,
+                            )
                             for species_id in eligible
                         ],
                     }

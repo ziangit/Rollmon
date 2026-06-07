@@ -17,6 +17,7 @@ from rollmons.legality_matrix import (
 FIXED_LEVEL = 100
 NEUTRAL_NATURE = "Serious"
 NEUTRAL_EVS = 85
+DEFAULT_IVS = 31
 STATS = ("HP", "Atk", "Def", "SpA", "SpD", "Spe")
 
 
@@ -103,6 +104,18 @@ def select_random_battle_set(
         [set_.observed_count for set_ in available],
         k=1,
     )[0]
+
+
+def representative_random_battle_set(
+    species_id: str,
+    sets: Mapping[str, Sequence[RandomBattleSet]],
+) -> RandomBattleSet:
+    """Return the most frequently observed randbats set for inspection."""
+
+    available = tuple(sets.get(species_id, ()))
+    if not available:
+        raise TeamAssemblyError(f"no randbats sets for {species_id}")
+    return max(available, key=lambda set_: set_.observed_count)
 
 
 def _display_name(value: str) -> str:

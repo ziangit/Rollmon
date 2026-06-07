@@ -11,6 +11,7 @@ from rollmons.team_assembly import (
     TeamAssemblyError,
     assemble_team,
     load_random_battle_sets,
+    representative_random_battle_set,
     select_random_battle_set,
 )
 
@@ -48,6 +49,16 @@ def test_source_defined_single_move_set_is_preserved():
     sets = load_random_battle_sets()
 
     assert sets["ditto"][0].moves == ("transform",)
+
+
+def test_representative_set_is_the_most_frequently_observed_role():
+    sets = load_random_battle_sets()
+
+    representative = representative_random_battle_set("charizard", sets)
+
+    assert representative.observed_count == max(
+        set_.observed_count for set_ in sets["charizard"]
+    )
 
 
 def test_team_export_is_well_formed_and_fixed_at_level_100():

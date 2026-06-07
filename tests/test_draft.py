@@ -72,6 +72,7 @@ def test_near_exhausted_cell_is_never_offered():
             name=species_id,
             types=("fire", "water") if species_id == "shared" else ("water",),
             debut_generation=1,
+            base_stat_total=500,
             legendary=False,
         )
         for species_id in ("shared", "two", "three", "four", "five", "six")
@@ -117,3 +118,5 @@ def test_offer_exposes_full_candidate_list_and_soft_suggestion():
 
     assert offer.candidates == data.matrix[offer.cell]
     assert offer.suggested_species in offer.candidates
+    assert set(offer.selection_probabilities) == set(offer.candidates)
+    assert sum(offer.selection_probabilities.values()) == pytest.approx(1)
