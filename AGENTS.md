@@ -88,6 +88,22 @@ player teams stat-identical to what the AI was validated piloting. The spread
 is neutral and source-consistent, not optimized or a placeholder. Separately
 authored boss teams may use optimized spreads.
 
+`rollmons/web_app.py` is a thin FastAPI transport over the game-layer modules.
+It keeps local single-user draft sessions in memory and exposes the complete
+18x9 pool inspector plus start/state/pick/skip draft endpoints. The static SPA
+under `rollmons/web_static/` renders that engine state; it does not implement
+matrix filtering, dedupe, cell guards, weighted suggestions, or team assembly
+in JavaScript.
+
+Run the development harness with:
+
+```bash
+uvicorn rollmons.web_app:app --reload --port 8080
+```
+
+Open `http://127.0.0.1:8080`. The harness intentionally uses names and CSS type
+chips only, with no hosted or vendored sprite dependency.
+
 ## Integration Landmines
 
 ### poke-engine compatibility
@@ -337,7 +353,8 @@ The pure legality matrix is implemented in `rollmons/legality_matrix.py`: 508
 randbats atoms produce 101 valid type-generation cells after the more-than-three
 filter. The six-round draft and level-100 team assembly are implemented in
 `rollmons/draft.py` and `rollmons/team_assembly.py`. Orchestration, bosses, and
-frontend remain unbuilt.
+results display, and replay integration remain unbuilt. The local development
+UI now covers the pool inspector and interactive draft flow only.
 
 ## Roadmap
 
@@ -345,6 +362,6 @@ frontend remain unbuilt.
    expanding its one-battle API.
 2. Build the orchestrator: draft, run ten battles, and tally results, using
    stub boss clients first.
-3. Build the draft UI, results display, and replay viewer, using the hosted
-   player temporarily.
+3. Extend the partial draft UI with results display and a replay viewer, using
+   the hosted player temporarily. Pool inspection and draft flow are built.
 4. Author boss teams and tune difficulty after playtesting.

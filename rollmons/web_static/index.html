@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>rollmons draft harness</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <header>
+      <div>
+        <p class="eyebrow">Local development harness</p>
+        <h1>rollmons pool inspector</h1>
+        <p>Engine-backed matrix inspection and six-round draft testing.</p>
+      </div>
+      <nav>
+        <button class="tab active" data-view="matrix">Pool matrix</button>
+        <button class="tab" data-view="draft">Draft flow</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="matrix-view" class="view">
+        <div class="section-heading">
+          <div>
+            <h2>18 × 9 legality matrix</h2>
+            <p id="matrix-summary">Loading matrix…</p>
+          </div>
+          <div class="legend">
+            <span><i class="swatch included"></i> Included (4+)</span>
+            <span><i class="swatch excluded"></i> Excluded (0–3)</span>
+          </div>
+        </div>
+        <div class="matrix-layout">
+          <div id="matrix-grid" class="matrix-grid" aria-label="Type by generation matrix"></div>
+          <aside id="cell-detail" class="panel">
+            <h3>Select a cell</h3>
+            <p>Click any included or excluded cell to inspect its pool.</p>
+          </aside>
+        </div>
+      </section>
+
+      <section id="draft-view" class="view hidden">
+        <div class="section-heading">
+          <div>
+            <h2>Interactive six-round draft</h2>
+            <p>Level 100 · one skip · engine-enforced dedupe</p>
+          </div>
+          <button id="start-draft" class="primary">Start new draft</button>
+        </div>
+        <div id="draft-status" class="draft-status panel">
+          Start a draft to roll the first cell.
+        </div>
+        <div class="draft-layout">
+          <section>
+            <div id="current-offer"></div>
+            <div id="candidate-list" class="candidate-grid"></div>
+          </section>
+          <aside>
+            <div class="panel">
+              <h3>Team</h3>
+              <ol id="team-slots" class="team-slots"></ol>
+            </div>
+            <div id="team-export-panel" class="panel hidden">
+              <h3>Showdown export</h3>
+              <pre id="team-export"></pre>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

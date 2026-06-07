@@ -184,6 +184,19 @@ def build_matrix(
 
     if min_cell_size < 1:
         raise ValueError("min_cell_size must be positive")
+    candidates = build_all_cells(species)
+    return {
+        cell: eligible
+        for cell, eligible in candidates.items()
+        if len(eligible) >= min_cell_size
+    }
+
+
+def build_all_cells(
+    species: Mapping[str, SpeciesMetadata],
+) -> dict[Cell, tuple[str, ...]]:
+    """Build all 18x9 cells, including cells excluded from slot-machine rolls."""
+
     candidates: dict[Cell, list[str]] = {
         (pokemon_type, generation): []
         for pokemon_type in TYPES
@@ -198,11 +211,7 @@ def build_matrix(
                 )
             candidates[cell].append(species_id)
 
-    return {
-        cell: tuple(sorted(eligible))
-        for cell, eligible in candidates.items()
-        if len(eligible) >= min_cell_size
-    }
+    return {cell: tuple(sorted(eligible)) for cell, eligible in candidates.items()}
 
 
 def cells_for_species(metadata: SpeciesMetadata) -> tuple[Cell, ...]:
