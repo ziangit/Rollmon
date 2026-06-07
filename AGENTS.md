@@ -49,6 +49,26 @@ Our game-specific code should eventually live outside its internals.
 The intended boundary is one battle-runner module. It should be the only place
 our code imports or calls foul-play.
 
+## Game Layer
+
+Pure game logic lives under `rollmons/` and must not import `fp/`.
+
+`rollmons/legality_matrix.py` builds the draft legality matrix and weighted
+selection primitive. Its data sources are:
+
+- `rollmons/data/gen9randombattle.json`: the checked-in 508-atom Generation 9
+  random-battle set snapshot. Presence in this file defines draftability.
+- `data/pokedex.json`: Showdown-derived current types, National Dex numbers,
+  formes, base-species links, and legendary tags.
+- `FORME_DEBUT_GENERATION_OVERRIDES`: 33 forme debut generations verified
+  against Pokemon Showdown `Dex.species.get(id).gen` at Showdown commit
+  `a9caa4c`. All other atoms derive generation from National Dex boundaries.
+
+The module treats `Mythical`, `Sub-Legendary`, and `Restricted Legendary` tags
+as legendary and inherits base-species tags for formes, matching the Showdown
+Dex result. Valid cells contain at least four atoms. Legendary selection weight
+must remain strictly positive so thin legendary-heavy cells cannot soft-lock.
+
 ## Integration Landmines
 
 ### poke-engine compatibility
@@ -104,14 +124,15 @@ Rust in its build stage.
 
 ### Worker processes
 
-The compatibility monkeypatch is applied in the parent Python process.
-`fp/search/main.py` uses `ProcessPoolExecutor`, and its workers do not reliably
-inherit that patch. Full PoC battles therefore used a runtime substitution of
-`ThreadPoolExecutor`.
+There are two nested process layers. `run_battle()` spawns one disposable
+foul-play client process per role (player and boss). Inside each client, every
+move search creates a transient `ProcessPoolExecutor` of MCTS workers; the pool
+is created and torn down per decision, not persisted for the battle.
 
-Resolve this in the future battle-runner with either a worker initializer that
-applies the compatibility patch or one small, documented internal edit. Do not
-accumulate additional ad hoc runtime commands.
+`battle_runner.py` preserves that inner process-pool concurrency and installs a
+worker initializer that reapplies the `poke-engine==0.0.46` compatibility patch
+only in those MCTS workers. Do not replace foul-play's process pool with
+threads.
 
 ### Local authentication
 
@@ -122,16 +143,15 @@ A local `--no-security` server accepts an empty-token command:
 /trn USERNAME,0,
 ```
 
-Stock foul-play does not use that path. The PoC handled it with a runtime
-monkeypatch. Prefer keeping local auth in the wrapper; editing
-`fp/websocket_client.py` creates an upstream merge cost.
+Stock foul-play does not use that path. `battle_runner.py` owns the empty-token
+login and verifies the resulting `|updateuser|` response. Keep local auth in
+the wrapper; editing `fp/websocket_client.py` creates an upstream merge cost.
 
 ### Challenge acceptance
 
 The tested Showdown server emitted challenge state through PM protocol lines;
-other current paths can emit `|updatechallenges|` JSON. The PoC acceptor handled
-both forms with a runtime monkeypatch. The battle-runner must normalize this in
-one place.
+other current paths can emit `|updatechallenges|` JSON. `battle_runner.py`
+normalizes both forms in one place.
 
 ### Results and process behavior
 
@@ -140,16 +160,21 @@ one place.
 loss. It emits log output but no structured result or distinct battle exit
 code.
 
-The wrapper should call `pokemon_battle()` directly and emit a structured value
-such as:
+The wrapper calls `pokemon_battle()` directly and emits:
 
 ```json
-{"winner": "name-or-null", "turns": 24, "replay_log": []}
+{"winner": "player-or-boss-or-tie", "turns": 24, "battle_id": "...", "replay_log": []}
 ```
 
-The exact result schema is not yet implemented. Also note that
-`check_dictionaries_are_unmodified()` calls `exit(1)` if shared move or Pokedex
-dictionaries mutate, which can terminate the whole process.
+The outer player and boss client processes are disposable, isolating engine
+failures and `SystemExit`; they are distinct from the transient inner MCTS
+workers described above. The runner does not call `run_foul_play()` or
+`check_dictionaries_are_unmodified()`.
+
+Challenge battle logs require `logchallenges = true` on the Showdown server.
+`BattleRunnerConfig.showdown_log_dir` must be the readable/shared battle-log
+root. A missing JSON log after `replay_timeout` is a recoverable
+`BattleReplayTimeoutError`.
 
 ### Reproducibility
 
@@ -236,6 +261,27 @@ node pokemon-showdown start --no-security 8000
 
 That server checkout and command are not provided by this repository.
 
+Enable challenge battle logs in that server's `config/config.js`:
+
+```js
+exports.logchallenges = true;
+```
+
+Call the checked-in fixed-team seam programmatically:
+
+```python
+run_battle(player_team, boss_team, config) -> BattleResult
+```
+
+Both teams are Showdown export strings. `config.seed` controls foul-play's
+Python-side sampling only; it does not seed Showdown's battle RNG.
+
+Run the live validation against the external server:
+
+```bash
+python3 scripts/validate_battle_runner.py --runs 20
+```
+
 The base foul-play client invocation against that server is:
 
 ```bash
@@ -250,40 +296,36 @@ python3 run_poke_engine_compat.py \
   --search-parallelism 1
 ```
 
-This base command is not yet sufficient for a stock local battle: the current
-PoC additionally requires runtime patches for the worker pool, local auth, and
-challenge acceptance. There is no clean, checked-in full local-battle command
-yet. Do not represent the experimental inline Python commands as a supported
-interface.
+The base foul-play CLI command remains useful for diagnosis, but product code
+must use `battle_runner.py` so lifecycle and result handling stay isolated.
 
 ## Current Status
 
-An end-to-end proof of concept works through experimental CLI glue and four
-runtime patches:
+`battle_runner.py` implements the one-battle fixed-team seam. It owns the MCTS
+compatibility patch, spawned-worker initialization, local no-security login,
+both challenge notification forms, typed lifecycle failures, normalized
+results, and server battle-log retrieval.
 
-1. remove the unsupported MCTS `threads` argument;
-2. substitute the process worker pool;
-3. use empty-token local authentication;
-4. accept the local challenge protocol.
+Live validation completed 20 consecutive fixed-team Generation 9 challenge
+battles. All structured winners matched both clients and the replay's final
+`|win|`; 80 spawned MCTS workers reported the compatibility initializer; child
+process and established connection counts were unchanged before and after.
 
-Two foul-play bots completed a local Generation 9 random battle. The captured
-replay then animated through the standard Showdown replay player in headless
-Chromium with all 299 protocol lines, the final winner, no rejected lines, and
-no JavaScript errors.
+The earlier 299-line random-battle replay fixture still animates through the
+standard Showdown replay player with no rejected lines or JavaScript errors.
 
-The compatibility shim and replay fixtures are checked in, but orchestration is
-not yet a reusable battle-runner.
+The pure legality matrix is implemented in `rollmons/legality_matrix.py`: 508
+randbats atoms produce 101 valid type-generation cells after the more-than-three
+filter. Draft flow, team assembly, orchestration, bosses, and frontend remain
+unbuilt.
 
 ## Roadmap
 
-1. Build the battle-runner: consolidate the glue and four patches into one
-   tested function `(player_team, boss_team) -> {winner, turns, replay_log}` and
-   resolve worker initialization there.
-2. Build the pure legality matrix for current type by debut generation, the
-   more-than-three filter, and legendary weighting.
-3. Build draft and team assembly, exporting fixed-level Showdown teams.
-4. Build the orchestrator: draft, run ten battles, and tally results, using
+1. Stabilize and containerize the existing battle-runner configuration without
+   expanding its one-battle API.
+2. Build draft and team assembly, exporting fixed-level Showdown teams.
+3. Build the orchestrator: draft, run ten battles, and tally results, using
    stub boss clients first.
-5. Build the draft UI, results display, and replay viewer, using the hosted
+4. Build the draft UI, results display, and replay viewer, using the hosted
    player temporarily.
-6. Author boss teams and tune difficulty after playtesting.
+5. Author boss teams and tune difficulty after playtesting.
