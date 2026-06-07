@@ -170,6 +170,16 @@ temporary, untracked directory. `N=1` and the default `N=10` are both
 supported. This sandbox requires the live stack; the matrix inspector and
 draft harness remain pure.
 
+`make stack RUNS=N BOSS=id` is the containerized sandbox path. Compose builds a
+pinned `pokemon-showdown@0.11.10` service with challenge logging and a shared
+log volume, plus a Rollmons image. The Rollmons Dockerfile compiles
+`poke-engine==0.0.46` with
+`--features poke-engine/gen9 --no-default-features` in a
+`rust:1.89-slim-bookworm` stage and copies only the wheel into a Python 3.11
+slim runtime. The final image contains neither Rust nor Cargo. Replay HTML is
+bind-mounted to ignored `.sandbox-replays/`; no sprites or audio are included.
+The Make target tears down containers and the network after the sandbox exits.
+
 Run the development harness with:
 
 ```bash
@@ -245,11 +255,11 @@ engine can therefore return an illegal `-tera` choice.
 The Docker equivalent is:
 
 ```bash
-make docker GEN=gen9
+make docker
 ```
 
-Rust and Cargo are required for a local engine build. The Docker build keeps
-Rust in its build stage.
+Rust and Cargo are required for a local engine build. The Dockerfile is fixed
+to gen9-no-tera and keeps Rust only in its build stage.
 
 ### Worker processes
 
@@ -379,7 +389,7 @@ make poke_engine GEN=gen9
 Build the same configuration in Docker:
 
 ```bash
-make docker GEN=gen9
+make docker
 ```
 
 Run the compatibility entry point with the normal foul-play CLI:
@@ -462,10 +472,8 @@ ranked-stat ingestion, and additional authored boss teams remain unbuilt.
 
 ## Roadmap
 
-1. Stabilize and containerize the existing battle-runner configuration without
-   expanding its one-battle API.
-2. Expand the proven one-battle draft integration into the ten-battle
+1. Expand the proven one-battle draft integration into the ten-battle
    orchestrator and tally results. Do not duplicate the existing seam.
-3. Extend the one-battle results UI for gauntlet progress and aggregate results.
+2. Extend the one-battle results UI for gauntlet progress and aggregate results.
    The hosted single-battle replay viewer is built temporarily.
-4. Author boss teams and tune difficulty after playtesting.
+3. Author boss teams and tune difficulty after playtesting.

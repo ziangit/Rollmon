@@ -52,3 +52,11 @@ make test
 
 Keep game logic under `rollmons/` independent from `fp/`. The single live
 battle boundary remains `battle_runner.py`.
+
+Run a real containerized boss sandbox without installing Node or Rust locally:
+
+```bash
+make stack RUNS=1 BOSS=ash
+```
+
+Generated replay pages are ignored under `.sandbox-replays/`.
