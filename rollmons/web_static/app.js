@@ -141,6 +141,7 @@ function renderDraft(draft) {
   const offerRoot = document.querySelector("#current-offer");
   const candidates = document.querySelector("#candidate-list");
   const exportPanel = document.querySelector("#team-export-panel");
+  const battlePanel = document.querySelector("#battle-panel");
 
   if (draft.complete) {
     status.innerHTML = `<strong>Draft complete.</strong> Six unique Pokémon assembled at level ${draft.level}.`;
@@ -148,10 +149,14 @@ function renderDraft(draft) {
     candidates.innerHTML = "";
     document.querySelector("#team-export").textContent = draft.team_export;
     exportPanel.classList.remove("hidden");
+    battlePanel.classList.remove("hidden");
+    if (draft.battle_result) renderBattleResult(draft.battle_result);
     return;
   }
 
   exportPanel.classList.add("hidden");
+  battlePanel.classList.add("hidden");
+  document.querySelector("#battle-result-panel").classList.add("hidden");
   status.innerHTML = `<strong>Round ${draft.offer.round_number}/6</strong> · ${draft.offer.candidates.length} undrafted candidates`;
   offerRoot.innerHTML = `
     <div class="offer-heading">
@@ -216,6 +221,61 @@ async function skipDraft() {
   renderDraft(await api(`/api/drafts/${state.sessionId}/skip`, {method: "POST"}));
 }
 
+function escapeHtml(value) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function replayDocument(replayLog) {
+  const protocol = escapeHtml(replayLog.join("\n"));
+  return `<!doctype html>
+<meta charset="utf-8">
+<style>
+html, body { margin: 0; padding: 0; font-family: Verdana, sans-serif; }
+.wrapper { max-width: 1180px; margin: 0 auto; }
+</style>
+<div class="wrapper replay-wrapper">
+  <div class="battle"></div>
+  <div class="battle-log"></div>
+  <div class="replay-controls"></div>
+  <div class="replay-controls-2"></div>
+  <script type="text/plain" class="battle-log-data">${protocol}<\/script>
+</div>
+<script src="https://play.pokemonshowdown.com/js/replay-embed.js"><\/script>`;
+}
+
+function renderBattleResult(result) {
+  const label = result.winner === "tie"
+    ? "Tie"
+    : `${result.winner === "player" ? "Drafted team" : "Ash"} wins`;
+  document.querySelector("#battle-result").textContent =
+    `${label} in ${result.turns} turns`;
+  document.querySelector("#battle-id").textContent = result.battle_id;
+  document.querySelector("#battle-replay").srcdoc = replayDocument(result.replay_log);
+  document.querySelector("#battle-result-panel").classList.remove("hidden");
+  document.querySelector("#battle-status").textContent = "Battle complete.";
+}
+
+async function battleBoss() {
+  const button = document.querySelector("#battle-boss");
+  const status = document.querySelector("#battle-status");
+  button.disabled = true;
+  status.textContent = "Running live battle…";
+  try {
+    const draft = await api(`/api/drafts/${state.sessionId}/battle`, {
+      method: "POST",
+      body: JSON.stringify({boss_id: "ash"}),
+    });
+    renderDraft(draft);
+  } catch (error) {
+    status.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 document.querySelectorAll(".tab").forEach(button => {
   button.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(item => item.classList.remove("active"));
@@ -225,6 +285,7 @@ document.querySelectorAll(".tab").forEach(button => {
   });
 });
 document.querySelector("#start-draft").addEventListener("click", startDraft);
+document.querySelector("#battle-boss").addEventListener("click", battleBoss);
 renderTeam([]);
 
 api("/api/matrix").then(matrix => {

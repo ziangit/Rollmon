@@ -26,6 +26,17 @@ Our game-specific code should eventually live outside its internals.
   Evolution, or Z-Moves.
 - Battles use a self-hosted, permissive custom format with Species Clause on,
   tier banlists off, Tera and Dynamax disabled, and a fixed level of 100.
+- The one-battle integration format is based on `gen9customgame` and adds
+  `Species Clause`, `+Past`, `-Mega`, explicit Primal and battle-only Past forme
+  bans, every Mega Stone and Primal Orb ban, `Dynamax Clause`,
+  `Z-Move Clause`, `CFZ Clause`, `Terastal Clause`,
+  `!! Max Move Count = 4`, and `Adjust Level = 100`. The double bang is required
+  to replace Custom Game's existing 24-move value. `+Past` enables old coded
+  species and moves but does not permit old mechanics: Mega and Primal
+  transformations are blocked by both forme and item bans, direct battle-only
+  Past formes are banned, Gigantamax is rejected by Dynamax Clause, and
+  Z-Moves remain blocked. Do not add tier banlists or general
+  `Obtainable`/learnset validation.
 - Movesets are borrowed from Generation 9 random-battle data and re-statted at
   the fixed level as an authoring step. foul-play does not derive fixed custom
   teams automatically from random-battle data.
@@ -95,6 +106,12 @@ player teams stat-identical to what the AI was validated piloting. The spread
 is neutral and source-consistent, not optimized or a placeholder. Separately
 authored boss teams may use optimized spreads.
 
+Authored bosses live as Showdown export text under `rollmons/bosses/`.
+`rollmons/boss_loader.py` maps stable boss IDs to those files and returns the
+export string expected by `battle_runner.run_battle()`. `ash.txt` is the first
+thematic, intentionally suboptimal boss team; all six members explicitly set
+level 100.
+
 `rollmons/web_app.py` is a thin FastAPI transport over the game-layer modules.
 It keeps local single-user draft sessions in memory and exposes the complete
 18x9 pool inspector plus start/state/pick/skip draft endpoints. The static SPA
@@ -106,10 +123,19 @@ Serious, flat-85 EV, and implicit-31 IV assembly data. It does not implement
 matrix filtering, dedupe, cell guards, weighted suggestions, probability
 calculation, or team assembly in JavaScript.
 
+After a six-round draft completes, the harness exposes one live integration
+action. It loads the Ash boss, performs an existence-only species/move check
+against foul-play's checked-in Gen 9 data, calls `battle_runner.run_battle()`,
+and returns winner, turns, battle ID, and replay protocol. The browser embeds
+`"\n".join(replay_log)` in the hosted Showdown replay player. This path requires
+the self-hosted server, `logchallenges = true`, a readable
+`ROLLMONS_SHOWDOWN_LOG_DIR`, and the gen9-no-Tera engine. Matrix inspection and
+drafting remain usable without any live battle stack.
+
 Run the development harness with:
 
 ```bash
-uvicorn rollmons.web_app:app --reload --port 8080
+make dev
 ```
 
 Open `http://127.0.0.1:8080`. For development only, the harness hotlinks
@@ -205,6 +231,13 @@ the wrapper; editing `fp/websocket_client.py` creates an upstream merge cost.
 The tested Showdown server emitted challenge state through PM protocol lines;
 other current paths can emit `|updatechallenges|` JSON. `battle_runner.py`
 normalizes both forms in one place.
+
+Some current Showdown websocket paths also emit each private `|request|` frame
+before the corresponding public battle update frame. Stock foul-play assumes
+the public update is seen first (or in the same frame), otherwise it can discard
+the team-preview request or search before applying a switch. The runner buffers
+request-only battle frames until the next public update and then replays the
+request. Keep this protocol normalization in the wrapper.
 
 ### Results and process behavior
 
@@ -370,16 +403,17 @@ standard Showdown replay player with no rejected lines or JavaScript errors.
 The pure legality matrix is implemented in `rollmons/legality_matrix.py`: 508
 randbats atoms produce 101 valid type-generation cells after the more-than-three
 filter. The six-round draft and level-100 team assembly are implemented in
-`rollmons/draft.py` and `rollmons/team_assembly.py`. Orchestration, bosses, and
-results display, and replay integration remain unbuilt. The local development
-UI now covers the pool inspector and interactive draft flow only.
+`rollmons/draft.py` and `rollmons/team_assembly.py`. The first authored boss and
+one real post-draft battle path are built, including structured results and a
+hosted replay embed. Ten-battle orchestration, gauntlet results, and additional
+boss authoring remain unbuilt.
 
 ## Roadmap
 
 1. Stabilize and containerize the existing battle-runner configuration without
    expanding its one-battle API.
-2. Build the orchestrator: draft, run ten battles, and tally results, using
-   stub boss clients first.
-3. Extend the partial draft UI with results display and a replay viewer, using
-   the hosted player temporarily. Pool inspection and draft flow are built.
+2. Expand the proven one-battle draft integration into the ten-battle
+   orchestrator and tally results. Do not duplicate the existing seam.
+3. Extend the one-battle results UI for gauntlet progress and aggregate results.
+   The hosted single-battle replay viewer is built temporarily.
 4. Author boss teams and tune difficulty after playtesting.

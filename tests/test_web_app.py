@@ -1,7 +1,8 @@
 import httpx
 import pytest
 
-from rollmons.web_app import app
+from battle_runner import BattleResult, BattleRunnerConfig, PERMISSIVE_GEN9_FORMAT
+from rollmons.web_app import app, create_app
 
 
 @pytest.fixture
@@ -142,3 +143,89 @@ async def test_bst_exclusions_are_not_marked_legendary_in_api(client):
     assert pokemon["regigigas"]["base_stat_total"] == 670
     assert not pokemon["slaking"]["legendary"]
     assert not pokemon["regigigas"]["legendary"]
+
+
+@pytest.mark.anyio
+async def test_completed_draft_can_delegate_one_battle_and_return_replay(tmp_path):
+    calls = []
+    expected_result = BattleResult(
+        winner="player",
+        turns=12,
+        battle_id="battle-gen9customgame-42",
+        replay_log=["|turn|12", "|win|RollmonsPlayer"],
+    )
+    config = BattleRunnerConfig(
+        websocket_url="ws://localhost:8000/showdown/websocket",
+        showdown_log_dir=tmp_path,
+    )
+
+    def fake_run_battle(player_team, boss_team, received_config):
+        calls.append((player_team, boss_team, received_config))
+        return expected_result
+
+    test_app = create_app(
+        battle_fn=fake_run_battle,
+        battle_config_factory=lambda: config,
+    )
+    transport = httpx.ASGITransport(app=test_app)
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as battle_client:
+        state = (
+            await battle_client.post(
+                "/api/drafts",
+                json={"level": 100, "skip_count": 1, "seed": 2026},
+            )
+        ).json()
+        while not state["complete"]:
+            state = (
+                await battle_client.post(
+                    f"/api/drafts/{state['session_id']}/pick",
+                    json={"species_id": state["offer"]["suggested_species"]},
+                )
+            ).json()
+
+        response = await battle_client.post(
+            f"/api/drafts/{state['session_id']}/battle",
+            json={"boss_id": "ash"},
+        )
+
+    assert response.status_code == 200
+    result = response.json()["battle_result"]
+    assert result == {
+        "winner": "player",
+        "turns": 12,
+        "battle_id": "battle-gen9customgame-42",
+        "replay_log": ["|turn|12", "|win|RollmonsPlayer"],
+    }
+    assert len(calls) == 1
+    player_team, boss_team, received_config = calls[0]
+    assert player_team.count("Level: 100") == 6
+    assert boss_team.count("Level: 100") == 6
+    assert "Pikachu @ Light Ball" in boss_team
+    assert received_config.battle_format == PERMISSIVE_GEN9_FORMAT
+
+
+@pytest.mark.anyio
+async def test_battle_requires_a_completed_draft(tmp_path):
+    test_app = create_app(
+        battle_fn=lambda *_args: pytest.fail("runner should not be called"),
+        battle_config_factory=lambda: BattleRunnerConfig(
+            websocket_url="ws://localhost:8000/showdown/websocket",
+            showdown_log_dir=tmp_path,
+        ),
+    )
+    transport = httpx.ASGITransport(app=test_app)
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as battle_client:
+        state = (await battle_client.post("/api/drafts", json={})).json()
+        response = await battle_client.post(
+            f"/api/drafts/{state['session_id']}/battle",
+            json={"boss_id": "ash"},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "draft is not complete"

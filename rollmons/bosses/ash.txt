@@ -1,0 +1,61 @@
+Pikachu @ Light Ball
+Ability: Static
+Level: 100
+EVs: 252 Atk / 4 SpA / 252 Spe
+Naive Nature
+- Volt Tackle
+- Iron Tail
+- Thunderbolt
+- Quick Attack
+
+Lapras
+Ability: Water Absorb
+Level: 100
+EVs: 252 HP / 252 SpA / 4 SpD
+Quiet Nature
+- Body Slam
+- Brine
+- Blizzard
+- Psychic
+
+Snorlax
+Ability: Immunity
+Level: 100
+EVs: 252 HP / 252 Atk / 4 SpA
+Serious Nature
+- Shadow Ball
+- Crunch
+- Blizzard
+- Giga Impact
+
+Venusaur
+Ability: Overgrow
+Level: 100
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Sludge Bomb
+- Frenzy Plant
+- Giga Drain
+- Sleep Powder
+
+Charizard
+Ability: Blaze
+Level: 100
+EVs: 4 Atk / 252 SpA / 252 Spe
+Naive Nature
+- Blast Burn
+- Flare Blitz
+- Air Slash
+- Dragon Pulse
+
+Blastoise
+Ability: Torrent
+Level: 100
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Hydro Cannon
+- Blizzard
+- Flash Cannon
+- Focus Blast

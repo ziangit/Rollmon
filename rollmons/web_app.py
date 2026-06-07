@@ -3,17 +3,29 @@
 from __future__ import annotations
 
 import json
+import os
 import random
 import re
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
+from battle_runner import (
+    BattleEntityNotFoundError,
+    BattleResult,
+    BattleRunnerConfig,
+    BattleRunnerError,
+    result_as_dict,
+    run_battle,
+    verify_team_entities_exist,
+)
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from rollmons.boss_loader import BossTeamError, load_boss_team
 from rollmons.draft import Draft, DraftError, DraftOffer
 from rollmons.legality_matrix import (
     DEFAULT_POKEDEX_PATH,
@@ -148,11 +160,34 @@ class PickRequest(BaseModel):
     species_id: str
 
 
+class BattleRequest(BaseModel):
+    boss_id: str = "ash"
+
+
 @dataclass
 class DraftSession:
     draft: Draft
     assembly_rng: random.Random
     team_export: str | None = None
+    battle_result: BattleResult | None = None
+
+
+def _battle_config_from_environment() -> BattleRunnerConfig:
+    log_dir = os.environ.get("ROLLMONS_SHOWDOWN_LOG_DIR")
+    if not log_dir:
+        raise BattleRunnerError(
+            "ROLLMONS_SHOWDOWN_LOG_DIR must point to the Showdown battle-log root"
+        )
+    return BattleRunnerConfig(
+        websocket_url=os.environ.get(
+            "ROLLMONS_SHOWDOWN_WEBSOCKET_URL",
+            "ws://localhost:8000/showdown/websocket",
+        ),
+        showdown_log_dir=log_dir,
+        search_time_ms=int(os.environ.get("ROLLMONS_SEARCH_TIME_MS", "25")),
+        search_parallelism=int(os.environ.get("ROLLMONS_SEARCH_PARALLELISM", "1")),
+        search_threads=int(os.environ.get("ROLLMONS_SEARCH_THREADS", "1")),
+    )
 
 
 def _species_payload(
@@ -218,7 +253,13 @@ def _offer_payload(
     return payload
 
 
-def create_app() -> FastAPI:
+def create_app(
+    *,
+    battle_fn: Callable[[str, str, BattleRunnerConfig], BattleResult] = run_battle,
+    battle_config_factory: Callable[[], BattleRunnerConfig] = (
+        _battle_config_from_environment
+    ),
+) -> FastAPI:
     legality_data = build_legality_data()
     all_cells = build_all_cells(legality_data.species)
     random_battle_sets = load_random_battle_sets()
@@ -258,6 +299,11 @@ def create_app() -> FastAPI:
             ),
             "skips_remaining": draft.skips_remaining,
             "team_export": session.team_export,
+            "battle_result": (
+                result_as_dict(session.battle_result)
+                if session.battle_result is not None
+                else None
+            ),
         }
 
     @app.get("/", include_in_schema=False)
@@ -340,6 +386,30 @@ def create_app() -> FastAPI:
             session.draft.use_skip()
         except DraftError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return serialize_session(session_id, session)
+
+    @app.post("/api/drafts/{session_id}/battle")
+    def battle(session_id: str, request: BattleRequest):
+        session = get_session(session_id)
+        if not session.draft.complete or session.team_export is None:
+            raise HTTPException(status_code=409, detail="draft is not complete")
+        try:
+            boss_team = load_boss_team(request.boss_id)
+            verify_team_entities_exist(
+                player=session.team_export,
+                boss=boss_team,
+            )
+            session.battle_result = battle_fn(
+                session.team_export,
+                boss_team,
+                battle_config_factory(),
+            )
+        except BossTeamError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except BattleEntityNotFoundError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except (BattleRunnerError, OSError, ValueError) as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         return serialize_session(session_id, session)
 
     return app
