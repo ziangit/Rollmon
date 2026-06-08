@@ -486,13 +486,17 @@ six-round draft and level-100 team assembly are implemented in
 `rollmons/draft.py` and `rollmons/team_assembly.py`. The first authored boss and
 one real post-draft battle path are built, including structured results and a
 hosted replay embed. Contributor boss/set validation and the N-battle
-pool-draft sandbox are built. Ten-battle orchestration, gauntlet results, and
-additional authored boss teams remain unbuilt.
+pool-draft sandbox are built. The browser can now run the discovered boss list
+as a sequential post-draft gauntlet: it validates every selected boss up front,
+runs one battle at a time through `battle_runner.run_battle()`, renders each
+replay immediately, then starts the next battle. Fixed ten-battle campaign
+tuning and additional authored boss teams remain ongoing work.
 
 ## Roadmap
 
-1. Expand the proven one-battle draft integration into the ten-battle
-   orchestrator and tally results. Do not duplicate the existing seam.
-2. Extend the one-battle results UI for gauntlet progress and aggregate results.
-   The hosted single-battle replay viewer is built temporarily.
+1. Tune the sequential browser gauntlet into the intended fixed ten-battle
+   campaign ordering and aggregate results. Do not duplicate the existing
+   battle-runner seam.
+2. Extend the gauntlet results UI for campaign-level summaries. The hosted
+   replay viewer is still temporary.
 3. Author boss teams and tune difficulty after playtesting.

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>rollmons draft harness</title>
-    <link rel="stylesheet" href="/static/styles.css?v=20260608-smogon-ui">
+    <link rel="stylesheet" href="/static/styles.css?v=20260608-gauntlet-ui">
   </head>
   <body>
     <header>
@@ -64,14 +64,16 @@
             </div>
             <div id="battle-panel" class="panel hidden">
               <p class="eyebrow">Live integration</p>
-              <h3>Battle a contributed boss</h3>
+              <h3>Run boss gauntlet</h3>
               <p>Requires the local Showdown server, battle logging, and the Gen 9 no-Tera engine.</p>
               <label class="boss-field" for="boss-select">
-                Boss
+                Single-battle debug boss
                 <select id="boss-select"></select>
               </label>
               <button id="battle-boss" class="primary">Battle this boss</button>
+              <button id="start-gauntlet" class="primary">Start boss gauntlet</button>
               <p id="battle-status" class="battle-status"></p>
+              <ol id="gauntlet-list" class="gauntlet-list"></ol>
             </div>
             <div id="team-export-panel" class="panel hidden">
               <h3>Showdown export</h3>
@@ -82,8 +84,8 @@
         <section id="battle-result-panel" class="panel battle-result-panel hidden">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Battle result</p>
-              <h2 id="battle-result"></h2>
+              <p class="eyebrow">Current replay</p>
+              <h2 id="battle-result">No battle yet</h2>
             </div>
             <code id="battle-id"></code>
           </div>
@@ -96,6 +98,6 @@
       </section>
     </main>
 
-    <script src="/static/app.js?v=20260608-smogon-ui"></script>
+    <script src="/static/app.js?v=20260608-gauntlet-ui"></script>
   </body>
 </html>

@@ -169,12 +169,19 @@ class BattleRequest(BaseModel):
     boss_id: str = "ash"
 
 
+class GauntletStartRequest(BaseModel):
+    boss_ids: list[str] | None = None
+
+
 @dataclass
 class DraftSession:
     draft: Draft
     assembly_rng: random.Random
     team_export: str | None = None
     battle_result: Any | None = None
+    gauntlet_boss_ids: tuple[str, ...] = ()
+    gauntlet_next_index: int = 0
+    gauntlet_results: list[Any] | None = None
 
 
 def _battle_config_from_environment():
@@ -201,6 +208,26 @@ def _run_live_battle(*args, **kwargs):
     from battle_runner import run_battle
 
     return run_battle(*args, **kwargs)
+
+
+def _gauntlet_payload(session: DraftSession) -> dict:
+    boss_ids = session.gauntlet_boss_ids
+    next_index = session.gauntlet_next_index
+    results = session.gauntlet_results or []
+    return {
+        "bosses": [
+            {
+                "id": boss_id,
+                "name": boss_display_name(boss_id),
+                "complete": index < next_index,
+                "current": index == next_index and next_index < len(boss_ids),
+            }
+            for index, boss_id in enumerate(boss_ids)
+        ],
+        "next_index": next_index,
+        "complete": bool(boss_ids) and next_index >= len(boss_ids),
+        "results": [asdict(result) for result in results],
+    }
 
 
 def _species_payload(
@@ -346,6 +373,7 @@ def create_app(
                 if session.battle_result is not None
                 else None
             ),
+            "gauntlet": _gauntlet_payload(session),
         }
 
     @app.get("/", include_in_schema=False)
@@ -484,6 +512,74 @@ def create_app(
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         except (RuntimeError, OSError, ValueError) as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
+        return serialize_session(session_id, session)
+
+    def validate_gauntlet(session: DraftSession, boss_ids: tuple[str, ...]) -> None:
+        errors = []
+        for boss_id in boss_ids:
+            try:
+                boss_team = load_boss_team(boss_id)
+                verify_team_entities_exist(
+                    player=session.team_export or "",
+                    boss=boss_team,
+                )
+            except (BossTeamError, BattleEntityNotFoundError) as exc:
+                errors.append(f"{boss_id}: {exc}")
+        if errors:
+            raise HTTPException(
+                status_code=422,
+                detail="invalid gauntlet boss team(s): " + "; ".join(errors),
+            )
+
+    @app.post("/api/drafts/{session_id}/gauntlet/start")
+    def start_gauntlet(session_id: str, request: GauntletStartRequest):
+        session = get_session(session_id)
+        if not session.draft.complete or session.team_export is None:
+            raise HTTPException(status_code=409, detail="draft is not complete")
+        boss_ids = tuple(request.boss_ids or list_boss_ids())
+        if not boss_ids:
+            raise HTTPException(status_code=404, detail="no boss teams found")
+        validate_gauntlet(session, boss_ids)
+        session.gauntlet_boss_ids = boss_ids
+        session.gauntlet_next_index = 0
+        session.gauntlet_results = []
+        return serialize_session(session_id, session)
+
+    @app.post("/api/drafts/{session_id}/gauntlet/next")
+    def next_gauntlet_battle(session_id: str):
+        session = get_session(session_id)
+        if not session.draft.complete or session.team_export is None:
+            raise HTTPException(status_code=409, detail="draft is not complete")
+        if not session.gauntlet_boss_ids:
+            raise HTTPException(status_code=409, detail="gauntlet has not started")
+        if session.gauntlet_next_index >= len(session.gauntlet_boss_ids):
+            return serialize_session(session_id, session)
+        boss_id = session.gauntlet_boss_ids[session.gauntlet_next_index]
+        try:
+            boss_team = load_boss_team(boss_id)
+            boss_name = boss_display_name(boss_id)
+            verify_team_entities_exist(
+                player=session.team_export,
+                boss=boss_team,
+            )
+            result = battle_fn(
+                session.team_export,
+                boss_team,
+                battle_config_factory(),
+                player_name=os.environ.get("ROLLMONS_PLAYER_NAME", "Player"),
+                boss_name=boss_name,
+            )
+        except BossTeamError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except BattleEntityNotFoundError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except (RuntimeError, OSError, ValueError) as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        if session.gauntlet_results is None:
+            session.gauntlet_results = []
+        session.gauntlet_results.append(result)
+        session.battle_result = result
+        session.gauntlet_next_index += 1
         return serialize_session(session_id, session)
 
     return app

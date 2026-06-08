@@ -2,6 +2,8 @@ import httpx
 import pytest
 
 from battle_runner import BattleResult, BattleRunnerConfig, PERMISSIVE_GEN9_FORMAT
+from rollmons import boss_loader
+from rollmons.boss_loader import load_boss_team
 from rollmons.web_app import app, create_app
 
 
@@ -47,8 +49,10 @@ async def test_frontend_and_static_assets_are_served(client):
     assert "thinRerollDraft" in javascript.text
     assert "cell-pokemon-sprite" in javascript.text
     assert "escapeHtml(set.export)" in javascript.text
+    assert "startGauntlet" in javascript.text
     assert stylesheet.status_code == 200
     assert "cell-pokemon-sprite-frame" in stylesheet.text
+    assert "gauntlet-list" in stylesheet.text
 
 
 @pytest.mark.anyio
@@ -256,6 +260,91 @@ async def test_completed_draft_can_delegate_one_battle_and_return_replay(tmp_pat
     assert received_config.battle_format == PERMISSIVE_GEN9_FORMAT
     assert player_name == "Player"
     assert boss_name == "Ash"
+
+
+@pytest.mark.anyio
+async def test_completed_draft_can_run_boss_gauntlet_sequentially(tmp_path, monkeypatch):
+    boss_dir = tmp_path / "bosses"
+    boss_dir.mkdir()
+    boss_team = load_boss_team("ash")
+    (boss_dir / "brock.txt").write_text(boss_team, encoding="utf-8")
+    (boss_dir / "misty.txt").write_text(boss_team, encoding="utf-8")
+    monkeypatch.setattr(boss_loader, "BOSSES_DIR", boss_dir)
+    calls = []
+    config = BattleRunnerConfig(
+        websocket_url="ws://localhost:8000/showdown/websocket",
+        showdown_log_dir=tmp_path,
+    )
+
+    def fake_run_battle(
+        player_team,
+        boss_team,
+        received_config,
+        *,
+        player_name,
+        boss_name,
+    ):
+        calls.append((player_team, boss_team, received_config, player_name, boss_name))
+        return BattleResult(
+            winner="player",
+            turns=10 + len(calls),
+            battle_id=f"battle-gen9customgame-{len(calls)}",
+            replay_log=[f"|turn|{10 + len(calls)}", f"|win|{player_name}"],
+            player_name=player_name,
+            boss_name=boss_name,
+        )
+
+    test_app = create_app(
+        battle_fn=fake_run_battle,
+        battle_config_factory=lambda: config,
+    )
+    transport = httpx.ASGITransport(app=test_app)
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://testserver",
+    ) as battle_client:
+        state = (
+            await battle_client.post(
+                "/api/drafts",
+                json={"level": 100, "skip_count": 1, "seed": 2026},
+            )
+        ).json()
+        while not state["complete"]:
+            state = (
+                await battle_client.post(
+                    f"/api/drafts/{state['session_id']}/pick",
+                    json={"species_id": state["offer"]["suggested_species"]},
+                )
+            ).json()
+
+        started = await battle_client.post(
+            f"/api/drafts/{state['session_id']}/gauntlet/start",
+            json={"boss_ids": ["brock", "misty"]},
+        )
+        first = await battle_client.post(
+            f"/api/drafts/{state['session_id']}/gauntlet/next",
+        )
+        second = await battle_client.post(
+            f"/api/drafts/{state['session_id']}/gauntlet/next",
+        )
+
+    assert started.status_code == 200
+    assert started.json()["gauntlet"]["bosses"] == [
+        {"id": "brock", "name": "Brock", "complete": False, "current": True},
+        {"id": "misty", "name": "Misty", "complete": False, "current": False},
+    ]
+    assert first.status_code == 200
+    assert first.json()["gauntlet"]["results"][0]["boss_name"] == "Brock"
+    assert first.json()["gauntlet"]["complete"] is False
+    assert second.status_code == 200
+    payload = second.json()["gauntlet"]
+    assert payload["complete"] is True
+    assert [result["boss_name"] for result in payload["results"]] == ["Brock", "Misty"]
+    assert [result["battle_id"] for result in payload["results"]] == [
+        "battle-gen9customgame-1",
+        "battle-gen9customgame-2",
+    ]
+    assert len(calls) == 2
 
 
 @pytest.mark.anyio

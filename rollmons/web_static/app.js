@@ -2,6 +2,7 @@ const state = {
   matrix: null,
   bosses: [],
   sessionId: null,
+  gauntletRunning: false,
 };
 
 async function api(path, options = {}) {
@@ -159,6 +160,7 @@ function renderBosses(bosses) {
   state.bosses = bosses;
   const select = document.querySelector("#boss-select");
   const button = document.querySelector("#battle-boss");
+  const gauntletButton = document.querySelector("#start-gauntlet");
   select.replaceChildren(...bosses.map(boss => {
     const option = document.createElement("option");
     option.value = boss.id;
@@ -167,15 +169,40 @@ function renderBosses(bosses) {
   }));
   select.disabled = bosses.length === 0;
   button.disabled = bosses.length === 0;
+  gauntletButton.disabled = bosses.length === 0;
   if (bosses.length === 0) {
     document.querySelector("#battle-status").textContent =
       "No boss files found under rollmons/bosses/.";
   }
 }
 
+function renderGauntlet(gauntlet) {
+  const list = document.querySelector("#gauntlet-list");
+  if (!gauntlet || !gauntlet.bosses.length) {
+    list.innerHTML = "";
+    return;
+  }
+  list.innerHTML = gauntlet.bosses.map((boss, index) => {
+    const result = gauntlet.results[index];
+    const status = result
+      ? `${result.winner === "tie" ? "Tie" : `${result.winner} win`} · ${result.turns} turns`
+      : boss.current
+        ? "Running next"
+        : boss.complete
+          ? "Complete"
+          : "Waiting";
+    return `
+      <li class="${boss.current ? "current" : ""} ${result ? "complete" : ""}">
+        <span>${index + 1}. ${boss.name}</span>
+        <small>${status}</small>
+      </li>`;
+  }).join("");
+}
+
 function renderDraft(draft) {
   state.sessionId = draft.session_id;
   renderTeam(draft.team);
+  renderGauntlet(draft.gauntlet);
   const status = document.querySelector("#draft-status");
   const offerRoot = document.querySelector("#current-offer");
   const candidates = document.querySelector("#candidate-list");
@@ -336,6 +363,66 @@ async function battleBoss() {
   }
 }
 
+async function startGauntlet() {
+  const button = document.querySelector("#start-gauntlet");
+  const singleBattleButton = document.querySelector("#battle-boss");
+  const status = document.querySelector("#battle-status");
+  button.disabled = true;
+  singleBattleButton.disabled = true;
+  state.gauntletRunning = true;
+  status.textContent = "Validating boss teams…";
+  try {
+    const draft = await api(`/api/drafts/${state.sessionId}/gauntlet/start`, {
+      method: "POST",
+      body: JSON.stringify({boss_ids: state.bosses.map(boss => boss.id)}),
+    });
+    renderDraft(draft);
+    await runNextGauntletBattle();
+  } catch (error) {
+    status.textContent = error.message;
+    button.disabled = false;
+    singleBattleButton.disabled = false;
+    state.gauntletRunning = false;
+  }
+}
+
+async function runNextGauntletBattle() {
+  const status = document.querySelector("#battle-status");
+  const button = document.querySelector("#start-gauntlet");
+  const singleBattleButton = document.querySelector("#battle-boss");
+  try {
+    const currentState = await api(`/api/drafts/${state.sessionId}`);
+    if (currentState.gauntlet.complete) {
+      renderDraft(currentState);
+      status.textContent = "Gauntlet complete.";
+      button.disabled = false;
+      singleBattleButton.disabled = false;
+      state.gauntletRunning = false;
+      return;
+    }
+    const nextBoss = currentState.gauntlet.bosses[currentState.gauntlet.next_index];
+    status.textContent = `Running battle ${currentState.gauntlet.next_index + 1}/${currentState.gauntlet.bosses.length}: ${nextBoss.name}…`;
+    renderGauntlet(currentState.gauntlet);
+    const nextState = await api(`/api/drafts/${state.sessionId}/gauntlet/next`, {
+      method: "POST",
+    });
+    renderDraft(nextState);
+    if (!nextState.gauntlet.complete) {
+      setTimeout(runNextGauntletBattle, 250);
+      return;
+    }
+    status.textContent = "Gauntlet complete.";
+    button.disabled = false;
+    singleBattleButton.disabled = false;
+    state.gauntletRunning = false;
+  } catch (error) {
+    status.textContent = error.message;
+    button.disabled = false;
+    singleBattleButton.disabled = false;
+    state.gauntletRunning = false;
+  }
+}
+
 document.querySelectorAll(".tab").forEach(button => {
   button.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(item => item.classList.remove("active"));
@@ -346,6 +433,7 @@ document.querySelectorAll(".tab").forEach(button => {
 });
 document.querySelector("#start-draft").addEventListener("click", startDraft);
 document.querySelector("#battle-boss").addEventListener("click", battleBoss);
+document.querySelector("#start-gauntlet").addEventListener("click", startGauntlet);
 renderTeam([]);
 
 api("/api/matrix").then(matrix => {
