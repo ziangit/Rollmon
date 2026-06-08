@@ -13,8 +13,10 @@ from rollmons.team_assembly import (
     load_set_override,
     load_random_battle_sets,
     representative_random_battle_set,
+    select_smogon_set,
     select_random_battle_set,
 )
+from rollmons.smogon_sets import load_usable_smogon_sets
 
 DRAFTED_TEAM = (
     "charizard",
@@ -70,17 +72,26 @@ def test_team_export_is_well_formed_and_fixed_at_level_100():
     for member in members:
         lines = member.splitlines()
         assert " @ " in lines[0]
-        assert lines[1].startswith("Ability: ")
-        assert lines[2] == f"Level: {FIXED_LEVEL}"
-        assert lines[3].startswith("EVs: ")
-        assert lines[4] == "Serious Nature"
+        assert any(line.startswith("Ability: ") for line in lines)
+        assert f"Level: {FIXED_LEVEL}" in lines
         assert len([line for line in lines if line.startswith("- ")]) == 4
-        assert not any(line.startswith("IVs: ") for line in lines)
         assert not any(line.startswith("Tera Type: ") for line in lines)
 
 
+def test_smogon_set_selection_is_uniform_and_seedable():
+    sets = load_usable_smogon_sets()
+    rng = RecordingRng()
+
+    chosen = select_smogon_set("clefable", sets, rng=rng)
+
+    assert len(sets["clefable"]) > 1
+    assert rng.weights == (1, 1, 1)
+    assert chosen == sets["clefable"][0]
+    assert "Tera Type:" not in chosen.export
+
+
 def test_neutral_spread_is_the_legal_510_ev_cap():
-    export = assemble_team(DRAFTED_TEAM, rng=random.Random(8))
+    export = assemble_team(DRAFTED_TEAM, rng=random.Random(8), source="randbats")
     ev_line = export.split("\n\n")[0].splitlines()[3]
     ev_values = [
         int(part.strip().split(" ", 1)[0])
@@ -98,7 +109,7 @@ def test_fixed_level_replaces_randbats_scaled_level():
     first_charizard_set = next(iter(source["charizard"]))
     assert first_charizard_set.split(",", 1)[0] == "85"
 
-    export = assemble_team(DRAFTED_TEAM, rng=RecordingRng())
+    export = assemble_team(DRAFTED_TEAM, rng=RecordingRng(), source="randbats")
 
     assert "Level: 85" not in export
     assert export.count("Level: 100") == 6
@@ -124,7 +135,12 @@ Timid Nature
 """
     (tmp_path / "charizard.txt").write_text(override, encoding="utf-8")
 
-    export = assemble_team(DRAFTED_TEAM, rng=RecordingRng(), sets_dir=tmp_path)
+    export = assemble_team(
+        DRAFTED_TEAM,
+        rng=RecordingRng(),
+        sets_dir=tmp_path,
+        source="randbats",
+    )
 
     assert load_set_override("charizard", sets_dir=tmp_path) == override.strip()
     assert export.split("\n\n")[0] == override.strip()

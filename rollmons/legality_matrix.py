@@ -1,6 +1,8 @@
 """Build the rollmons type-by-debut-generation draft legality matrix.
 
-Draftable atoms come from the checked-in Generation 9 random-battle set data.
+Draftable atoms come from the configured set source. Smogon contributor sets
+are the default primary source; randbats remains available as a fallback and
+alternate source.
 Current types and base stats come from the checked-in Showdown-derived
 Pokedex. Forme debut overrides were verified against Pokemon Showdown's
 ``Dex.species.get(id).gen``.
@@ -9,6 +11,7 @@ Pokedex. Forme debut overrides were verified against Pokemon Showdown's
 from __future__ import annotations
 
 import json
+import os
 import random
 from dataclasses import dataclass
 from pathlib import Path
@@ -48,6 +51,8 @@ MIN_CELL_SIZE = 1
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RANDBATS_PATH = REPO_ROOT / "rollmons" / "data" / "gen9randombattle.json"
 DEFAULT_POKEDEX_PATH = REPO_ROOT / "data" / "pokedex.json"
+DEFAULT_SET_SOURCE = "smogon"
+SET_SOURCE_ENV_VAR = "ROLLMONS_SET_SOURCE"
 
 # These are the randbats formes whose Showdown debut generation differs from
 # the generation implied by their National Dex number. Values were extracted
@@ -126,6 +131,29 @@ def _load_json(path: str | Path) -> dict:
     if not isinstance(data, dict):
         raise LegalityDataError(f"expected a JSON object in {path}")
     return data
+
+
+def configured_set_source() -> str:
+    return os.environ.get(SET_SOURCE_ENV_VAR, DEFAULT_SET_SOURCE).strip().lower()
+
+
+def _atoms_for_source(
+    *,
+    source: str,
+    randbats_path: str | Path,
+    smogon_path: str | Path | None,
+) -> tuple[str, ...]:
+    if source == "randbats":
+        return tuple(sorted(_load_json(randbats_path)))
+    if source == "smogon":
+        from rollmons.smogon_sets import DEFAULT_SMOGON_SETS_PATH, load_usable_smogon_sets
+
+        return tuple(
+            sorted(load_usable_smogon_sets(smogon_path or DEFAULT_SMOGON_SETS_PATH))
+        )
+    raise LegalityDataError(
+        f"unsupported set source {source!r}; expected 'smogon' or 'randbats'"
+    )
 
 
 def _generation_from_national_dex_number(number: int) -> int:
@@ -216,20 +244,26 @@ def cells_for_species(metadata: SpeciesMetadata) -> tuple[Cell, ...]:
 def build_legality_data(
     *,
     randbats_path: str | Path = DEFAULT_RANDBATS_PATH,
+    smogon_path: str | Path | None = None,
     pokedex_path: str | Path = DEFAULT_POKEDEX_PATH,
+    source: str | None = None,
 ) -> LegalityData:
     """Load source data and return atoms, metadata, and the filtered matrix."""
 
-    randbats = _load_json(randbats_path)
+    selected_source = (source or configured_set_source()).lower()
     pokedex = _load_json(pokedex_path)
-    atoms = tuple(sorted(randbats))
+    atoms = _atoms_for_source(
+        source=selected_source,
+        randbats_path=randbats_path,
+        smogon_path=smogon_path,
+    )
     species = {}
 
     for species_id in atoms:
         entry = pokedex.get(species_id)
         if not isinstance(entry, dict):
             raise LegalityDataError(
-                f"randbats atom {species_id} is missing from the Pokedex"
+                f"{selected_source} atom {species_id} is missing from the Pokedex"
             )
         _validate_no_battle_only_mechanics(species_id, entry)
         raw_types = entry.get("types")

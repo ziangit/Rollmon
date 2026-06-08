@@ -31,7 +31,9 @@ from rollmons.legality_matrix import (
     SpeciesMetadata,
     build_all_cells,
     build_legality_data,
+    configured_set_source,
 )
+from rollmons.smogon_sets import load_usable_smogon_sets
 from rollmons.submissions import (
     BattleEntityNotFoundError,
     verify_team_entities_exist,
@@ -45,6 +47,7 @@ from rollmons.team_assembly import (
     assemble_team,
     load_random_battle_sets,
     representative_random_battle_set,
+    representative_smogon_set,
 )
 
 STATIC_DIR = Path(__file__).resolve().parent / "web_static"
@@ -141,7 +144,9 @@ def _showdown_sprite_id(metadata: SpeciesMetadata, pokedex_entry: dict) -> str:
 def _item_icon_payload(item_id: str) -> dict | None:
     if not item_id:
         return None
-    sprite_number = SHOWDOWN_ITEM_SPRITE_NUMBERS[item_id]
+    sprite_number = SHOWDOWN_ITEM_SPRITE_NUMBERS.get(item_id)
+    if sprite_number is None:
+        return None
     return {
         "url": f"{SHOWDOWN_ASSET_ROOT}/itemicons-sheet.png?v1",
         "left": -(sprite_number % 16) * SHOWDOWN_ITEM_ICON_SIZE,
@@ -201,12 +206,37 @@ def _run_live_battle(*args, **kwargs):
 def _species_payload(
     metadata: SpeciesMetadata,
     random_battle_sets,
+    smogon_sets,
+    set_source: str,
     pokedex,
 ) -> dict:
-    representative = representative_random_battle_set(
-        metadata.species_id,
-        random_battle_sets,
-    )
+    if set_source == "smogon" and metadata.species_id in smogon_sets:
+        representative = representative_smogon_set(metadata.species_id, smogon_sets)
+        set_payload = {
+            "source": "smogon",
+            "label": representative.label,
+            "format": representative.format,
+            "item": representative.item,
+            "ability": representative.ability,
+            "moves": list(representative.moves),
+            "observed_count": 1,
+            "role_count": len(smogon_sets[metadata.species_id]),
+            "item_icon": _item_icon_payload(representative.item),
+        }
+    else:
+        representative = representative_random_battle_set(
+            metadata.species_id,
+            random_battle_sets,
+        )
+        set_payload = {
+            "source": "randbats",
+            "item": representative.item,
+            "ability": representative.ability,
+            "moves": list(representative.moves),
+            "observed_count": representative.observed_count,
+            "role_count": len(random_battle_sets[metadata.species_id]),
+            "item_icon": _item_icon_payload(representative.item),
+        }
     return {
         "id": metadata.species_id,
         "name": metadata.name,
@@ -218,14 +248,7 @@ def _species_payload(
             f"{SHOWDOWN_ASSET_ROOT}/home-centered/"
             f"{_showdown_sprite_id(metadata, pokedex[metadata.species_id])}.png"
         ),
-        "randbats_set": {
-            "item": representative.item,
-            "ability": representative.ability,
-            "moves": list(representative.moves),
-            "observed_count": representative.observed_count,
-            "role_count": len(random_battle_sets[metadata.species_id]),
-            "item_icon": _item_icon_payload(representative.item),
-        },
+        "randbats_set": set_payload,
         "assembly_spread": {
             "level": FIXED_LEVEL,
             "nature": NEUTRAL_NATURE,
@@ -239,6 +262,8 @@ def _offer_payload(
     offer: DraftOffer | None,
     legality_data: LegalityData,
     random_battle_sets,
+    smogon_sets,
+    set_source: str,
     pokedex,
 ) -> dict | None:
     if offer is None:
@@ -255,6 +280,8 @@ def _offer_payload(
         candidate = _species_payload(
             legality_data.species[species_id],
             random_battle_sets,
+            smogon_sets,
+            set_source,
             pokedex,
         )
         candidate["selection_probability"] = offer.selection_probabilities[species_id]
@@ -267,9 +294,11 @@ def create_app(
     battle_fn: Callable[..., Any] = _run_live_battle,
     battle_config_factory: Callable[[], Any] = _battle_config_from_environment,
 ) -> FastAPI:
+    set_source = configured_set_source()
     legality_data = build_legality_data()
     all_cells = build_all_cells(legality_data.species)
     random_battle_sets = load_random_battle_sets()
+    smogon_sets = load_usable_smogon_sets() if set_source == "smogon" else {}
     pokedex = json.loads(DEFAULT_POKEDEX_PATH.read_text(encoding="utf-8"))
     sessions: dict[str, DraftSession] = {}
     app = FastAPI(title="rollmons draft harness")
@@ -294,6 +323,8 @@ def create_app(
                 _species_payload(
                     legality_data.species[species_id],
                     random_battle_sets,
+                    smogon_sets,
+                    set_source,
                     pokedex,
                 )
                 for species_id in draft.picks
@@ -302,6 +333,8 @@ def create_app(
                 draft.current_offer,
                 legality_data,
                 random_battle_sets,
+                smogon_sets,
+                set_source,
                 pokedex,
             ),
             "skips_remaining": draft.skips_remaining,
@@ -341,6 +374,8 @@ def create_app(
                             _species_payload(
                                 legality_data.species[species_id],
                                 random_battle_sets,
+                                smogon_sets,
+                                set_source,
                                 pokedex,
                             )
                             for species_id in eligible
@@ -352,6 +387,7 @@ def create_app(
             "generations": list(GENERATIONS),
             "included_cell_count": len(legality_data.matrix),
             "atom_count": len(legality_data.atoms),
+            "set_source": set_source,
             "cells": cells,
         }
 

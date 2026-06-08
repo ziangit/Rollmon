@@ -21,8 +21,11 @@ Our game-specific code should eventually live outside its internals.
 - Include every nonempty `(type, generation)` cell. Cells with 1-2 undrafted
   candidates are thin and grant an optional reroll separate from the manual skip.
 - Legendary Pokemon are down-weighted, not banned.
-- A species or forme is a draftable atom if it has a `gen9randombattle` set.
-  Its type is its current type and its generation is its debut generation.
+- A species or forme is a draftable atom if it has at least one usable set in
+  the configured set source. `rollmons/data/smogon_sets.json` is the default
+  primary source; the checked-in `gen9randombattle` snapshot remains available
+  as a switchable alternate and set-level fallback. Its type is its current
+  type and its generation is its debut generation.
 - Battles use Generation 9 mechanics with no Terastallization, Dynamax, Mega
   Evolution, or Z-Moves.
 - Battles use a self-hosted, permissive custom format with Species Clause on,
@@ -38,9 +41,10 @@ Our game-specific code should eventually live outside its internals.
   Past formes are banned, Gigantamax is rejected by Dynamax Clause, and
   Z-Moves remain blocked. Do not add tier banlists or general
   `Obtainable`/learnset validation.
-- Movesets are borrowed from Generation 9 random-battle data and re-statted at
-  the fixed level as an authoring step. foul-play does not derive fixed custom
-  teams automatically from random-battle data.
+- Player movesets are assembled from the configured set source at level 100.
+  Smogon exports are already level 100; their `Tera Type:` lines are stripped
+  so the set is inert in the no-Tera format. foul-play does not derive fixed
+  custom teams automatically from source data.
 
 ## Architecture
 
@@ -67,8 +71,12 @@ Pure game logic lives under `rollmons/` and must not import `fp/`.
 `rollmons/legality_matrix.py` builds the draft legality matrix and weighted
 selection primitive. Its data sources are:
 
+- `rollmons/data/smogon_sets.json`: the contributor-provided Smogon set
+  snapshot. This is the default primary pool and set source.
 - `rollmons/data/gen9randombattle.json`: the checked-in 508-atom Generation 9
-  random-battle set snapshot. Presence in this file defines draftability.
+  random-battle set snapshot. This remains available with
+  `ROLLMONS_SET_SOURCE=randbats` and as the fallback when a drafted species has
+  no usable Smogon set.
 - `data/pokedex.json`: Showdown-derived current types, six base stats, National
   Dex numbers, formes, and base-species links. BST is the sum of the six
   `baseStats` values in this file.
@@ -97,24 +105,34 @@ types, the slot-machine guard excludes cells with no undrafted candidates, and
 the default draft has one bounded cell skip. Thin-cell rerolls do not consume
 that skip.
 
-`rollmons/team_assembly.py` selects each drafted atom's randbats set weighted by
-its observed count and emits a six-member Showdown export at level 100. It
-preserves the recorded item, ability, and moves. Nearly all source records have
-four moves; Ditto deliberately preserves its source-defined single
-`Transform`.
+`rollmons/smogon_sets.py` ingests the Smogon JSON. It first excludes set rows
+whose format is Godly Gift, 1v1/1V1, Battle Stadium Singles/BSS, or Monotype
+using case-insensitive alias matching. It strips `Tera Type:` lines, parses the
+remaining standard Showdown export text, and applies only the existing
+species/move existence pre-flight. Failed sets are reported for manual review
+and do not count as usable; they are not silently fixed. Run
+`python3 -m rollmons.report_smogon_ingestion` to reproduce exclusion counts,
+validation issues, setless species, and pool/matrix deltas.
+
+`rollmons/team_assembly.py` selects one usable Smogon set uniformly at random
+for each drafted species, using the same seedable/injectable RNG as draft team
+assembly. Do not use the contributor JSON's generation or format priority for
+runtime set selection. If `ROLLMONS_SET_SOURCE=randbats`, or if a drafted
+species has no usable Smogon set but does have a randbats set, assembly falls
+back to the randbats path, where observed counts remain the selection weights.
 
 Contributor overrides live under `rollmons/sets/` as one standard Showdown
 export block per normalized species-ID filename. Assembly uses an override for
-that drafted species when present and otherwise retains randbats selection.
+that drafted species when present and otherwise retains configured-source
+selection.
 Overrides never create custom player teams; all player teams still originate
 from a six-round pool draft.
 
-Player-team stats intentionally use `Serious` nature, 85 EVs in each of the six
-stats (the legal 510 total cap), and omitted IV lines so Showdown defaults to
-31. This exactly matches foul-play's own randbats parser, keeping assembled
-player teams stat-identical to what the AI was validated piloting. The spread
-is neutral and source-consistent, not optimized or a placeholder. Separately
-authored boss teams may use optimized spreads.
+The randbats fallback path intentionally uses `Serious` nature, 85 EVs in each
+of the six stats (the legal 510 total cap), and omitted IV lines so Showdown
+defaults to 31. This exactly matches foul-play's own randbats parser. Smogon
+sets preserve their authored EVs, IVs, nature, item, ability, and moves after
+Tera-line stripping. Separately authored boss teams may use optimized spreads.
 
 Authored bosses live as Showdown export text under `rollmons/bosses/`.
 `rollmons/boss_loader.py` discovers stable boss IDs from those files and returns the
@@ -133,10 +151,10 @@ does not require Showdown, Rust, poke-engine, or a running battle stack.
 It keeps local single-user draft sessions in memory and exposes the complete
 18x9 pool inspector plus start/state/pick/skip draft endpoints. The static SPA
 under `rollmons/web_static/` renders that engine state, including BST,
-engine-calculated suggestion probability, the most-observed representative
-randbats set and role count, and the fixed player assembly spread. Draft cards
-use a light PokePaste/Showdown-teambuilder layout with the real level 100,
-Serious, flat-85 EV, and implicit-31 IV assembly data. It does not implement
+engine-calculated suggestion probability, a representative set from the active
+source and role count, and the fixed player assembly level. Draft cards use a
+light PokePaste/Showdown-teambuilder layout with the real level 100 source
+data. It does not implement
 matrix filtering, dedupe, cell guards, weighted suggestions, probability
 calculation, or team assembly in JavaScript.
 
@@ -460,15 +478,16 @@ process and established connection counts were unchanged before and after.
 The earlier 299-line random-battle replay fixture still animates through the
 standard Showdown replay player with no rejected lines or JavaScript errors.
 
-The pure legality matrix is implemented in `rollmons/legality_matrix.py`: 508
-randbats atoms produce 158 nonempty type-generation cells (125 normal and 33
-thin), with only four empty cells excluded. The six-round draft and level-100
-team assembly are implemented in
+The pure legality matrix is implemented in `rollmons/legality_matrix.py`.
+With the current Smogon primary source, 435 usable atoms produce 155 nonempty
+type-generation cells (114 normal and 41 thin), with seven empty cells
+excluded. The randbats alternate remains 508 atoms and 158 nonempty cells. The
+six-round draft and level-100 team assembly are implemented in
 `rollmons/draft.py` and `rollmons/team_assembly.py`. The first authored boss and
 one real post-draft battle path are built, including structured results and a
 hosted replay embed. Contributor boss/set validation and the N-battle
-pool-draft sandbox are built. Ten-battle orchestration, gauntlet results,
-ranked-stat ingestion, and additional authored boss teams remain unbuilt.
+pool-draft sandbox are built. Ten-battle orchestration, gauntlet results, and
+additional authored boss teams remain unbuilt.
 
 ## Roadmap
 

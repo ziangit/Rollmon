@@ -17,6 +17,7 @@ from rollmons.legality_matrix import (
     select_species,
     selection_probabilities,
 )
+from rollmons.smogon_sets import load_usable_smogon_sets
 
 
 @pytest.fixture(scope="module")
@@ -36,7 +37,15 @@ def metadata(species_id, types, generation, *, legendary=False, bst=500):
 
 
 def test_atom_count_matches_gen9_randbats_source(legality_data):
+    source = load_usable_smogon_sets()
+    assert len(source) == 435
+    assert len(legality_data.atoms) == len(source)
+    assert set(legality_data.atoms) == set(source)
+
+
+def test_randbats_source_remains_available():
     source = json.loads(DEFAULT_RANDBATS_PATH.read_text(encoding="utf-8"))
+    legality_data = build_legality_data(source="randbats")
     assert len(source) == 508
     assert len(legality_data.atoms) == len(source)
     assert set(legality_data.atoms) == set(source)

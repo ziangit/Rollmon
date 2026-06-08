@@ -12,6 +12,12 @@ from rollmons.draft import TEAM_SIZE
 from rollmons.legality_matrix import (
     DEFAULT_POKEDEX_PATH,
     DEFAULT_RANDBATS_PATH,
+    configured_set_source,
+)
+from rollmons.smogon_sets import (
+    DEFAULT_SMOGON_SETS_PATH,
+    SmogonSet,
+    load_usable_smogon_sets,
 )
 from rollmons.submissions import SubmissionError, parse_showdown_export
 
@@ -120,6 +126,33 @@ def representative_random_battle_set(
     return max(available, key=lambda set_: set_.observed_count)
 
 
+def select_smogon_set(
+    species_id: str,
+    sets: Mapping[str, Sequence[SmogonSet]],
+    *,
+    rng: TeamRandomSource | None = None,
+) -> SmogonSet:
+    available = tuple(sets.get(species_id, ()))
+    if not available:
+        raise TeamAssemblyError(f"no Smogon sets for {species_id}")
+    random_source = rng or random
+    return random_source.choices(
+        available,
+        [1 for _ in available],
+        k=1,
+    )[0]
+
+
+def representative_smogon_set(
+    species_id: str,
+    sets: Mapping[str, Sequence[SmogonSet]],
+) -> SmogonSet:
+    available = tuple(sets.get(species_id, ()))
+    if not available:
+        raise TeamAssemblyError(f"no Smogon sets for {species_id}")
+    return available[0]
+
+
 def _display_name(value: str) -> str:
     return value.replace("-", " ").title().replace(" ", "-")
 
@@ -170,8 +203,10 @@ def assemble_team(
     *,
     rng: TeamRandomSource | None = None,
     randbats_path: str | Path = DEFAULT_RANDBATS_PATH,
+    smogon_path: str | Path = DEFAULT_SMOGON_SETS_PATH,
     pokedex_path: str | Path = DEFAULT_POKEDEX_PATH,
     sets_dir: str | Path = SETS_DIR,
+    source: str | None = None,
 ) -> str:
     """Return a six-member, fixed-level Showdown export string."""
 
@@ -180,7 +215,18 @@ def assemble_team(
     if len(set(drafted_species)) != TEAM_SIZE:
         raise TeamAssemblyError("team violates Species Clause")
 
-    sets = load_random_battle_sets(randbats_path)
+    selected_source = (source or configured_set_source()).lower()
+    randbats_sets = load_random_battle_sets(randbats_path)
+    smogon_sets = (
+        load_usable_smogon_sets(smogon_path)
+        if selected_source == "smogon"
+        else {}
+    )
+    if selected_source not in {"smogon", "randbats"}:
+        raise TeamAssemblyError(
+            f"unsupported set source {selected_source!r}; "
+            "expected 'smogon' or 'randbats'"
+        )
     pokedex = _load_json(pokedex_path)
     members = []
     for species_id in drafted_species:
@@ -188,9 +234,12 @@ def assemble_team(
         if override is not None:
             members.append(override)
             continue
+        if selected_source == "smogon" and species_id in smogon_sets:
+            members.append(select_smogon_set(species_id, smogon_sets, rng=rng).export)
+            continue
         entry = pokedex.get(species_id)
         if not isinstance(entry, dict):
             raise TeamAssemblyError(f"unknown species: {species_id}")
-        chosen_set = select_random_battle_set(species_id, sets, rng=rng)
+        chosen_set = select_random_battle_set(species_id, randbats_sets, rng=rng)
         members.append(_export_member(str(entry.get("name", species_id)), chosen_set))
     return "\n\n".join(members)
