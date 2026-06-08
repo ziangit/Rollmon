@@ -178,10 +178,13 @@ function renderBosses(bosses) {
 
 function renderGauntlet(gauntlet) {
   const list = document.querySelector("#gauntlet-list");
+  const button = document.querySelector("#start-gauntlet");
   if (!gauntlet || !gauntlet.bosses.length) {
     list.innerHTML = "";
+    button.textContent = "Start boss rush";
     return;
   }
+  button.textContent = gauntlet.complete ? "Restart boss rush" : "Continue boss rush";
   list.innerHTML = gauntlet.bosses.map((boss, index) => {
     const result = gauntlet.results[index];
     const status = result
@@ -413,13 +416,19 @@ async function startGauntlet() {
   button.disabled = true;
   singleBattleButton.disabled = true;
   state.gauntletRunning = true;
-  status.textContent = "Validating boss teams…";
+  status.textContent = "Starting boss rush…";
   try {
-    const draft = await api(`/api/drafts/${state.sessionId}/gauntlet/start`, {
-      method: "POST",
-      body: JSON.stringify({boss_ids: state.bosses.map(boss => boss.id)}),
-    });
-    renderDraft(draft);
+    const currentState = await api(`/api/drafts/${state.sessionId}`);
+    if (currentState.gauntlet.bosses.length && !currentState.gauntlet.complete) {
+      renderDraft(currentState);
+    } else {
+      status.textContent = "Validating boss teams…";
+      const draft = await api(`/api/drafts/${state.sessionId}/gauntlet/start`, {
+        method: "POST",
+        body: JSON.stringify({boss_ids: state.bosses.map(boss => boss.id)}),
+      });
+      renderDraft(draft);
+    }
     setTimeout(runNextGauntletBattle, 0);
   } catch (error) {
     status.textContent = error.message;
