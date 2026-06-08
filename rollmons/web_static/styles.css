@@ -298,6 +298,22 @@ pre {
   margin-bottom: 0;
   color: #596575;
 }
+.boss-field {
+  display: grid;
+  gap: .35rem;
+  margin-bottom: .75rem;
+  font-size: .82rem;
+  font-weight: 700;
+}
+.boss-field select {
+  width: 100%;
+  border: 1px solid #bac2cc;
+  border-radius: .4rem;
+  padding: .6rem;
+  background: white;
+  color: #1c2430;
+  font: inherit;
+}
 #battle-panel {
   margin-bottom: 1rem;
   border-color: #4f8cff;

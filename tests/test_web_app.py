@@ -42,9 +42,18 @@ async def test_frontend_and_static_assets_are_served(client):
     )
     assert javascript.status_code == 200
     assert "/api/matrix" in javascript.text
+    assert "/api/bosses" in javascript.text
     assert "battlePanel.scrollIntoView" in javascript.text
     assert "thinRerollDraft" in javascript.text
     assert stylesheet.status_code == 200
+
+
+@pytest.mark.anyio
+async def test_boss_endpoint_exposes_discovered_bosses(client):
+    response = await client.get("/api/bosses")
+
+    assert response.status_code == 200
+    assert {"id": "ash", "name": "Ash"} in response.json()
 
 
 @pytest.mark.anyio

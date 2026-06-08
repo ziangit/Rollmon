@@ -1,5 +1,6 @@
 const state = {
   matrix: null,
+  bosses: [],
   sessionId: null,
 };
 
@@ -138,6 +139,24 @@ function renderTeam(team) {
     ? `<li><strong>${pokemon.name}</strong><br>${chips(pokemon)}</li>`
     : `<li>Empty slot ${index + 1}</li>`
   ).join("");
+}
+
+function renderBosses(bosses) {
+  state.bosses = bosses;
+  const select = document.querySelector("#boss-select");
+  const button = document.querySelector("#battle-boss");
+  select.replaceChildren(...bosses.map(boss => {
+    const option = document.createElement("option");
+    option.value = boss.id;
+    option.textContent = boss.name;
+    return option;
+  }));
+  select.disabled = bosses.length === 0;
+  button.disabled = bosses.length === 0;
+  if (bosses.length === 0) {
+    document.querySelector("#battle-status").textContent =
+      "No boss files found under rollmons/bosses/.";
+  }
 }
 
 function renderDraft(draft) {
@@ -282,13 +301,18 @@ function renderBattleResult(result) {
 
 async function battleBoss() {
   const button = document.querySelector("#battle-boss");
+  const bossId = document.querySelector("#boss-select").value;
   const status = document.querySelector("#battle-status");
+  if (!bossId) {
+    status.textContent = "Select a boss before starting the battle.";
+    return;
+  }
   button.disabled = true;
   status.textContent = "Running live battle…";
   try {
     const draft = await api(`/api/drafts/${state.sessionId}/battle`, {
       method: "POST",
-      body: JSON.stringify({boss_id: "ash"}),
+      body: JSON.stringify({boss_id: bossId}),
     });
     renderDraft(draft);
   } catch (error) {
@@ -315,4 +339,8 @@ api("/api/matrix").then(matrix => {
   renderMatrix();
 }).catch(error => {
   document.querySelector("#matrix-summary").textContent = error.message;
+});
+
+api("/api/bosses").then(renderBosses).catch(error => {
+  document.querySelector("#battle-status").textContent = error.message;
 });

@@ -16,7 +16,12 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from rollmons.boss_loader import BossTeamError, boss_display_name, load_boss_team
+from rollmons.boss_loader import (
+    BossTeamError,
+    boss_display_name,
+    list_boss_ids,
+    load_boss_team,
+)
 from rollmons.draft import Draft, DraftError, DraftOffer
 from rollmons.legality_matrix import (
     DEFAULT_POKEDEX_PATH,
@@ -349,6 +354,16 @@ def create_app(
             "atom_count": len(legality_data.atoms),
             "cells": cells,
         }
+
+    @app.get("/api/bosses")
+    def bosses():
+        return [
+            {
+                "id": boss_id,
+                "name": boss_display_name(boss_id),
+            }
+            for boss_id in list_boss_ids()
+        ]
 
     @app.post("/api/drafts")
     def start_draft(request: StartDraftRequest):

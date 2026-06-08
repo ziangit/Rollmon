@@ -41,6 +41,16 @@ checked-in Generation 9 data. It does not enforce tiers, learnsets, or
 obtainability. No Showdown server, Rust toolchain, or live battle stack is
 required.
 
+To draft a team manually and battle the contributed boss through the browser,
+start the live harness:
+
+```bash
+make live SHOWDOWN_DIR=/path/to/pokemon-showdown
+```
+
+Open <http://127.0.0.1:8080>, choose **Draft flow**, complete all six picks,
+select the contributed boss by filename, and click **Battle this boss**.
+
 ## Code contributions
 
 Bootstrap the full development environment and run all tests:
@@ -58,5 +68,10 @@ Run a real containerized boss sandbox without installing Node or Rust locally:
 ```bash
 make stack RUNS=1 BOSS=ash
 ```
+
+This command is an automated balance test: each run creates a fresh draft,
+accepts the engine's suggested picks, and battles the named boss without manual
+pool choices. Use the live browser harness above for the contributor-facing
+draft-to-battle experience.
 
 Generated replay pages are ignored under `.sandbox-replays/`.
