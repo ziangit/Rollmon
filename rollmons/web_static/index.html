@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>rollmons draft harness</title>
-    <link rel="stylesheet" href="/static/styles.css?v=20260608-boss-rush-replay">
+    <link rel="stylesheet" href="/static/styles.css?v=20260608-boss-rush-replay-list">
   </head>
   <body>
     <header>
@@ -84,20 +84,15 @@
         <section id="battle-result-panel" class="panel battle-result-panel hidden">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Current replay</p>
-              <h2 id="battle-result">No battle yet</h2>
+              <p class="eyebrow">Boss rush</p>
+              <h2>Completed replays</h2>
             </div>
-            <code id="battle-id"></code>
           </div>
-          <iframe
-            id="battle-replay"
-            class="battle-replay"
-            title="Pokemon Showdown battle replay"
-          ></iframe>
+          <div id="battle-replay-list" class="battle-replay-list"></div>
         </section>
       </section>
     </main>
 
-    <script src="/static/app.js?v=20260608-boss-rush-replay"></script>
+    <script src="/static/app.js?v=20260608-boss-rush-replay-list"></script>
   </body>
 </html>

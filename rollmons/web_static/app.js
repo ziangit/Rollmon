@@ -203,6 +203,13 @@ function renderDraft(draft) {
   state.sessionId = draft.session_id;
   renderTeam(draft.team);
   renderGauntlet(draft.gauntlet);
+  renderBattleResults(
+    draft.gauntlet?.results?.length
+      ? draft.gauntlet.results
+      : draft.battle_result
+        ? [draft.battle_result]
+        : []
+  );
   const status = document.querySelector("#draft-status");
   const offerRoot = document.querySelector("#current-offer");
   const candidates = document.querySelector("#candidate-list");
@@ -216,13 +223,15 @@ function renderDraft(draft) {
     document.querySelector("#team-export").textContent = draft.team_export;
     exportPanel.classList.remove("hidden");
     battlePanel.classList.remove("hidden");
-    if (draft.battle_result) renderBattleResult(draft.battle_result);
-    else battlePanel.scrollIntoView({behavior: "smooth", block: "center"});
+    if (!draft.battle_result && !draft.gauntlet?.results?.length) {
+      battlePanel.scrollIntoView({behavior: "smooth", block: "center"});
+    }
     return;
   }
 
   exportPanel.classList.add("hidden");
   battlePanel.classList.add("hidden");
+  document.querySelector("#battle-replay-list").innerHTML = "";
   document.querySelector("#battle-result-panel").classList.add("hidden");
   status.innerHTML = `<strong>Round ${draft.offer.round_number}/6</strong> · ${draft.offer.candidates.length} undrafted candidates`;
   const thinReroll = draft.offer.thin_reroll_available
@@ -328,18 +337,49 @@ html, body { margin: 0; padding: 0; font-family: Verdana, sans-serif; }
 <script src="https://play.pokemonshowdown.com/js/replay-embed.js"><\/script>`;
 }
 
-function renderBattleResult(result) {
-  const label = result.winner === "tie"
+function battleResultLabel(result) {
+  return result.winner === "tie"
     ? "Tie"
     : `${result.winner === "player" ? result.player_name : result.boss_name} wins`;
-  document.querySelector("#battle-result").textContent =
-    `${label} in ${result.turns} turns`;
-  document.querySelector("#battle-id").textContent = result.battle_id;
-  const previousReplay = document.querySelector("#battle-replay");
-  const nextReplay = previousReplay.cloneNode(false);
-  nextReplay.srcdoc = replayDocument(result.replay_log);
-  previousReplay.replaceWith(nextReplay);
-  document.querySelector("#battle-result-panel").classList.remove("hidden");
+}
+
+function renderBattleResults(results) {
+  const panel = document.querySelector("#battle-result-panel");
+  const list = document.querySelector("#battle-replay-list");
+  if (!results.length) {
+    list.innerHTML = "";
+    panel.classList.add("hidden");
+    return;
+  }
+  const existingBattleIds = new Set(
+    [...list.querySelectorAll("[data-battle-id]")].map(item => item.dataset.battleId)
+  );
+  results.forEach((result, index) => {
+    if (existingBattleIds.has(result.battle_id)) return;
+    const card = document.createElement("article");
+    card.className = "battle-replay-card";
+    card.dataset.battleId = result.battle_id;
+    const iframe = document.createElement("iframe");
+    iframe.className = "battle-replay";
+    iframe.title = `${result.player_name} vs ${result.boss_name} replay`;
+    iframe.srcdoc = replayDocument(result.replay_log);
+    card.innerHTML = `
+      <div class="battle-replay-heading">
+        <div>
+          <p class="eyebrow">Battle ${index + 1}</p>
+          <h3>${escapeHtml(result.player_name)} vs ${escapeHtml(result.boss_name)}</h3>
+          <p>${escapeHtml(battleResultLabel(result))} in ${result.turns} turns</p>
+        </div>
+        <code>${escapeHtml(result.battle_id)}</code>
+      </div>`;
+    card.appendChild(iframe);
+    list.appendChild(card);
+  });
+  panel.classList.remove("hidden");
+}
+
+function renderBattleResult(result) {
+  renderBattleResults([result]);
   document.querySelector("#battle-status").textContent = "Battle complete.";
 }
 
@@ -380,7 +420,7 @@ async function startGauntlet() {
       body: JSON.stringify({boss_ids: state.bosses.map(boss => boss.id)}),
     });
     renderDraft(draft);
-    await runNextGauntletBattle();
+    setTimeout(runNextGauntletBattle, 0);
   } catch (error) {
     status.textContent = error.message;
     button.disabled = false;
@@ -409,9 +449,14 @@ async function runNextGauntletBattle() {
     const nextState = await api(`/api/drafts/${state.sessionId}/gauntlet/next`, {
       method: "POST",
     });
+    const shouldContinue = !nextState.gauntlet.complete;
+    if (shouldContinue) {
+      setTimeout(() => {
+        if (state.gauntletRunning) runNextGauntletBattle();
+      }, 500);
+    }
     renderDraft(nextState);
-    if (!nextState.gauntlet.complete) {
-      setTimeout(runNextGauntletBattle, 250);
+    if (shouldContinue) {
       return;
     }
     status.textContent = "Boss rush complete.";
