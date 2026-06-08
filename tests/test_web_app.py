@@ -50,6 +50,7 @@ async def test_frontend_and_static_assets_are_served(client):
     assert "cell-pokemon-sprite" in javascript.text
     assert "escapeHtml(set.export)" in javascript.text
     assert "startGauntlet" in javascript.text
+    assert "previousReplay.replaceWith(nextReplay)" in javascript.text
     assert stylesheet.status_code == 200
     assert "cell-pokemon-sprite-frame" in stylesheet.text
     assert "gauntlet-list" in stylesheet.text

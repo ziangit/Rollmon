@@ -335,7 +335,10 @@ function renderBattleResult(result) {
   document.querySelector("#battle-result").textContent =
     `${label} in ${result.turns} turns`;
   document.querySelector("#battle-id").textContent = result.battle_id;
-  document.querySelector("#battle-replay").srcdoc = replayDocument(result.replay_log);
+  const previousReplay = document.querySelector("#battle-replay");
+  const nextReplay = previousReplay.cloneNode(false);
+  nextReplay.srcdoc = replayDocument(result.replay_log);
+  previousReplay.replaceWith(nextReplay);
   document.querySelector("#battle-result-panel").classList.remove("hidden");
   document.querySelector("#battle-status").textContent = "Battle complete.";
 }
