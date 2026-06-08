@@ -6,8 +6,8 @@ import random
 from dataclasses import dataclass
 from typing import Protocol, Sequence
 
+from rollmons.draft_config import DraftConfig, default_draft_config
 from rollmons.legality_matrix import (
-    DEFAULT_LEGENDARY_WEIGHT,
     Cell,
     LegalityData,
     select_species,
@@ -15,8 +15,6 @@ from rollmons.legality_matrix import (
 )
 
 TEAM_SIZE = 6
-DEFAULT_SKIP_COUNT = 1
-THIN_CELL_MAX_CANDIDATES = 2
 
 
 class DraftRandomSource(Protocol):
@@ -74,13 +72,37 @@ class Draft:
         legality_data: LegalityData,
         *,
         rng: DraftRandomSource | None = None,
-        skip_count: int = DEFAULT_SKIP_COUNT,
-        legendary_weight: float = DEFAULT_LEGENDARY_WEIGHT,
+        config: DraftConfig | None = None,
+        skip_count: int | None = None,
+        legendary_weight: float | None = None,
+        candidate_cap: int | None = None,
+        thin_cell_threshold: int | None = None,
     ):
+        draft_config = config or default_draft_config()
+        skip_count = (
+            draft_config.manual_skip_count if skip_count is None else skip_count
+        )
+        legendary_weight = (
+            draft_config.legendary_weight
+            if legendary_weight is None
+            else legendary_weight
+        )
+        candidate_cap = (
+            draft_config.candidate_cap if candidate_cap is None else candidate_cap
+        )
+        thin_cell_threshold = (
+            draft_config.thin_cell_threshold
+            if thin_cell_threshold is None
+            else thin_cell_threshold
+        )
         if skip_count < 0:
             raise ValueError("skip_count cannot be negative")
         if legendary_weight <= 0:
             raise ValueError("legendary_weight must be greater than zero")
+        if candidate_cap < 1:
+            raise ValueError("candidate_cap must be positive")
+        if thin_cell_threshold < 1:
+            raise ValueError("thin_cell_threshold must be positive")
         available_species = {
             species_id
             for candidates in legality_data.matrix.values()
@@ -94,6 +116,8 @@ class Draft:
         self._legality_data = legality_data
         self._rng = rng or random
         self._legendary_weight = legendary_weight
+        self._candidate_cap = candidate_cap
+        self._thin_cell_threshold = thin_cell_threshold
         self._skips_remaining = skip_count
         self._picks: list[str] = []
         self._current_offer = self._roll_offer()
@@ -154,6 +178,23 @@ class Draft:
             if species_id not in drafted
         )
 
+    def _offer_candidates(self, candidates: tuple[str, ...]) -> tuple[str, ...]:
+        if len(candidates) <= self._candidate_cap:
+            return candidates
+        remaining = list(candidates)
+        offered = []
+        while remaining and len(offered) < self._candidate_cap:
+            weights = [
+                self._legendary_weight
+                if self._legality_data.species[species_id].legendary
+                else 1.0
+                for species_id in remaining
+            ]
+            selected = self._rng.choices(remaining, weights, k=1)[0]
+            offered.append(selected)
+            remaining.remove(selected)
+        return tuple(sorted(offered))
+
     def _fillable_cells(self) -> tuple[Cell, ...]:
         return tuple(
             cell
@@ -170,26 +211,27 @@ class Draft:
         alternatives = tuple(cell for cell in fillable if cell != exclude_cell)
         selectable = alternatives or fillable
         cell = self._rng.choice(selectable)
-        candidates = self._undrafted_candidates(cell)
+        cell_candidates = self._undrafted_candidates(cell)
+        offered_candidates = self._offer_candidates(cell_candidates)
         suggested = select_species(
             cell,
-            {cell: candidates},
+            {cell: offered_candidates},
             self._legality_data.species,
             rng=self._rng,
             legendary_weight=self._legendary_weight,
         )
         probabilities = selection_probabilities(
             cell,
-            {cell: candidates},
+            {cell: offered_candidates},
             self._legality_data.species,
             legendary_weight=self._legendary_weight,
         )
         return DraftOffer(
             round_number=len(self._picks) + 1,
             cell=cell,
-            candidates=candidates,
+            candidates=offered_candidates,
             suggested_species=suggested,
             selection_probabilities=probabilities,
             skips_remaining=self._skips_remaining,
-            thin_reroll_available=len(candidates) <= THIN_CELL_MAX_CANDIDATES,
+            thin_reroll_available=len(cell_candidates) < self._thin_cell_threshold,
         )

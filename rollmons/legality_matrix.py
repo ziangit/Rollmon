@@ -17,6 +17,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Protocol, Sequence
 
+from rollmons.draft_config import DraftConfig
+
 Cell = tuple[str, int]
 
 TYPES = (
@@ -40,7 +42,7 @@ TYPES = (
     "water",
 )
 GENERATIONS = tuple(range(1, 10))
-DEFAULT_LEGENDARY_WEIGHT = 0.25
+DEFAULT_LEGENDARY_WEIGHT = DraftConfig().legendary_weight
 LEGENDARY_BST_THRESHOLD = 600
 LEGENDARY_BST_EXCLUSIONS = {
     "slaking",  # Truant suppresses the stat-ball; raw BST overstates competitive power.

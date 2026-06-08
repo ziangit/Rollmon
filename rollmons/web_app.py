@@ -23,6 +23,7 @@ from rollmons.boss_loader import (
     load_boss_team,
 )
 from rollmons.draft import Draft, DraftError, DraftOffer
+from rollmons.draft_config import DraftConfig, default_draft_config
 from rollmons.legality_matrix import (
     DEFAULT_POKEDEX_PATH,
     GENERATIONS,
@@ -157,7 +158,7 @@ def _item_icon_payload(item_id: str) -> dict | None:
 
 class StartDraftRequest(BaseModel):
     level: int = FIXED_LEVEL
-    skip_count: int = Field(default=1, ge=0)
+    skip_count: int | None = Field(default=None, ge=0)
     seed: int | None = None
 
 
@@ -294,6 +295,7 @@ def _offer_payload(
     smogon_sets,
     set_source: str,
     pokedex,
+    draft_config: DraftConfig,
 ) -> dict | None:
     if offer is None:
         return None
@@ -304,6 +306,8 @@ def _offer_payload(
         "suggested_species": offer.suggested_species,
         "skips_remaining": offer.skips_remaining,
         "thin_reroll_available": offer.thin_reroll_available,
+        "candidate_cap": draft_config.candidate_cap,
+        "thin_cell_threshold": draft_config.thin_cell_threshold,
     }
     for species_id in offer.candidates:
         candidate = _species_payload(
@@ -324,6 +328,7 @@ def create_app(
     battle_config_factory: Callable[[], Any] = _battle_config_from_environment,
 ) -> FastAPI:
     set_source = configured_set_source()
+    draft_config = default_draft_config()
     legality_data = build_legality_data()
     all_cells = build_all_cells(legality_data.species)
     random_battle_sets = load_random_battle_sets()
@@ -365,8 +370,10 @@ def create_app(
                 smogon_sets,
                 set_source,
                 pokedex,
+                draft_config,
             ),
             "skips_remaining": draft.skips_remaining,
+            "draft_config": asdict(draft_config),
             "team_export": session.team_export,
             "battle_result": (
                 asdict(session.battle_result)
@@ -396,7 +403,7 @@ def create_app(
                             "excluded"
                             if not eligible
                             else "thin"
-                            if len(eligible) <= 2
+                            if len(eligible) < draft_config.thin_cell_threshold
                             else "normal"
                         ),
                         "eligible_count": len(eligible),
@@ -444,6 +451,7 @@ def create_app(
             draft=Draft(
                 legality_data,
                 rng=random.Random(seed),
+                config=draft_config,
                 skip_count=request.skip_count,
             ),
             assembly_rng=random.Random(seed + 1),

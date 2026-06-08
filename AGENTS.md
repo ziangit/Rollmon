@@ -88,20 +88,25 @@ and Regigigas (`Slow Start`). Their ability-suppressed stat-balls make raw BST
 overstate competitive power. Exactly-600 pseudo-legendaries and mythicals such
 as Mew, Jirachi, and Victini are normal atoms by design. Do not change this
 back to a tag-based definition. Every nonempty cell is valid; cells with 1-2
-undrafted candidates expose a free optional reroll for that offer. Legendary
-selection weight must remain strictly positive so thin legendary-heavy cells
-cannot soft-lock.
+undrafted candidates expose a free optional reroll for that offer. Draft
+balance knobs live in `rollmons/draft_config.py` and may be overridden by
+environment variables for playtesting. Starting playtest values are candidate
+cap 5, legendary weight 0.10, manual skips 2, and thin-cell threshold `<3`.
+These are explicitly subject to playtest and are not final balance constants.
+Legendary selection weight must remain strictly positive so thin
+legendary-heavy cells cannot soft-lock.
 
 `rollmons/draft.py` implements the six-round headless draft state machine. Each
-offer contains a valid cell, its complete undrafted candidate list, and one
-legendary-weighted suggested pick. The suggestion is a soft nudge only: the
-chooser may select any offered candidate, so legendary Pokemon remain fully
-draftable. The offer also exposes the selector's normalized probability for
-each candidate; consumers must display this engine value rather than
-recomputing weights. Species identity is deduplicated globally across both
-types, the slot-machine guard excludes cells with no undrafted candidates, and
-the default draft has one bounded cell skip. Thin-cell rerolls do not consume
-that skip.
+offer contains a valid cell, up to the configured cap of undrafted candidates
+sampled with the configured legendary weight, and one legendary-weighted
+suggested pick. The suggestion is a soft nudge only: the chooser may select any
+offered candidate, so legendary Pokemon remain fully draftable. The offer also
+exposes the selector's normalized probability for each offered candidate;
+consumers must display this engine value rather than recomputing weights.
+Species identity is deduplicated globally across both types, the slot-machine
+guard excludes cells with no undrafted candidates, and the default draft has
+two bounded manual cell skips. Thin-cell rerolls do not consume that skip and
+do not bank as extra skip currency.
 
 `rollmons/smogon_sets.py` ingests the Smogon JSON. It first excludes set rows
 whose format is Godly Gift, 1v1/1V1, Battle Stadium Singles/BSS, or Monotype

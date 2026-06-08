@@ -47,6 +47,8 @@ async def test_frontend_and_static_assets_are_served(client):
     assert "/api/bosses" in javascript.text
     assert "battlePanel.scrollIntoView" in javascript.text
     assert "thinRerollDraft" in javascript.text
+    assert "Free re-spin (thin cell)" in javascript.text
+    assert "Manual skip" in javascript.text
     assert "cell-pokemon-sprite" in javascript.text
     assert "escapeHtml(set.export)" in javascript.text
     assert "startGauntlet" in javascript.text
@@ -127,16 +129,22 @@ Adamant Nature
 async def test_api_driven_six_round_draft_completes_with_level_100_export(client):
     started = await client.post(
         "/api/drafts",
-        json={"level": 100, "skip_count": 1, "seed": 2026},
+        json={"level": 100, "seed": 2026},
     )
     assert started.status_code == 200
     state = started.json()
     session_id = state["session_id"]
+    assert state["draft_config"] == {
+        "candidate_cap": 5,
+        "legendary_weight": 0.10,
+        "manual_skip_count": 2,
+        "thin_cell_threshold": 3,
+    }
 
     skipped = await client.post(f"/api/drafts/{session_id}/skip")
     assert skipped.status_code == 200
     state = skipped.json()
-    assert state["skips_remaining"] == 0
+    assert state["skips_remaining"] == 1
 
     while not state["complete"]:
         candidates = {item["id"] for item in state["offer"]["candidates"]}
@@ -145,6 +153,7 @@ async def test_api_driven_six_round_draft_completes_with_level_100_export(client
             for item in state["offer"]["candidates"]
         }
         suggested = state["offer"]["suggested_species"]
+        assert len(candidates) <= state["draft_config"]["candidate_cap"]
         assert suggested in candidates
         assert set(probabilities) == candidates
         assert sum(probabilities.values()) == pytest.approx(1)

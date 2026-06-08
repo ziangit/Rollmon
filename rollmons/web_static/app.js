@@ -237,21 +237,22 @@ function renderDraft(draft) {
   battlePanel.classList.add("hidden");
   document.querySelector("#battle-replay-list").innerHTML = "";
   document.querySelector("#battle-result-panel").classList.add("hidden");
-  status.innerHTML = `<strong>Round ${draft.offer.round_number}/6</strong> · ${draft.offer.candidates.length} undrafted candidates`;
+  status.innerHTML = `<strong>Round ${draft.offer.round_number}/6</strong> · ${draft.offer.candidates.length} offered candidates`;
   const thinReroll = draft.offer.thin_reroll_available
-    ? `<button id="thin-reroll" class="thin-reroll-button">Thin cell — reroll available</button>`
+    ? `<button id="thin-reroll" class="thin-reroll-button">Free re-spin (thin cell)</button>`
     : "";
+  const totalSkips = draft.draft_config.manual_skip_count;
   offerRoot.innerHTML = `
     <div class="offer-heading">
       <div>
         <p class="eyebrow">Current cell</p>
         <h3>${draft.offer.cell.type} · Gen ${draft.offer.cell.generation}</h3>
-        ${draft.offer.thin_reroll_available ? "<p class=\"thin-note\">Only 1–2 undrafted choices remain.</p>" : ""}
+        ${draft.offer.thin_reroll_available ? `<p class="thin-note">Fewer than ${draft.offer.thin_cell_threshold} undrafted choices remain; this re-spin is free and not banked.</p>` : ""}
       </div>
       <div class="offer-actions">
         ${thinReroll}
         <button id="skip-draft" class="skip-button" ${draft.skips_remaining ? "" : "disabled"}>
-          Skip (${draft.skips_remaining})
+          Manual skip (${draft.skips_remaining}/${totalSkips})
         </button>
       </div>
     </div>`;
@@ -291,7 +292,7 @@ async function startDraft() {
   try {
     renderDraft(await api("/api/drafts", {
       method: "POST",
-      body: JSON.stringify({level: 100, skip_count: 1}),
+      body: JSON.stringify({level: 100}),
     }));
   } catch (error) {
     document.querySelector("#draft-status").textContent = error.message;

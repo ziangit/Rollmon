@@ -2,6 +2,7 @@ import random
 
 import pytest
 
+from rollmons.draft_config import DraftConfig
 from rollmons.draft import (
     Draft,
     DraftCompleteError,
@@ -27,6 +28,11 @@ class FirstChoiceRng:
 
     def choices(self, population, weights, *, k):
         return [population[0]]
+
+
+class FirstCellWeightedRng(random.Random):
+    def choice(self, sequence):
+        return sequence[0]
 
 
 def test_full_seeded_draft_completes_without_duplicates():
@@ -100,14 +106,16 @@ def test_near_exhausted_cell_is_never_offered():
 
 
 def test_skip_rerolls_cell_and_is_bounded():
-    draft = Draft(build_legality_data(), rng=random.Random(14), skip_count=1)
+    draft = Draft(build_legality_data(), rng=random.Random(14), skip_count=2)
     original_cell = draft.current_offer.cell
 
-    replacement = draft.use_skip()
+    first_replacement = draft.use_skip()
+    second_replacement = draft.use_skip()
 
-    assert replacement.cell != original_cell
+    assert first_replacement.cell != original_cell
+    assert second_replacement.cell
     assert draft.skips_remaining == 0
-    assert replacement.skips_remaining == 0
+    assert second_replacement.skips_remaining == 0
     with pytest.raises(NoSkipsRemainingError):
         draft.use_skip()
 
@@ -134,24 +142,183 @@ def test_thin_landing_offers_free_reroll_without_consuming_skip():
             ),
         },
     )
-    draft = Draft(data, rng=FirstChoiceRng(), skip_count=1)
+    draft = Draft(data, rng=FirstChoiceRng(), skip_count=2)
 
     assert draft.current_offer.thin_reroll_available
     replacement = draft.use_thin_reroll()
 
     assert replacement.cell == ("water", 1)
     assert not replacement.thin_reroll_available
-    assert draft.skips_remaining == 1
+    assert draft.skips_remaining == 2
     with pytest.raises(ThinRerollUnavailableError):
         draft.use_thin_reroll()
 
 
-def test_offer_exposes_full_candidate_list_and_soft_suggestion():
+def test_thin_reroll_does_not_accumulate_skip_currency():
+    species = {
+        species_id: SpeciesMetadata(
+            species_id=species_id,
+            name=species_id,
+            types=("fire",) if species_id == "thin" else ("water",),
+            debut_generation=1,
+            base_stat_total=500,
+            legendary=False,
+        )
+        for species_id in ("thin", "two", "three", "four", "five", "six", "seven")
+    }
+    data = LegalityData(
+        atoms=tuple(species),
+        species=species,
+        matrix={
+            ("fire", 1): ("thin",),
+            ("water", 1): tuple(
+                species_id for species_id in species if species_id != "thin"
+            ),
+        },
+    )
+    draft = Draft(data, rng=FirstChoiceRng(), skip_count=0)
+
+    assert draft.current_offer.thin_reroll_available
+    draft.use_thin_reroll()
+
+    assert draft.skips_remaining == 0
+    with pytest.raises(NoSkipsRemainingError):
+        draft.use_skip()
+
+
+def test_offer_caps_overstuffed_cell_to_configured_candidate_count():
+    species = {
+        species_id: SpeciesMetadata(
+            species_id=species_id,
+            name=species_id,
+            types=("water",),
+            debut_generation=1,
+            base_stat_total=500,
+            legendary=False,
+        )
+        for species_id in (
+            "eight",
+            "five",
+            "four",
+            "nine",
+            "one",
+            "seven",
+            "six",
+            "three",
+            "two",
+        )
+    }
+    data = LegalityData(
+        atoms=tuple(species),
+        species=species,
+        matrix={("water", 1): tuple(species), ("fire", 1): ("one",)},
+    )
+    draft = Draft(
+        data,
+        rng=FirstChoiceRng(),
+        config=DraftConfig(candidate_cap=5),
+    )
+
+    assert len(draft.current_offer.candidates) == 5
+    assert set(draft.current_offer.candidates).issubset(species)
+
+
+def test_small_cells_are_not_candidate_capped():
+    species = {
+        species_id: SpeciesMetadata(
+            species_id=species_id,
+            name=species_id,
+            types=("water",),
+            debut_generation=1,
+            base_stat_total=500,
+            legendary=False,
+        )
+        for species_id in ("one", "two", "three", "four", "five")
+    }
+    species["extra"] = SpeciesMetadata(
+        species_id="extra",
+        name="extra",
+        types=("fire",),
+        debut_generation=1,
+        base_stat_total=500,
+        legendary=False,
+    )
+    data = LegalityData(
+        atoms=tuple(species),
+        species=species,
+        matrix={
+            ("water", 1): ("one", "two", "three", "four", "five"),
+            ("fire", 1): ("extra",),
+        },
+    )
+    draft = Draft(
+        data,
+        rng=FirstChoiceRng(),
+        config=DraftConfig(candidate_cap=5),
+    )
+
+    assert draft.current_offer.candidates == data.matrix[("water", 1)]
+
+
+def test_offer_cap_uses_legendary_weight_for_candidate_sampling():
+    species = {
+        "normal": SpeciesMetadata(
+            species_id="normal",
+            name="normal",
+            types=("water",),
+            debut_generation=1,
+            base_stat_total=500,
+            legendary=False,
+        ),
+        "legend": SpeciesMetadata(
+            species_id="legend",
+            name="legend",
+            types=("water",),
+            debut_generation=1,
+            base_stat_total=700,
+            legendary=True,
+        ),
+        **{
+            f"extra{index}": SpeciesMetadata(
+                species_id=f"extra{index}",
+                name=f"extra{index}",
+                types=("fire",),
+                debut_generation=1,
+                base_stat_total=500,
+                legendary=False,
+            )
+            for index in range(4)
+        },
+    }
+    data = LegalityData(
+        atoms=tuple(species),
+        species=species,
+        matrix={
+            ("water", 1): ("normal", "legend"),
+            ("fire", 1): tuple(f"extra{index}" for index in range(4)),
+        },
+    )
+    rng = FirstCellWeightedRng(12345)
+    picks = [
+        Draft(
+            data,
+            rng=rng,
+            config=DraftConfig(candidate_cap=1, legendary_weight=0.10),
+        ).current_offer.candidates[0]
+        for _ in range(5_000)
+    ]
+    ratio = picks.count("legend") / picks.count("normal")
+
+    assert ratio == pytest.approx(0.10, abs=0.025)
+
+
+def test_offer_exposes_capped_candidate_list_and_soft_suggestion():
     data = build_legality_data()
     draft = Draft(data, rng=random.Random(5))
     offer = draft.current_offer
 
-    assert offer.candidates == data.matrix[offer.cell]
+    assert set(offer.candidates).issubset(data.matrix[offer.cell])
+    assert 1 <= len(offer.candidates) <= DraftConfig().candidate_cap
     assert offer.suggested_species in offer.candidates
     assert set(offer.selection_probabilities) == set(offer.candidates)
     assert sum(offer.selection_probabilities.values()) == pytest.approx(1)
