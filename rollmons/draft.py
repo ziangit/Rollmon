@@ -11,6 +11,7 @@ from rollmons.legality_matrix import (
     Cell,
     LegalityData,
     select_species,
+    selection_weight,
     selection_probabilities,
 )
 
@@ -75,6 +76,7 @@ class Draft:
         config: DraftConfig | None = None,
         skip_count: int | None = None,
         legendary_weight: float | None = None,
+        arceus_weight: float | None = None,
         candidate_cap: int | None = None,
         thin_cell_threshold: int | None = None,
     ):
@@ -86,6 +88,9 @@ class Draft:
             draft_config.legendary_weight
             if legendary_weight is None
             else legendary_weight
+        )
+        arceus_weight = (
+            draft_config.arceus_weight if arceus_weight is None else arceus_weight
         )
         candidate_cap = (
             draft_config.candidate_cap if candidate_cap is None else candidate_cap
@@ -99,6 +104,8 @@ class Draft:
             raise ValueError("skip_count cannot be negative")
         if legendary_weight <= 0:
             raise ValueError("legendary_weight must be greater than zero")
+        if arceus_weight <= 0:
+            raise ValueError("arceus_weight must be greater than zero")
         if candidate_cap < 1:
             raise ValueError("candidate_cap must be positive")
         if thin_cell_threshold < 1:
@@ -116,6 +123,7 @@ class Draft:
         self._legality_data = legality_data
         self._rng = rng or random
         self._legendary_weight = legendary_weight
+        self._arceus_weight = arceus_weight
         self._candidate_cap = candidate_cap
         self._thin_cell_threshold = thin_cell_threshold
         self._skips_remaining = skip_count
@@ -185,9 +193,11 @@ class Draft:
         offered = []
         while remaining and len(offered) < self._candidate_cap:
             weights = [
-                self._legendary_weight
-                if self._legality_data.species[species_id].legendary
-                else 1.0
+                selection_weight(
+                    self._legality_data.species[species_id],
+                    legendary_weight=self._legendary_weight,
+                    arceus_weight=self._arceus_weight,
+                )
                 for species_id in remaining
             ]
             selected = self._rng.choices(remaining, weights, k=1)[0]
@@ -219,12 +229,14 @@ class Draft:
             self._legality_data.species,
             rng=self._rng,
             legendary_weight=self._legendary_weight,
+            arceus_weight=self._arceus_weight,
         )
         probabilities = selection_probabilities(
             cell,
             {cell: offered_candidates},
             self._legality_data.species,
             legendary_weight=self._legendary_weight,
+            arceus_weight=self._arceus_weight,
         )
         return DraftOffer(
             round_number=len(self._picks) + 1,

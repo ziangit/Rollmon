@@ -37,6 +37,8 @@ from rollmons.legality_matrix import (
 from rollmons.smogon_sets import load_usable_smogon_sets
 from rollmons.submissions import (
     BattleEntityNotFoundError,
+    SubmissionError,
+    parse_showdown_export,
     verify_team_entities_exist,
 )
 from rollmons.team_assembly import (
@@ -172,6 +174,16 @@ class BattleRequest(BaseModel):
 
 class GauntletStartRequest(BaseModel):
     boss_ids: list[str] | None = None
+    stop_on_loss: bool = False
+
+
+class CustomBossRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    export: str = Field(min_length=1)
+
+
+BOSS_ORDER_MIN = 1
+BOSS_ORDER_MAX = 10
 
 
 @dataclass
@@ -183,6 +195,7 @@ class DraftSession:
     gauntlet_boss_ids: tuple[str, ...] = ()
     gauntlet_next_index: int = 0
     gauntlet_results: list[Any] | None = None
+    gauntlet_stop_on_loss: bool = False
 
 
 def _battle_config_from_environment():
@@ -211,22 +224,37 @@ def _run_live_battle(*args, **kwargs):
     return run_battle(*args, **kwargs)
 
 
-def _gauntlet_payload(session: DraftSession) -> dict:
+def _gauntlet_payload(
+    session: DraftSession,
+    *,
+    boss_name_lookup: Callable[[str], str] = boss_display_name,
+) -> dict:
     boss_ids = session.gauntlet_boss_ids
     next_index = session.gauntlet_next_index
     results = session.gauntlet_results or []
+    complete = bool(boss_ids) and next_index >= len(boss_ids)
+    summary = None
+    if complete and results:
+        wins = sum(1 for result in results if result.winner == "player")
+        losses = sum(1 for result in results if result.winner == "boss")
+        ties = sum(1 for result in results if result.winner == "tie")
+        average_turns = sum(result.turns for result in results) / len(results)
+        record = f"{wins}-{losses}-{ties}" if ties else f"{wins}-{losses}"
+        summary = f"Your record is {record}! Average turn is {average_turns:.1f}."
     return {
         "bosses": [
             {
                 "id": boss_id,
-                "name": boss_display_name(boss_id),
+                "name": boss_name_lookup(boss_id),
                 "complete": index < next_index,
                 "current": index == next_index and next_index < len(boss_ids),
             }
             for index, boss_id in enumerate(boss_ids)
         ],
         "next_index": next_index,
-        "complete": bool(boss_ids) and next_index >= len(boss_ids),
+        "complete": complete,
+        "summary": summary,
+        "stop_on_loss": session.gauntlet_stop_on_loss,
         "results": [asdict(result) for result in results],
     }
 
@@ -335,8 +363,51 @@ def create_app(
     smogon_sets = load_usable_smogon_sets() if set_source == "smogon" else {}
     pokedex = json.loads(DEFAULT_POKEDEX_PATH.read_text(encoding="utf-8"))
     sessions: dict[str, DraftSession] = {}
+    custom_bosses: dict[str, dict[str, str]] = {}
     app = FastAPI(title="rollmons draft harness")
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+    def boss_name_for_id(boss_id: str) -> str:
+        if boss_id in custom_bosses:
+            return custom_bosses[boss_id]["name"]
+        return boss_display_name(boss_id)
+
+    def boss_team_for_id(boss_id: str) -> str:
+        if boss_id in custom_bosses:
+            return custom_bosses[boss_id]["export"]
+        return load_boss_team(boss_id)
+
+    def boss_payloads() -> list[dict[str, str]]:
+        file_bosses = [
+            {
+                "id": boss_id,
+                "name": boss_name_for_id(boss_id),
+                "source": "edited" if boss_id in custom_bosses else "file",
+            }
+            for boss_id in list_boss_ids()
+        ]
+        pasted_bosses = [
+            {
+                "id": boss_id,
+                "name": boss["name"],
+                "source": "custom",
+            }
+            for boss_id, boss in custom_bosses.items()
+        ]
+        return file_bosses + pasted_bosses
+
+    def validate_boss_export(name: str, export_text: str) -> str:
+        cleaned_export = export_text.strip()
+        try:
+            parse_showdown_export(
+                cleaned_export,
+                expected_members=6,
+                source=name,
+            )
+            verify_team_entities_exist(boss=cleaned_export)
+        except (SubmissionError, BattleEntityNotFoundError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return cleaned_export
 
     def get_session(session_id: str) -> DraftSession:
         session = sessions.get(session_id)
@@ -380,7 +451,10 @@ def create_app(
                 if session.battle_result is not None
                 else None
             ),
-            "gauntlet": _gauntlet_payload(session),
+            "gauntlet": _gauntlet_payload(
+                session,
+                boss_name_lookup=boss_name_for_id,
+            ),
         }
 
     @app.get("/", include_in_schema=False)
@@ -430,13 +504,56 @@ def create_app(
 
     @app.get("/api/bosses")
     def bosses():
-        return [
-            {
+        return boss_payloads()
+
+    @app.get("/api/bosses/{boss_id}")
+    def boss_detail(boss_id: str):
+        try:
+            return {
                 "id": boss_id,
-                "name": boss_display_name(boss_id),
+                "name": boss_name_for_id(boss_id),
+                "source": "custom"
+                if boss_id.startswith("custom-")
+                else "edited"
+                if boss_id in custom_bosses
+                else "file",
+                "export": boss_team_for_id(boss_id),
             }
-            for boss_id in list_boss_ids()
-        ]
+        except BossTeamError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/api/bosses/custom")
+    def add_custom_boss(request: CustomBossRequest):
+        export_text = validate_boss_export(request.name, request.export)
+        boss_id = f"custom-{uuid.uuid4().hex}"
+        custom_bosses[boss_id] = {
+            "id": boss_id,
+            "name": request.name.strip(),
+            "export": export_text,
+        }
+        return {
+            "id": boss_id,
+            "name": custom_bosses[boss_id]["name"],
+            "source": "custom",
+        }
+
+    @app.put("/api/bosses/{boss_id}")
+    def edit_boss(boss_id: str, request: CustomBossRequest):
+        try:
+            boss_team_for_id(boss_id)
+        except BossTeamError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        export_text = validate_boss_export(request.name, request.export)
+        custom_bosses[boss_id] = {
+            "id": boss_id,
+            "name": request.name.strip(),
+            "export": export_text,
+        }
+        return {
+            "id": boss_id,
+            "name": custom_bosses[boss_id]["name"],
+            "source": "custom" if boss_id.startswith("custom-") else "edited",
+        }
 
     @app.post("/api/drafts")
     def start_draft(request: StartDraftRequest):
@@ -501,8 +618,8 @@ def create_app(
         if not session.draft.complete or session.team_export is None:
             raise HTTPException(status_code=409, detail="draft is not complete")
         try:
-            boss_team = load_boss_team(request.boss_id)
-            boss_name = boss_display_name(request.boss_id)
+            boss_team = boss_team_for_id(request.boss_id)
+            boss_name = boss_name_for_id(request.boss_id)
             verify_team_entities_exist(
                 player=session.team_export,
                 boss=boss_team,
@@ -522,35 +639,25 @@ def create_app(
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         return serialize_session(session_id, session)
 
-    def validate_gauntlet(session: DraftSession, boss_ids: tuple[str, ...]) -> None:
-        errors = []
-        for boss_id in boss_ids:
-            try:
-                boss_team = load_boss_team(boss_id)
-                verify_team_entities_exist(
-                    player=session.team_export or "",
-                    boss=boss_team,
-                )
-            except (BossTeamError, BattleEntityNotFoundError) as exc:
-                errors.append(f"{boss_id}: {exc}")
-        if errors:
-            raise HTTPException(
-                status_code=422,
-                detail="invalid gauntlet boss team(s): " + "; ".join(errors),
-            )
-
     @app.post("/api/drafts/{session_id}/gauntlet/start")
     def start_gauntlet(session_id: str, request: GauntletStartRequest):
         session = get_session(session_id)
         if not session.draft.complete or session.team_export is None:
             raise HTTPException(status_code=409, detail="draft is not complete")
-        boss_ids = tuple(request.boss_ids or list_boss_ids())
-        if not boss_ids:
+        boss_ids = tuple(
+            list_boss_ids() if request.boss_ids is None else request.boss_ids
+        )
+        if len(boss_ids) < BOSS_ORDER_MIN:
             raise HTTPException(status_code=404, detail="no boss teams found")
-        validate_gauntlet(session, boss_ids)
+        if len(boss_ids) > BOSS_ORDER_MAX:
+            raise HTTPException(
+                status_code=422,
+                detail=f"boss rush supports at most {BOSS_ORDER_MAX} bosses",
+            )
         session.gauntlet_boss_ids = boss_ids
         session.gauntlet_next_index = 0
         session.gauntlet_results = []
+        session.gauntlet_stop_on_loss = request.stop_on_loss
         return serialize_session(session_id, session)
 
     @app.post("/api/drafts/{session_id}/gauntlet/next")
@@ -564,8 +671,8 @@ def create_app(
             return serialize_session(session_id, session)
         boss_id = session.gauntlet_boss_ids[session.gauntlet_next_index]
         try:
-            boss_team = load_boss_team(boss_id)
-            boss_name = boss_display_name(boss_id)
+            boss_team = boss_team_for_id(boss_id)
+            boss_name = boss_name_for_id(boss_id)
             verify_team_entities_exist(
                 player=session.team_export,
                 boss=boss_team,
@@ -588,6 +695,8 @@ def create_app(
         session.gauntlet_results.append(result)
         session.battle_result = result
         session.gauntlet_next_index += 1
+        if session.gauntlet_stop_on_loss and result.winner != "player":
+            session.gauntlet_next_index = len(session.gauntlet_boss_ids)
         return serialize_session(session_id, session)
 
     return app

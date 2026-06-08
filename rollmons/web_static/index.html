@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>rollmons draft harness</title>
-    <link rel="stylesheet" href="/static/styles.css?v=20260608-draft-tuning">
+    <link rel="stylesheet" href="/static/styles.css?v=20260608-boss-editor">
   </head>
   <body>
     <header>
@@ -53,13 +53,26 @@
           Start a draft to roll the first cell.
         </div>
         <div class="draft-layout">
-          <section>
+          <section class="draft-main">
             <div id="current-offer"></div>
             <div id="candidate-list" class="candidate-grid"></div>
+            <section id="battle-result-panel" class="panel battle-result-panel hidden">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">Boss rush</p>
+                  <h2>Completed replays</h2>
+                </div>
+              </div>
+              <div id="battle-replay-list" class="battle-replay-list"></div>
+              <p id="battle-replay-summary" class="gauntlet-summary"></p>
+            </section>
           </section>
-          <aside>
+          <aside class="draft-sidebar">
             <div class="panel">
-              <h3>Team</h3>
+              <div class="panel-heading">
+                <h3>Team</h3>
+                <button id="copy-team-export" class="copy-button" disabled>Copy export</button>
+              </div>
               <ol id="team-slots" class="team-slots"></ol>
             </div>
             <div id="battle-panel" class="panel hidden">
@@ -72,27 +85,37 @@
               </label>
               <button id="battle-boss" class="primary">Battle this boss</button>
               <button id="start-gauntlet" class="primary">Start boss rush</button>
+              <button id="start-real-gauntlet" class="primary">Real boss rush</button>
+              <div class="boss-order-panel">
+                <p class="mini-heading">Boss order</p>
+                <ol id="boss-order-list" class="boss-order-list"></ol>
+              </div>
+              <form id="custom-boss-form" class="custom-boss-form">
+                <p id="boss-form-heading" class="mini-heading">Add or edit boss</p>
+                <input id="custom-boss-id" name="bossId" type="hidden">
+                <label class="boss-field" for="custom-boss-name">
+                  Boss name
+                  <input id="custom-boss-name" name="name" autocomplete="off">
+                </label>
+                <label class="boss-field" for="custom-boss-export">
+                  PokePaste export
+                  <textarea id="custom-boss-export" name="export" rows="8"></textarea>
+                </label>
+                <div class="boss-form-actions">
+                  <button id="save-boss" class="copy-button" type="submit">Add boss</button>
+                  <button id="cancel-boss-edit" class="copy-button subtle" type="button">Cancel edit</button>
+                </div>
+                <p id="custom-boss-status" class="battle-status"></p>
+              </form>
               <p id="battle-status" class="battle-status"></p>
+              <p id="gauntlet-summary" class="gauntlet-summary"></p>
               <ol id="gauntlet-list" class="gauntlet-list"></ol>
-            </div>
-            <div id="team-export-panel" class="panel hidden">
-              <h3>Showdown export</h3>
-              <pre id="team-export"></pre>
             </div>
           </aside>
         </div>
-        <section id="battle-result-panel" class="panel battle-result-panel hidden">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Boss rush</p>
-              <h2>Completed replays</h2>
-            </div>
-          </div>
-          <div id="battle-replay-list" class="battle-replay-list"></div>
-        </section>
       </section>
     </main>
 
-    <script src="/static/app.js?v=20260608-draft-tuning"></script>
+    <script src="/static/app.js?v=20260608-boss-editor"></script>
   </body>
 </html>

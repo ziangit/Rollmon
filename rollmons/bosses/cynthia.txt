@@ -1,4 +1,4 @@
-Garchomp @ Garchompite
+Garchomp @ Life Orb
 Ability: Rough Skin  
 EVs: 4 HP / 252 Atk / 252 Spe  
 Adamant Nature  
@@ -38,8 +38,8 @@ IVs: 0 Atk
 - Ancient Power  
 - Flamethrower  
 
-Lucario @ Life Orb  
-Ability: Inner Focus  
+Lucario-Mega @ Lucarionite
+Ability: Adaptability
 Tera Type: Normal  
 EVs: 252 Atk / 4 SpD / 252 Spe  
 Jolly Nature  

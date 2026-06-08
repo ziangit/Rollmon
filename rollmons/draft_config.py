@@ -6,6 +6,7 @@ checked-in playtest defaults:
 
 - ROLLMONS_DRAFT_CANDIDATE_CAP: max offered candidates from one cell.
 - ROLLMONS_DRAFT_LEGENDARY_WEIGHT: relative legendary offer/suggestion weight.
+- ROLLMONS_DRAFT_ARCEUS_WEIGHT: relative Arceus-forme offer/suggestion weight.
 - ROLLMONS_DRAFT_MANUAL_SKIPS: manual cell skips per draft.
 - ROLLMONS_DRAFT_THIN_CELL_THRESHOLD: cells below this size get a free reroll.
 """
@@ -20,6 +21,7 @@ from dataclasses import dataclass
 class DraftConfig:
     candidate_cap: int = 5
     legendary_weight: float = 0.10
+    arceus_weight: float = 0.05
     manual_skip_count: int = 2
     thin_cell_threshold: int = 3
 
@@ -28,6 +30,8 @@ class DraftConfig:
             raise ValueError("candidate_cap must be positive")
         if self.legendary_weight <= 0:
             raise ValueError("legendary_weight must be greater than zero")
+        if self.arceus_weight <= 0:
+            raise ValueError("arceus_weight must be greater than zero")
         if self.manual_skip_count < 0:
             raise ValueError("manual_skip_count cannot be negative")
         if self.thin_cell_threshold < 1:
@@ -54,6 +58,10 @@ def default_draft_config() -> DraftConfig:
         legendary_weight=_float_from_env(
             "ROLLMONS_DRAFT_LEGENDARY_WEIGHT",
             base.legendary_weight,
+        ),
+        arceus_weight=_float_from_env(
+            "ROLLMONS_DRAFT_ARCEUS_WEIGHT",
+            base.arceus_weight,
         ),
         manual_skip_count=_int_from_env(
             "ROLLMONS_DRAFT_MANUAL_SKIPS",

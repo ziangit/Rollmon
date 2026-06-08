@@ -31,7 +31,7 @@ h1 { margin-bottom: .4rem; }
 }
 
 nav { display: flex; gap: .5rem; }
-.tab, .primary, .skip-button, .thin-reroll-button, .pick-button {
+.tab, .primary, .skip-button, .thin-reroll-button, .pick-button, .copy-button {
   border: 0;
   border-radius: .45rem;
   cursor: pointer;
@@ -126,6 +126,27 @@ main { padding: 2rem 3rem 4rem; }
   background: white;
   padding: 1rem;
 }
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  align-items: center;
+  margin-bottom: .75rem;
+}
+.panel-heading h3 {
+  margin-bottom: 0;
+}
+.copy-button {
+  flex: 0 0 auto;
+  padding: .45rem .65rem;
+  background: #27344d;
+  color: white;
+  font-size: .78rem;
+}
+.copy-button.subtle {
+  background: #e7edf5;
+  color: #27344d;
+}
 .pokemon-list, .team-slots { margin: 0; padding-left: 1.25rem; }
 .pokemon-list li, .team-slots li { margin-bottom: .65rem; }
 .cell-pokemon-list {
@@ -164,15 +185,48 @@ main { padding: 2rem 3rem 4rem; }
   border-radius: 99px;
   padding: .18rem .45rem;
   background: #e7edf5;
+  color: #1c2430;
   font-size: .72rem;
+  font-weight: 700;
   text-transform: capitalize;
 }
+.type-bug { background: #a6b91a; color: #202604; }
+.type-dark { background: #705746; color: #fff; }
+.type-dragon { background: #6f35fc; color: #fff; }
+.type-electric { background: #f7d02c; color: #332a00; }
+.type-fairy { background: #d685ad; color: #fff; }
+.type-fighting { background: #c22e28; color: #fff; }
+.type-fire { background: #ee8130; color: #fff; }
+.type-flying { background: #a98ff3; color: #241947; }
+.type-ghost { background: #735797; color: #fff; }
+.type-grass { background: #7ac74c; color: #123109; }
+.type-ground { background: #e2bf65; color: #352605; }
+.type-ice { background: #96d9d6; color: #073433; }
+.type-normal { background: #a8a77a; color: #24240d; }
+.type-poison { background: #a33ea1; color: #fff; }
+.type-psychic { background: #f95587; color: #fff; }
+.type-rock { background: #b6a136; color: #2f2704; }
+.type-steel { background: #b7b7ce; color: #202033; }
+.type-water { background: #6390f0; color: #fff; }
 .legendary-marker { background: #fff0ba; color: #6b5000; }
 
 .draft-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 1rem;
+  margin-top: 1rem;
+}
+.draft-main {
+  min-width: 0;
+}
+.draft-sidebar {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+.draft-sidebar .panel + .panel {
   margin-top: 1rem;
 }
 .draft-status { margin-bottom: 1rem; }
@@ -328,6 +382,69 @@ pre {
   margin-bottom: 0;
   color: #596575;
 }
+.team-slots {
+  display: grid;
+  gap: .75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.team-slots li {
+  margin-bottom: 0;
+}
+.team-card {
+  border: 1px solid #d6dce4;
+  border-radius: .45rem;
+  padding: .65rem;
+  background: #fff;
+}
+.team-card-heading {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: .6rem;
+  align-items: center;
+  margin-bottom: .55rem;
+}
+.team-pokemon-sprite-frame {
+  display: flex;
+  width: 64px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  border-radius: .35rem;
+  background: #f2f5f8;
+}
+.team-pokemon-sprite {
+  max-width: 60px;
+  max-height: 60px;
+  object-fit: contain;
+}
+.team-pokemon-meta {
+  min-width: 0;
+}
+.team-pokemon-meta strong {
+  display: block;
+  overflow-wrap: anywhere;
+  text-transform: capitalize;
+}
+.team-pokemon-meta p {
+  margin: .25rem 0 0;
+  color: #596575;
+  font-size: .76rem;
+}
+.team-empty {
+  border: 1px dashed #bac2cc;
+  border-radius: .45rem;
+  padding: .7rem;
+  color: #667384;
+  background: #f8fafc;
+}
+.team-card .set-details {
+  padding: .55rem .6rem;
+}
+.team-card .pokepaste-set {
+  font-size: .72rem;
+}
 .boss-field {
   display: grid;
   gap: .35rem;
@@ -335,7 +452,9 @@ pre {
   font-size: .82rem;
   font-weight: 700;
 }
-.boss-field select {
+.boss-field select,
+.boss-field input,
+.boss-field textarea {
   width: 100%;
   border: 1px solid #bac2cc;
   border-radius: .4rem;
@@ -343,6 +462,78 @@ pre {
   background: white;
   color: #1c2430;
   font: inherit;
+}
+.boss-field textarea {
+  min-height: 9rem;
+  resize: vertical;
+}
+.mini-heading {
+  margin: .85rem 0 .45rem;
+  color: #596575;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.boss-order-list {
+  display: grid;
+  gap: .35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.boss-order-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: .5rem;
+  align-items: center;
+  border: 1px solid #d6dce4;
+  border-radius: .4rem;
+  padding: .45rem .55rem;
+  background: #f8fafc;
+  font-size: .82rem;
+}
+.boss-order-list li.dragging {
+  opacity: .55;
+}
+.boss-order-list li.drag-over {
+  border-color: #4f8cff;
+  background: #edf4ff;
+}
+.boss-drag-handle {
+  cursor: grab;
+  color: #596575;
+  font-weight: 700;
+  letter-spacing: -.08em;
+}
+.boss-order-list li > span:nth-child(2) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.boss-order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .3rem;
+}
+.boss-edit,
+.boss-discard {
+  padding: .32rem .45rem;
+  font-size: .72rem;
+}
+.boss-discard {
+  background: #78313c;
+}
+.custom-boss-form {
+  margin-top: .85rem;
+  border-top: 1px solid #d6dce4;
+  padding-top: .15rem;
+}
+.boss-form-actions {
+  display: flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+  margin-top: .55rem;
 }
 .gauntlet-list {
   display: grid;
@@ -381,6 +572,18 @@ pre {
 .gauntlet-list small {
   color: #596575;
   white-space: nowrap;
+}
+.gauntlet-summary {
+  margin: .6rem 0 0;
+  border: 1px solid #67a875;
+  border-radius: .4rem;
+  padding: .55rem .65rem;
+  background: #eef9f1;
+  color: #21472b;
+  font-weight: 700;
+}
+.gauntlet-summary:empty {
+  display: none;
 }
 #battle-panel {
   margin-bottom: 1rem;
@@ -436,6 +639,11 @@ pre {
 @media (max-width: 980px) {
   header, .section-heading { align-items: start; flex-direction: column; }
   .matrix-layout, .draft-layout { grid-template-columns: 1fr; }
+  .draft-sidebar {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
   main, header { padding-left: 1rem; padding-right: 1rem; }
 }
 

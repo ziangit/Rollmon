@@ -43,6 +43,7 @@ TYPES = (
 )
 GENERATIONS = tuple(range(1, 10))
 DEFAULT_LEGENDARY_WEIGHT = DraftConfig().legendary_weight
+DEFAULT_ARCEUS_WEIGHT = DraftConfig().arceus_weight
 LEGENDARY_BST_THRESHOLD = 600
 LEGENDARY_BST_EXCLUSIONS = {
     "slaking",  # Truant suppresses the stat-ball; raw BST overstates competitive power.
@@ -243,6 +244,21 @@ def cells_for_species(metadata: SpeciesMetadata) -> tuple[Cell, ...]:
     )
 
 
+def selection_weight(
+    metadata: SpeciesMetadata,
+    *,
+    legendary_weight: float = DEFAULT_LEGENDARY_WEIGHT,
+    arceus_weight: float = DEFAULT_ARCEUS_WEIGHT,
+) -> float:
+    """Return the configured relative draft weight for one atom."""
+
+    if metadata.species_id.startswith("arceus"):
+        return arceus_weight
+    if metadata.legendary:
+        return legendary_weight
+    return 1.0
+
+
 def build_legality_data(
     *,
     randbats_path: str | Path = DEFAULT_RANDBATS_PATH,
@@ -302,17 +318,24 @@ def selection_probabilities(
     species: Mapping[str, SpeciesMetadata],
     *,
     legendary_weight: float = DEFAULT_LEGENDARY_WEIGHT,
+    arceus_weight: float = DEFAULT_ARCEUS_WEIGHT,
 ) -> dict[str, float]:
     """Return the selector's normalized probability for every eligible atom."""
 
     if legendary_weight <= 0:
         raise ValueError("legendary_weight must be greater than zero")
+    if arceus_weight <= 0:
+        raise ValueError("arceus_weight must be greater than zero")
     eligible = tuple(matrix.get(cell, ()))
     if not eligible:
         raise KeyError(f"cell is not eligible: {cell}")
     try:
         weights = [
-            legendary_weight if species[species_id].legendary else 1.0
+            selection_weight(
+                species[species_id],
+                legendary_weight=legendary_weight,
+                arceus_weight=arceus_weight,
+            )
             for species_id in eligible
         ]
     except KeyError as exc:
@@ -333,6 +356,7 @@ def select_species(
     *,
     rng: RandomSource | None = None,
     legendary_weight: float = DEFAULT_LEGENDARY_WEIGHT,
+    arceus_weight: float = DEFAULT_ARCEUS_WEIGHT,
 ) -> str:
     """Select one eligible atom, down-weighting but never banning legendaries."""
 
@@ -341,6 +365,7 @@ def select_species(
         matrix,
         species,
         legendary_weight=legendary_weight,
+        arceus_weight=arceus_weight,
     )
     random_source = rng or random
     return random_source.choices(

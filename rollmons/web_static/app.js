@@ -3,7 +3,10 @@ const state = {
   bosses: [],
   sessionId: null,
   gauntletRunning: false,
+  teamExport: "",
 };
+const MIN_BOSSES = 1;
+const MAX_BOSSES = 10;
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -17,7 +20,7 @@ async function api(path, options = {}) {
 
 function chips(pokemon) {
   const types = pokemon.types
-    .map(type => `<span class="type-chip">${type}</span>`)
+    .map(type => `<span class="type-chip type-${type.toLowerCase()}">${type}</span>`)
     .join("");
   const legendary = pokemon.legendary
     ? `<span class="legendary-marker">Legendary</span>`
@@ -48,7 +51,8 @@ function itemIcon(icon, itemName) {
     </span>`;
 }
 
-function setDetails(pokemon) {
+function setDetails(pokemon, options = {}) {
+  const showRoleNote = options.showRoleNote !== false;
   const set = pokemon.randbats_set;
   const spread = pokemon.assembly_spread;
   const source = set.source === "smogon" ? "Smogon" : "Randbats";
@@ -58,13 +62,13 @@ function setDetails(pokemon) {
   if (set.export) {
     return `
       <div class="set-details" aria-label="${pokemon.name} representative set">
-        <p class="role-note">${roles}${set.format ? ` · ${set.format}` : ""}</p>
+        ${showRoleNote ? `<p class="role-note">${roles}${set.format ? ` · ${set.format}` : ""}</p>` : ""}
         <pre class="pokepaste-set">${escapeHtml(set.export)}</pre>
       </div>`;
   }
   return `
     <div class="set-details" aria-label="${pokemon.name} representative set">
-      <p class="role-note">${roles}</p>
+      ${showRoleNote ? `<p class="role-note">${roles}</p>` : ""}
       <div class="set-first-line">
         <code>${pokemon.name}${set.item ? ` @ ${displayId(set.item)}` : ""}</code>
         ${itemIcon(set.item_icon, set.item)}
@@ -148,12 +152,39 @@ function renderCell(cell, button) {
 
 function renderTeam(team) {
   const slots = document.querySelector("#team-slots");
+  const copyButton = document.querySelector("#copy-team-export");
   const entries = [...team];
   while (entries.length < 6) entries.push(null);
   slots.innerHTML = entries.map((pokemon, index) => pokemon
-    ? `<li><strong>${pokemon.name}</strong><br>${chips(pokemon)}</li>`
-    : `<li>Empty slot ${index + 1}</li>`
+    ? `<li class="team-card">
+        <div class="team-card-heading">
+          <span class="team-pokemon-sprite-frame hotlink-frame">
+            <img class="team-pokemon-sprite hotlinked-asset" src="${pokemon.sprite_url}" alt="">
+          </span>
+          <div class="team-pokemon-meta">
+            <strong>${pokemon.name}</strong>
+            <div>${chips(pokemon)}</div>
+            <p>Gen ${pokemon.debut_generation} · BST ${pokemon.base_stat_total}</p>
+          </div>
+        </div>
+        ${setDetails(pokemon, {showRoleNote: false})}
+      </li>`
+    : `<li class="team-empty">Empty slot ${index + 1}</li>`
   ).join("");
+  if (copyButton) copyButton.disabled = !state.teamExport;
+  activateImageFallbacks(slots);
+}
+
+function gauntletReport(gauntlet) {
+  if (gauntlet?.summary) return gauntlet.summary;
+  if (!gauntlet?.complete || !gauntlet.results.length) return "";
+  const wins = gauntlet.results.filter(result => result.winner === "player").length;
+  const losses = gauntlet.results.filter(result => result.winner === "boss").length;
+  const ties = gauntlet.results.filter(result => result.winner === "tie").length;
+  const turnTotal = gauntlet.results.reduce((total, result) => total + result.turns, 0);
+  const averageTurns = turnTotal / gauntlet.results.length;
+  const record = ties ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
+  return `Your record is ${record}! Average turn is ${averageTurns.toFixed(1)}.`;
 }
 
 function renderBosses(bosses) {
@@ -161,29 +192,145 @@ function renderBosses(bosses) {
   const select = document.querySelector("#boss-select");
   const button = document.querySelector("#battle-boss");
   const gauntletButton = document.querySelector("#start-gauntlet");
+  const realGauntletButton = document.querySelector("#start-real-gauntlet");
+  const orderList = document.querySelector("#boss-order-list");
+  const addButton = document.querySelector("#save-boss");
   select.replaceChildren(...bosses.map(boss => {
     const option = document.createElement("option");
     option.value = boss.id;
-    option.textContent = boss.name;
+    option.textContent = bossDisplayName(boss);
     return option;
   }));
+  orderList.innerHTML = bosses.map((boss, index) => `
+    <li data-boss-id="${boss.id}" data-index="${index}" draggable="true">
+      <span class="boss-drag-handle" aria-hidden="true">::</span>
+      <span>${index + 1}. ${escapeHtml(bossDisplayName(boss))}</span>
+      <span class="boss-order-actions">
+        <button class="copy-button boss-edit" data-index="${index}">Edit</button>
+        <button class="copy-button boss-discard" data-index="${index}" ${bosses.length <= MIN_BOSSES ? "disabled" : ""}>Discard</button>
+      </span>
+    </li>
+  `).join("");
+  orderList.querySelectorAll("li").forEach(item => {
+    item.addEventListener("dragstart", event => {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", item.dataset.index);
+      item.classList.add("dragging");
+    });
+    item.addEventListener("dragend", () => item.classList.remove("dragging"));
+    item.addEventListener("dragover", event => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      item.classList.add("drag-over");
+    });
+    item.addEventListener("dragleave", () => item.classList.remove("drag-over"));
+    item.addEventListener("drop", event => {
+      event.preventDefault();
+      orderList.querySelectorAll(".drag-over").forEach(row => row.classList.remove("drag-over"));
+      dragBoss(
+        Number(event.dataTransfer.getData("text/plain")),
+        Number(item.dataset.index),
+      );
+    });
+  });
+  orderList.querySelectorAll(".boss-edit").forEach(button => {
+    button.addEventListener("click", () => editBoss(Number(button.dataset.index)));
+  });
+  orderList.querySelectorAll(".boss-discard").forEach(button => {
+    button.addEventListener("click", () => discardBoss(Number(button.dataset.index)));
+  });
   select.disabled = bosses.length === 0;
   button.disabled = bosses.length === 0;
   gauntletButton.disabled = bosses.length === 0;
+  realGauntletButton.disabled = bosses.length === 0;
+  if (!document.querySelector("#custom-boss-id").value) {
+    addButton.disabled = bosses.length >= MAX_BOSSES;
+  }
   if (bosses.length === 0) {
     document.querySelector("#battle-status").textContent =
       "No boss files found under rollmons/bosses/.";
   }
 }
 
+function bossDisplayName(boss) {
+  if (boss.source === "custom") return `${boss.name} (pasted)`;
+  if (boss.source === "edited") return `${boss.name} (edited)`;
+  return boss.name;
+}
+
+function dragBoss(fromIndex, toIndex) {
+  if (
+    Number.isNaN(fromIndex)
+    || Number.isNaN(toIndex)
+    || fromIndex === toIndex
+    || fromIndex < 0
+    || toIndex < 0
+    || fromIndex >= state.bosses.length
+    || toIndex >= state.bosses.length
+  ) {
+    return;
+  }
+  const bosses = [...state.bosses];
+  const [moved] = bosses.splice(fromIndex, 1);
+  bosses.splice(toIndex, 0, moved);
+  renderBosses(bosses);
+}
+
+function orderedBossIds() {
+  return state.bosses.map(boss => boss.id);
+}
+
+function discardBoss(index) {
+  const status = document.querySelector("#custom-boss-status");
+  if (state.bosses.length <= MIN_BOSSES) {
+    status.textContent = "At least one boss must remain.";
+    return;
+  }
+  const bosses = state.bosses.filter((_boss, bossIndex) => bossIndex !== index);
+  renderBosses(bosses);
+  resetBossForm();
+  status.textContent = "Boss removed from the current order.";
+}
+
+async function editBoss(index) {
+  const boss = state.bosses[index];
+  const status = document.querySelector("#custom-boss-status");
+  status.textContent = `Loading ${boss.name}…`;
+  try {
+    const detail = await api(`/api/bosses/${boss.id}`);
+    document.querySelector("#custom-boss-id").value = detail.id;
+    document.querySelector("#custom-boss-name").value = detail.name;
+    document.querySelector("#custom-boss-export").value = detail.export;
+    document.querySelector("#boss-form-heading").textContent = `Edit ${detail.name}`;
+    document.querySelector("#save-boss").textContent = "Save boss";
+    document.querySelector("#save-boss").disabled = false;
+    document.querySelector("#cancel-boss-edit").classList.remove("hidden");
+    status.textContent = "Validate and save to apply this edit.";
+  } catch (error) {
+    status.textContent = error.message;
+  }
+}
+
+function resetBossForm() {
+  document.querySelector("#custom-boss-form").reset();
+  document.querySelector("#custom-boss-id").value = "";
+  document.querySelector("#boss-form-heading").textContent = "Add or edit boss";
+  document.querySelector("#save-boss").textContent = "Add boss";
+  document.querySelector("#save-boss").disabled = state.bosses.length >= MAX_BOSSES;
+  document.querySelector("#cancel-boss-edit").classList.add("hidden");
+}
+
 function renderGauntlet(gauntlet) {
   const list = document.querySelector("#gauntlet-list");
   const button = document.querySelector("#start-gauntlet");
+  const summary = document.querySelector("#gauntlet-summary");
   if (!gauntlet || !gauntlet.bosses.length) {
     list.innerHTML = "";
+    summary.textContent = "";
     button.textContent = "Start boss rush";
     return;
   }
+  summary.textContent = gauntletReport(gauntlet);
   button.textContent = gauntlet.complete ? "Restart boss rush" : "Continue boss rush";
   list.innerHTML = gauntlet.bosses.map((boss, index) => {
     const result = gauntlet.results[index];
@@ -205,6 +352,7 @@ function renderGauntlet(gauntlet) {
 
 function renderDraft(draft) {
   state.sessionId = draft.session_id;
+  state.teamExport = draft.complete ? draft.team_export : "";
   renderTeam(draft.team);
   renderGauntlet(draft.gauntlet);
   renderBattleResults(
@@ -212,20 +360,18 @@ function renderDraft(draft) {
       ? draft.gauntlet.results
       : draft.battle_result
         ? [draft.battle_result]
-        : []
+        : [],
+    gauntletReport(draft.gauntlet)
   );
   const status = document.querySelector("#draft-status");
   const offerRoot = document.querySelector("#current-offer");
   const candidates = document.querySelector("#candidate-list");
-  const exportPanel = document.querySelector("#team-export-panel");
   const battlePanel = document.querySelector("#battle-panel");
 
   if (draft.complete) {
     status.innerHTML = `<strong>Draft complete.</strong> Six unique Pokémon assembled at level ${draft.level}.`;
     offerRoot.innerHTML = "";
     candidates.innerHTML = "";
-    document.querySelector("#team-export").textContent = draft.team_export;
-    exportPanel.classList.remove("hidden");
     battlePanel.classList.remove("hidden");
     if (!draft.battle_result && !draft.gauntlet?.results?.length) {
       battlePanel.scrollIntoView({behavior: "smooth", block: "center"});
@@ -233,9 +379,9 @@ function renderDraft(draft) {
     return;
   }
 
-  exportPanel.classList.add("hidden");
   battlePanel.classList.add("hidden");
   document.querySelector("#battle-replay-list").innerHTML = "";
+  document.querySelector("#battle-replay-summary").textContent = "";
   document.querySelector("#battle-result-panel").classList.add("hidden");
   status.innerHTML = `<strong>Round ${draft.offer.round_number}/6</strong> · ${draft.offer.candidates.length} offered candidates`;
   const thinReroll = draft.offer.thin_reroll_available
@@ -348,11 +494,13 @@ function battleResultLabel(result) {
     : `${result.winner === "player" ? result.player_name : result.boss_name} wins`;
 }
 
-function renderBattleResults(results) {
+function renderBattleResults(results, summary = "") {
   const panel = document.querySelector("#battle-result-panel");
   const list = document.querySelector("#battle-replay-list");
+  const summaryRoot = document.querySelector("#battle-replay-summary");
   if (!results.length) {
     list.innerHTML = "";
+    summaryRoot.textContent = "";
     panel.classList.add("hidden");
     return;
   }
@@ -380,12 +528,37 @@ function renderBattleResults(results) {
     card.appendChild(iframe);
     list.appendChild(card);
   });
+  summaryRoot.textContent = summary;
   panel.classList.remove("hidden");
 }
 
 function renderBattleResult(result) {
   renderBattleResults([result]);
   document.querySelector("#battle-status").textContent = "Battle complete.";
+}
+
+async function copyTeamExport() {
+  const button = document.querySelector("#copy-team-export");
+  if (!state.teamExport || !button) return;
+  const originalText = button.textContent;
+  try {
+    await navigator.clipboard.writeText(state.teamExport);
+    button.textContent = "Copied";
+  } catch (_error) {
+    const textArea = document.createElement("textarea");
+    textArea.value = state.teamExport;
+    textArea.setAttribute("readonly", "");
+    textArea.style.position = "fixed";
+    textArea.style.left = "-9999px";
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand("copy");
+    textArea.remove();
+    button.textContent = "Copied";
+  }
+  setTimeout(() => {
+    button.textContent = originalText;
+  }, 1200);
 }
 
 async function battleBoss() {
@@ -411,23 +584,47 @@ async function battleBoss() {
   }
 }
 
-async function startGauntlet() {
+function gauntletCompletionStatus(gauntlet) {
+  const report = gauntletReport(gauntlet);
+  const stoppedOnLoss = gauntlet.stop_on_loss
+    && gauntlet.results.length
+    && gauntlet.results[gauntlet.results.length - 1].winner !== "player";
+  const prefix = stoppedOnLoss
+    ? "Real boss rush ended after first loss."
+    : "Boss rush complete.";
+  return report ? `${prefix} ${report}` : prefix;
+}
+
+async function startGauntlet(stopOnLoss = false) {
   const button = document.querySelector("#start-gauntlet");
+  const realButton = document.querySelector("#start-real-gauntlet");
   const singleBattleButton = document.querySelector("#battle-boss");
   const status = document.querySelector("#battle-status");
   button.disabled = true;
+  realButton.disabled = true;
   singleBattleButton.disabled = true;
   state.gauntletRunning = true;
-  status.textContent = "Starting boss rush…";
+  if (state.bosses.length < MIN_BOSSES || state.bosses.length > MAX_BOSSES) {
+    status.textContent = `Boss rush needs ${MIN_BOSSES}-${MAX_BOSSES} bosses.`;
+    button.disabled = false;
+    realButton.disabled = false;
+    singleBattleButton.disabled = false;
+    state.gauntletRunning = false;
+    return;
+  }
+  status.textContent = stopOnLoss ? "Starting real boss rush…" : "Starting boss rush…";
   try {
     const currentState = await api(`/api/drafts/${state.sessionId}`);
     if (currentState.gauntlet.bosses.length && !currentState.gauntlet.complete) {
       renderDraft(currentState);
     } else {
-      status.textContent = "Validating boss teams…";
+      status.textContent = "Starting boss order…";
       const draft = await api(`/api/drafts/${state.sessionId}/gauntlet/start`, {
         method: "POST",
-        body: JSON.stringify({boss_ids: state.bosses.map(boss => boss.id)}),
+        body: JSON.stringify({
+          boss_ids: orderedBossIds(),
+          stop_on_loss: stopOnLoss,
+        }),
       });
       renderDraft(draft);
     }
@@ -435,6 +632,7 @@ async function startGauntlet() {
   } catch (error) {
     status.textContent = error.message;
     button.disabled = false;
+    realButton.disabled = false;
     singleBattleButton.disabled = false;
     state.gauntletRunning = false;
   }
@@ -443,13 +641,15 @@ async function startGauntlet() {
 async function runNextGauntletBattle() {
   const status = document.querySelector("#battle-status");
   const button = document.querySelector("#start-gauntlet");
+  const realButton = document.querySelector("#start-real-gauntlet");
   const singleBattleButton = document.querySelector("#battle-boss");
   try {
     const currentState = await api(`/api/drafts/${state.sessionId}`);
     if (currentState.gauntlet.complete) {
       renderDraft(currentState);
-      status.textContent = "Boss rush complete.";
+      status.textContent = gauntletCompletionStatus(currentState.gauntlet);
       button.disabled = false;
+      realButton.disabled = false;
       singleBattleButton.disabled = false;
       state.gauntletRunning = false;
       return;
@@ -470,15 +670,48 @@ async function runNextGauntletBattle() {
     if (shouldContinue) {
       return;
     }
-    status.textContent = "Boss rush complete.";
+    status.textContent = gauntletCompletionStatus(nextState.gauntlet);
     button.disabled = false;
+    realButton.disabled = false;
     singleBattleButton.disabled = false;
     state.gauntletRunning = false;
   } catch (error) {
     status.textContent = error.message;
     button.disabled = false;
+    realButton.disabled = false;
     singleBattleButton.disabled = false;
     state.gauntletRunning = false;
+  }
+}
+
+async function addCustomBoss(event) {
+  event.preventDefault();
+  const status = document.querySelector("#custom-boss-status");
+  const bossId = document.querySelector("#custom-boss-id").value;
+  const name = document.querySelector("#custom-boss-name").value.trim();
+  const exportText = document.querySelector("#custom-boss-export").value.trim();
+  if (!name || !exportText) {
+    status.textContent = "Boss name and export are required.";
+    return;
+  }
+  if (!bossId && state.bosses.length >= MAX_BOSSES) {
+    status.textContent = `A boss rush can include at most ${MAX_BOSSES} bosses.`;
+    return;
+  }
+  status.textContent = bossId ? "Validating edited boss…" : "Validating pasted boss…";
+  try {
+    const boss = await api(bossId ? `/api/bosses/${bossId}` : "/api/bosses/custom", {
+      method: bossId ? "PUT" : "POST",
+      body: JSON.stringify({name, export: exportText}),
+    });
+    const bosses = bossId
+      ? state.bosses.map(current => current.id === boss.id ? boss : current)
+      : [...state.bosses, boss];
+    renderBosses(bosses);
+    resetBossForm();
+    status.textContent = bossId ? `Saved ${boss.name}.` : `Added ${boss.name}.`;
+  } catch (error) {
+    status.textContent = `Boss does not pass validation: ${error.message}`;
   }
 }
 
@@ -492,8 +725,13 @@ document.querySelectorAll(".tab").forEach(button => {
 });
 document.querySelector("#start-draft").addEventListener("click", startDraft);
 document.querySelector("#battle-boss").addEventListener("click", battleBoss);
-document.querySelector("#start-gauntlet").addEventListener("click", startGauntlet);
+document.querySelector("#start-gauntlet").addEventListener("click", () => startGauntlet(false));
+document.querySelector("#start-real-gauntlet").addEventListener("click", () => startGauntlet(true));
+document.querySelector("#copy-team-export").addEventListener("click", copyTeamExport);
+document.querySelector("#custom-boss-form").addEventListener("submit", addCustomBoss);
+document.querySelector("#cancel-boss-edit").addEventListener("click", resetBossForm);
 renderTeam([]);
+resetBossForm();
 
 api("/api/matrix").then(matrix => {
   state.matrix = matrix;

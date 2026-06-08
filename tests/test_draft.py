@@ -312,6 +312,58 @@ def test_offer_cap_uses_legendary_weight_for_candidate_sampling():
     assert ratio == pytest.approx(0.10, abs=0.025)
 
 
+def test_offer_cap_uses_arceus_weight_for_candidate_sampling():
+    species = {
+        "normal": SpeciesMetadata(
+            species_id="normal",
+            name="normal",
+            types=("water",),
+            debut_generation=1,
+            base_stat_total=500,
+            legendary=False,
+        ),
+        "arceuswater": SpeciesMetadata(
+            species_id="arceuswater",
+            name="arceuswater",
+            types=("water",),
+            debut_generation=1,
+            base_stat_total=720,
+            legendary=True,
+        ),
+        **{
+            f"extra{index}": SpeciesMetadata(
+                species_id=f"extra{index}",
+                name=f"extra{index}",
+                types=("fire",),
+                debut_generation=1,
+                base_stat_total=500,
+                legendary=False,
+            )
+            for index in range(4)
+        },
+    }
+    data = LegalityData(
+        atoms=tuple(species),
+        species=species,
+        matrix={
+            ("water", 1): ("normal", "arceuswater"),
+            ("fire", 1): tuple(f"extra{index}" for index in range(4)),
+        },
+    )
+    rng = FirstCellWeightedRng(12345)
+    picks = [
+        Draft(
+            data,
+            rng=rng,
+            config=DraftConfig(candidate_cap=1, arceus_weight=0.05),
+        ).current_offer.candidates[0]
+        for _ in range(5_000)
+    ]
+    ratio = picks.count("arceuswater") / picks.count("normal")
+
+    assert ratio == pytest.approx(0.05, abs=0.02)
+
+
 def test_offer_exposes_capped_candidate_list_and_soft_suggestion():
     data = build_legality_data()
     draft = Draft(data, rng=random.Random(5))

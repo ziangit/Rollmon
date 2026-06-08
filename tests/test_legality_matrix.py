@@ -143,6 +143,31 @@ def test_selector_probabilities_use_the_same_positive_legendary_weight():
     assert probabilities["slaking"] > 0
 
 
+def test_arceus_probability_uses_arceus_specific_weight():
+    cell = ("fire", 4)
+    species = {
+        "ordinary": metadata("ordinary", ("fire",), 4, bst=500),
+        "legend": metadata("legend", ("fire",), 4, legendary=True),
+        "arceusfire": metadata("arceusfire", ("fire",), 4, legendary=True),
+    }
+    probabilities = selection_probabilities(
+        cell,
+        {cell: tuple(species)},
+        species,
+        legendary_weight=0.10,
+        arceus_weight=0.05,
+    )
+
+    assert probabilities == pytest.approx(
+        {
+            "ordinary": 1 / 1.15,
+            "legend": 0.10 / 1.15,
+            "arceusfire": 0.05 / 1.15,
+        }
+    )
+    assert probabilities["arceusfire"] < probabilities["legend"]
+
+
 def test_legendary_selection_is_down_weighted_deterministically():
     cell = ("psychic", 1)
     species = {

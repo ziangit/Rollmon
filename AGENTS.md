@@ -91,17 +91,18 @@ back to a tag-based definition. Every nonempty cell is valid; cells with 1-2
 undrafted candidates expose a free optional reroll for that offer. Draft
 balance knobs live in `rollmons/draft_config.py` and may be overridden by
 environment variables for playtesting. Starting playtest values are candidate
-cap 5, legendary weight 0.10, manual skips 2, and thin-cell threshold `<3`.
-These are explicitly subject to playtest and are not final balance constants.
+cap 5, legendary weight 0.10, Arceus-forme weight 0.05, manual skips 2, and
+thin-cell threshold `<3`. These are explicitly subject to playtest and are not
+final balance constants.
 Legendary selection weight must remain strictly positive so thin
 legendary-heavy cells cannot soft-lock.
 
 `rollmons/draft.py` implements the six-round headless draft state machine. Each
 offer contains a valid cell, up to the configured cap of undrafted candidates
-sampled with the configured legendary weight, and one legendary-weighted
-suggested pick. The suggestion is a soft nudge only: the chooser may select any
-offered candidate, so legendary Pokemon remain fully draftable. The offer also
-exposes the selector's normalized probability for each offered candidate;
+sampled with the configured legendary and Arceus-specific weights, and one
+weighted suggested pick. The suggestion is a soft nudge only: the chooser may
+select any offered candidate, so legendary Pokemon remain fully draftable. The
+offer also exposes the selector's normalized probability for each offered candidate;
 consumers must display this engine value rather than recomputing weights.
 Species identity is deduplicated globally across both types, the slot-machine
 guard excludes cells with no undrafted candidates, and the default draft has
