@@ -128,6 +128,36 @@ main { padding: 2rem 3rem 4rem; }
 }
 .pokemon-list, .team-slots { margin: 0; padding-left: 1.25rem; }
 .pokemon-list li, .team-slots li { margin-bottom: .65rem; }
+.cell-pokemon-list {
+  display: grid;
+  gap: .55rem;
+  padding-left: 0;
+  list-style: none;
+}
+.cell-pokemon-list li {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: .55rem;
+  align-items: center;
+}
+.cell-pokemon-sprite-frame {
+  display: flex;
+  width: 56px;
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  border-radius: .35rem;
+  background: #f2f5f8;
+}
+.cell-pokemon-sprite {
+  max-width: 52px;
+  max-height: 52px;
+  object-fit: contain;
+}
+.cell-pokemon-info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .type-chip, .legendary-marker {
   display: inline-block;
   margin: .15rem .2rem 0 0;

@@ -50,9 +50,17 @@ function itemIcon(icon, itemName) {
 function setDetails(pokemon) {
   const set = pokemon.randbats_set;
   const spread = pokemon.assembly_spread;
+  const source = set.source === "smogon" ? "Smogon" : "Randbats";
   const roles = set.role_count > 1
-    ? `${set.role_count} observed roles; showing the most common`
-    : "1 observed role";
+    ? `${set.role_count} ${source} sets; selected at battle assembly`
+    : `1 ${source} set`;
+  if (set.export) {
+    return `
+      <div class="set-details" aria-label="${pokemon.name} representative set">
+        <p class="role-note">${roles}${set.format ? ` · ${set.format}` : ""}</p>
+        <pre class="pokepaste-set">${escapeHtml(set.export)}</pre>
+      </div>`;
+  }
   return `
     <div class="set-details" aria-label="${pokemon.name} representative set">
       <p class="role-note">${roles}</p>
@@ -113,12 +121,17 @@ function renderCell(cell, button) {
   button.classList.add("selected");
   const detail = document.querySelector("#cell-detail");
   const pokemon = cell.pokemon.length
-    ? `<ol class="pokemon-list">${cell.pokemon.map(item => `
+    ? `<ol class="pokemon-list cell-pokemon-list">${cell.pokemon.map(item => `
         <li>
-          <strong>${item.name}</strong> · Gen ${item.debut_generation} · BST ${item.base_stat_total}<br>
-          ${chips(item)}
+          <span class="cell-pokemon-sprite-frame hotlink-frame">
+            <img class="cell-pokemon-sprite hotlinked-asset" src="${item.sprite_url}" alt="">
+          </span>
+          <span class="cell-pokemon-info">
+            <strong>${item.name}</strong> · Gen ${item.debut_generation} · BST ${item.base_stat_total}<br>
+            ${chips(item)}
+          </span>
         </li>`).join("")}</ol>`
-    : "<p>No randbats atoms occupy this cell.</p>";
+    : "<p>No active-source atoms occupy this cell.</p>";
   detail.innerHTML = `
     <h3>${cell.type} · Gen ${cell.generation}</h3>
     <p><strong>${cell.eligible_count}</strong> eligible · ${
@@ -129,6 +142,7 @@ function renderCell(cell, button) {
           : "Included in rolls"
     }</p>
     ${pokemon}`;
+  activateImageFallbacks(detail);
 }
 
 function renderTeam(team) {

@@ -216,6 +216,7 @@ def _species_payload(
             "source": "smogon",
             "label": representative.label,
             "format": representative.format,
+            "export": representative.export,
             "item": representative.item,
             "ability": representative.ability,
             "moves": list(representative.moves),
@@ -230,6 +231,7 @@ def _species_payload(
         )
         set_payload = {
             "source": "randbats",
+            "export": None,
             "item": representative.item,
             "ability": representative.ability,
             "moves": list(representative.moves),

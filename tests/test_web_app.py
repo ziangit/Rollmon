@@ -45,7 +45,10 @@ async def test_frontend_and_static_assets_are_served(client):
     assert "/api/bosses" in javascript.text
     assert "battlePanel.scrollIntoView" in javascript.text
     assert "thinRerollDraft" in javascript.text
+    assert "cell-pokemon-sprite" in javascript.text
+    assert "escapeHtml(set.export)" in javascript.text
     assert stylesheet.status_code == 200
+    assert "cell-pokemon-sprite-frame" in stylesheet.text
 
 
 @pytest.mark.anyio
@@ -88,6 +91,21 @@ async def test_matrix_endpoint_exposes_all_cells_and_known_placements(client):
     )
     assert clefable["assembly_spread"]["level"] == 100
     assert set(clefable["assembly_spread"]["ivs"].values()) == {31}
+
+    fire_gen3 = find_cell(matrix, "fire", 3)
+    blaziken = next(
+        pokemon for pokemon in fire_gen3["pokemon"] if pokemon["id"] == "blaziken"
+    )
+    assert blaziken["randbats_set"]["export"] == """Blaziken @ Life Orb
+Ability: Speed Boost
+Level: 100
+EVs: 252 Atk / 4 Def / 252 Spe
+Adamant Nature
+- Swords Dance
+- Close Combat
+- Flare Blitz
+- Stone Edge"""
+    assert "Tera Type:" not in blaziken["randbats_set"]["export"]
 
     fire_gen1 = find_cell(matrix, "fire", 1)
     flying_gen1 = find_cell(matrix, "flying", 1)
