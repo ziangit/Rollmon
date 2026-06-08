@@ -394,7 +394,7 @@ async function runNextGauntletBattle() {
     const currentState = await api(`/api/drafts/${state.sessionId}`);
     if (currentState.gauntlet.complete) {
       renderDraft(currentState);
-      status.textContent = "Gauntlet complete.";
+      status.textContent = "Boss rush complete.";
       button.disabled = false;
       singleBattleButton.disabled = false;
       state.gauntletRunning = false;
@@ -411,7 +411,7 @@ async function runNextGauntletBattle() {
       setTimeout(runNextGauntletBattle, 250);
       return;
     }
-    status.textContent = "Gauntlet complete.";
+    status.textContent = "Boss rush complete.";
     button.disabled = false;
     singleBattleButton.disabled = false;
     state.gauntletRunning = false;

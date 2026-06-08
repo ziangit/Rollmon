@@ -479,24 +479,24 @@ The earlier 299-line random-battle replay fixture still animates through the
 standard Showdown replay player with no rejected lines or JavaScript errors.
 
 The pure legality matrix is implemented in `rollmons/legality_matrix.py`.
-With the current Smogon primary source, 435 usable atoms produce 155 nonempty
-type-generation cells (114 normal and 41 thin), with seven empty cells
+With the current Smogon primary source, 432 usable atoms produce 155 nonempty
+type-generation cells (113 normal and 42 thin), with seven empty cells
 excluded. The randbats alternate remains 508 atoms and 158 nonempty cells. The
 six-round draft and level-100 team assembly are implemented in
 `rollmons/draft.py` and `rollmons/team_assembly.py`. The first authored boss and
 one real post-draft battle path are built, including structured results and a
 hosted replay embed. Contributor boss/set validation and the N-battle
 pool-draft sandbox are built. The browser can now run the discovered boss list
-as a sequential post-draft gauntlet: it validates every selected boss up front,
+as a sequential post-draft boss rush: it validates every selected boss up front,
 runs one battle at a time through `battle_runner.run_battle()`, renders each
 replay immediately, then starts the next battle. Fixed ten-battle campaign
 tuning and additional authored boss teams remain ongoing work.
 
 ## Roadmap
 
-1. Tune the sequential browser gauntlet into the intended fixed ten-battle
+1. Tune the sequential browser boss rush into the intended fixed ten-battle
    campaign ordering and aggregate results. Do not duplicate the existing
    battle-runner seam.
-2. Extend the gauntlet results UI for campaign-level summaries. The hosted
+2. Extend the boss-rush results UI for campaign-level summaries. The hosted
    replay viewer is still temporary.
 3. Author boss teams and tune difficulty after playtesting.

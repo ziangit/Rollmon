@@ -1,4 +1,7 @@
+import json
+
 from rollmons.smogon_sets import (
+    DEFAULT_SMOGON_SETS_PATH,
     ingest_smogon_sets,
     is_format_excluded,
     strip_tera_type_lines,
@@ -31,8 +34,9 @@ Level: 100
 def test_checked_in_smogon_ingestion_counts_and_validation_report():
     sets, report = ingest_smogon_sets()
 
-    assert len(sets) == 435
-    assert report.usable_set_count == 661
+    assert len(sets) == 432
+    assert report.input_set_count == 720
+    assert report.usable_set_count == 658
     assert report.format_excluded_set_count == 62
     assert report.matched_format_strings == (
         "1v1",
@@ -46,6 +50,17 @@ def test_checked_in_smogon_ingestion_counts_and_validation_report():
     assert report.all_sets_excluded_or_failed_species[:3] == (
         "annihilape",
         "arceusghost",
-        "archaludon",
+        "arceuspoison",
     )
     assert all("Tera Type:" not in set_.export for entries in sets.values() for set_ in entries)
+
+
+def test_checked_in_smogon_json_contains_no_bh_sets():
+    data = json.loads(DEFAULT_SMOGON_SETS_PATH.read_text(encoding="utf-8"))
+
+    assert {
+        entry.get("format")
+        for entries in data["sets"].values()
+        for entry in entries
+        if entry.get("format") == "BH"
+    } == set()

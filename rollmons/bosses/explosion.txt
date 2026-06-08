@@ -1,0 +1,55 @@
+Azelf @ Focus Sash  
+Ability: Levitate  
+Tera Type: Ghost  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Naive Nature  
+- Stealth Rock  
+- Taunt  
+- Explosion  
+- Flamethrower  
+
+Landorus-Therian (M) @ Choice Scarf  
+Ability: Intimidate  
+Tera Type: Ground  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Earthquake  
+- Stone Edge  
+- U-turn  
+- Explosion  
+
+Glalie-Mega @ Glalitite  
+Ability: Refrigerate  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Explosion  
+- Return  
+- Ice Shard  
+- Earthquake  
+
+Golem-Alola @ Choice Band  
+Ability: Galvanize  
+EVs: 252 HP / 252 Atk / 4 SpD  
+Adamant Nature  
+- Explosion  
+- Earthquake  
+- Stone Edge  
+- Return  
+
+Electrode-Hisui @ Choice Specs  
+Ability: Aftermath  
+EVs: 4 Def / 252 SpA / 252 Spe  
+Timid Nature  
+- Volt Switch  
+- Chloroblast  
+- Leaf Storm  
+- Explosion  
+
+Basculegion (M) @ Choice Scarf  
+Ability: Adaptability  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Last Respects  
+- Wave Crash  
+- Flip Turn  
+- Aqua Jet  

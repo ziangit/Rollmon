@@ -428,16 +428,7 @@
         "source_url": "https://www.smogon.com/dex/sv/pokemon/arceus-ice/"
       }
     ],
-    "arceuspoison": [
-      {
-        "label": "BH Magic Bounce Arceus-Poison",
-        "generation": "SV",
-        "format": "BH",
-        "name": "Magic Bounce",
-        "export": "Arceus-Poison @ Heavy-Duty Boots\nAbility: Magic Bounce\nLevel: 100\nTera Type: Poison\nEVs: 252 HP / 248 Atk / 252 Def / 252 SpA / 252 SpD / 252 Spe\nSassy Nature\n- Shore Up\n- Shell Side Arm\n- Nuzzle\n- Teleport",
-        "source_url": "https://www.smogon.com/dex/sv/pokemon/arceus-poison/"
-      }
-    ],
+    "arceuspoison": [],
     "arceuspsychic": [
       {
         "label": "Ubers UU Cosmic Power Arceus-Psychic",
@@ -3520,16 +3511,7 @@
         "source_url": "https://www.smogon.com/dex/sv/pokemon/kyurem-black/"
       }
     ],
-    "kyuremwhite": [
-      {
-        "label": "BH Choice Specs Kyurem-White",
-        "generation": "SV",
-        "format": "BH",
-        "name": "Choice Specs",
-        "export": "Kyurem-White @ Choice Specs\nAbility: Refrigerate\nLevel: 100\nEVs: 252 HP / 252 Atk / 252 Def / 252 SpA / 252 SpD / 252 Spe\nRash Nature\n- Boomburst\n- Armor Cannon\n- Clanging Scales\n- Knock Off",
-        "source_url": "https://www.smogon.com/dex/sv/pokemon/kyurem-white/"
-      }
-    ],
+    "kyuremwhite": [],
     "landorus": [
       {
         "label": "1v1 Life Orb Landorus",
@@ -3850,16 +3832,7 @@
         "source_url": "https://www.smogon.com/dex/sm/pokemon/magcargo/"
       }
     ],
-    "magearna": [
-      {
-        "label": "BH Defensive Magearna",
-        "generation": "SV",
-        "format": "BH",
-        "name": "Defensive",
-        "export": "Magearna @ Heavy-Duty Boots\nAbility: Ice Scales\nLevel: 100\nEVs: 252 HP / 252 Def / 252 SpA / 252 SpD / 252 Spe\nIVs: 0 Atk\nCalm Nature\n- Shore Up\n- Moonblast\n- Topsy-Turvy\n- Teleport",
-        "source_url": "https://www.smogon.com/dex/sv/pokemon/magearna/"
-      }
-    ],
+    "magearna": [],
     "magmortar": [
       {
         "label": "ZU All-out Attacker Magmortar",

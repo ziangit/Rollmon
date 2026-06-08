@@ -70,12 +70,12 @@ async def test_matrix_endpoint_exposes_all_cells_and_known_placements(client):
     assert response.status_code == 200
     matrix = response.json()
     assert matrix["set_source"] == "smogon"
-    assert matrix["atom_count"] == 435
+    assert matrix["atom_count"] == 432
     assert matrix["included_cell_count"] == 155
     assert len(matrix["cells"]) == 18 * 9
     assert sum(cell["included"] for cell in matrix["cells"]) == 155
-    assert sum(cell["state"] == "normal" for cell in matrix["cells"]) == 114
-    assert sum(cell["state"] == "thin" for cell in matrix["cells"]) == 41
+    assert sum(cell["state"] == "normal" for cell in matrix["cells"]) == 113
+    assert sum(cell["state"] == "thin" for cell in matrix["cells"]) == 42
     assert sum(cell["state"] == "excluded" for cell in matrix["cells"]) == 7
 
     fairy_gen1 = find_cell(matrix, "fairy", 1)

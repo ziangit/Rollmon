@@ -1,0 +1,60 @@
+Volcarona @ Heavy-Duty Boots  
+Ability: Flame Body  
+Tera Type: Water  
+EVs: 80 HP / 252 Def / 176 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Quiver Dance  
+- Flamethrower  
+- Morning Sun  
+- Bug Buzz  
+
+Conkeldurr @ Flame Orb  
+Ability: Guts  
+Tera Type: Normal  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Adamant Nature  
+- Drain Punch  
+- Facade  
+- Knock Off  
+- Mach Punch  
+
+Reuniclus @ Life Orb  
+Ability: Magic Guard  
+Tera Type: Fighting  
+EVs: 252 HP / 212 SpA / 44 Spe  
+Modest Nature  
+- Psychic Noise  
+- Knock Off  
+- Focus Blast  
+- Recover  
+
+Krookodile @ Choice Band  
+Ability: Intimidate  
+Tera Type: Dark  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Earthquake  
+- Knock Off  
+- Gunk Shot  
+- Close Combat  
+
+Chandelure @ Choice Specs  
+Ability: Flash Fire  
+Tera Type: Grass  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Fire Blast  
+- Shadow Ball  
+- Energy Ball  
+- Trick  
+
+Braviary (M) @ Heavy-Duty Boots  
+Ability: Defiant  
+EVs: 252 HP / 240 Def / 16 Spe  
+Impish Nature  
+- Brave Bird  
+- Defog  
+- Roost  
+- U-turn  

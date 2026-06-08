@@ -1,0 +1,59 @@
+Garchomp @ Garchompite  
+Ability: Rough Skin  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Swords Dance  
+- Earthquake  
+- Poison Jab  
+- Scale Shot  
+
+Spiritomb @ Leftovers  
+Ability: Infiltrator  
+Tera Type: Dark  
+EVs: 252 HP / 252 SpA / 4 SpD  
+Quiet Nature  
+IVs: 0 Atk / 0 Spe  
+- Will-O-Wisp  
+- Nasty Plot  
+- Dark Pulse  
+- Psyshock  
+
+Roserade @ Focus Sash  
+Ability: Technician  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Sludge Bomb  
+- Spikes  
+- Giga Drain  
+- Toxic Spikes  
+
+Togekiss @ Choice Scarf  
+Ability: Serene Grace  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Modest Nature  
+IVs: 0 Atk  
+- Air Slash  
+- Dazzling Gleam  
+- Ancient Power  
+- Flamethrower  
+
+Lucario @ Life Orb  
+Ability: Inner Focus  
+Tera Type: Normal  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Swords Dance  
+- Close Combat  
+- Meteor Mash  
+- Extreme Speed  
+
+Milotic @ Heavy-Duty Boots  
+Ability: Marvel Scale  
+Tera Type: Fairy  
+EVs: 252 HP / 248 Def / 8 Spe  
+Bold Nature  
+- Recover  
+- Scald  
+- Flip Turn  
+- Alluring Voice  
