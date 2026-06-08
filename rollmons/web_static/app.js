@@ -187,6 +187,7 @@ function renderGauntlet(gauntlet) {
   button.textContent = gauntlet.complete ? "Restart boss rush" : "Continue boss rush";
   list.innerHTML = gauntlet.bosses.map((boss, index) => {
     const result = gauntlet.results[index];
+    const resultClass = result ? `winner-${result.winner}` : "";
     const status = result
       ? `${result.winner === "tie" ? "Tie" : `${result.winner} win`} · ${result.turns} turns`
       : boss.current
@@ -195,7 +196,7 @@ function renderGauntlet(gauntlet) {
           ? "Complete"
           : "Waiting";
     return `
-      <li class="${boss.current ? "current" : ""} ${result ? "complete" : ""}">
+      <li class="${boss.current ? "current" : ""} ${result ? "complete" : ""} ${resultClass}">
         <span>${index + 1}. ${boss.name}</span>
         <small>${status}</small>
       </li>`;
@@ -360,7 +361,7 @@ function renderBattleResults(results) {
   results.forEach((result, index) => {
     if (existingBattleIds.has(result.battle_id)) return;
     const card = document.createElement("article");
-    card.className = "battle-replay-card";
+    card.className = `battle-replay-card winner-${result.winner}`;
     card.dataset.battleId = result.battle_id;
     const iframe = document.createElement("iframe");
     iframe.className = "battle-replay";

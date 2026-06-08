@@ -36,4 +36,5 @@ def boss_display_name(boss_id: str) -> str:
 
 
 def list_boss_ids() -> tuple[str, ...]:
-    return tuple(path.stem for path in sorted(BOSSES_DIR.glob("*.txt")))
+    boss_ids = sorted(path.stem for path in BOSSES_DIR.glob("*.txt"))
+    return tuple(sorted(boss_ids, key=lambda boss_id: (boss_id != "ash", boss_id)))

@@ -37,3 +37,11 @@ def test_contributed_boss_file_is_discovered_and_usable(tmp_path, monkeypatch):
 
     assert len(parse_showdown_export(team, expected_members=6)) == 6
     assert list_boss_ids() == ("misty",)
+
+
+def test_ash_is_first_boss_when_present(tmp_path, monkeypatch):
+    for boss_id in ("cynthia", "ash", "alder"):
+        (tmp_path / f"{boss_id}.txt").write_text(load_boss_team("ash"), encoding="utf-8")
+    monkeypatch.setattr(boss_loader, "BOSSES_DIR", tmp_path)
+
+    assert list_boss_ids() == ("ash", "alder", "cynthia")

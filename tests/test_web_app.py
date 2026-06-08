@@ -51,10 +51,13 @@ async def test_frontend_and_static_assets_are_served(client):
     assert "escapeHtml(set.export)" in javascript.text
     assert "startGauntlet" in javascript.text
     assert "battle-replay-card" in javascript.text
+    assert "winner-${result.winner}" in javascript.text
     assert "setTimeout(runNextGauntletBattle, 0)" in javascript.text
     assert stylesheet.status_code == 200
     assert "cell-pokemon-sprite-frame" in stylesheet.text
     assert "gauntlet-list" in stylesheet.text
+    assert "winner-boss" in stylesheet.text
+    assert "winner-player" in stylesheet.text
     assert "battle-replay-list" in stylesheet.text
 
 

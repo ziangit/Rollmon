@@ -26,20 +26,18 @@ Our game-specific code should eventually live outside its internals.
   primary source; the checked-in `gen9randombattle` snapshot remains available
   as a switchable alternate and set-level fallback. Its type is its current
   type and its generation is its debut generation.
-- Battles use Generation 9 mechanics with no Terastallization, Dynamax, Mega
-  Evolution, or Z-Moves.
+- Battles use Generation 9 mechanics with no Terastallization, Dynamax, or
+  Z-Moves. Mega Evolution is allowed for authored boss teams through the custom
+  game format.
 - Battles use a self-hosted, permissive custom format with Species Clause on,
   tier banlists off, Tera and Dynamax disabled, and a fixed level of 100.
 - The one-battle integration format is based on `gen9customgame` and adds
-  `Species Clause`, `+Past`, `-Mega`, explicit Primal and battle-only Past forme
-  bans, every Mega Stone and Primal Orb ban, `Dynamax Clause`,
-  `Z-Move Clause`, `CFZ Clause`, `Terastal Clause`,
-  `!! Max Move Count = 4`, and `Adjust Level = 100`. The double bang is required
-  to replace Custom Game's existing 24-move value. `+Past` enables old coded
-  species and moves but does not permit old mechanics: Mega and Primal
-  transformations are blocked by both forme and item bans, direct battle-only
-  Past formes are banned, Gigantamax is rejected by Dynamax Clause, and
-  Z-Moves remain blocked. Do not add tier banlists or general
+  `Species Clause`, `+Past`, `Dynamax Clause`, `Z-Move Clause`, `CFZ Clause`,
+  `Terastal Clause`, `!! Max Move Count = 4`, and `Adjust Level = 100`. The
+  double bang is required to replace Custom Game's existing 24-move value.
+  `+Past` enables old coded species, moves, formes, and Mega Stones for authored
+  teams. Gigantamax is rejected by Dynamax Clause, Z-Moves remain blocked, and
+  Terastallization remains blocked. Do not add tier banlists or general
   `Obtainable`/learnset validation.
 - Player movesets are assembled from the configured set source at level 100.
   Smogon exports are already level 100; their `Tera Type:` lines are stripped

@@ -370,6 +370,14 @@ pre {
   border-color: #67a875;
   background: #eef9f1;
 }
+.gauntlet-list li.complete.winner-boss {
+  border-color: #d66a6a;
+  background: #fff0f0;
+}
+.gauntlet-list li.complete.winner-player {
+  border-color: #67a875;
+  background: #eef9f1;
+}
 .gauntlet-list small {
   color: #596575;
   white-space: nowrap;
@@ -394,6 +402,14 @@ pre {
   border-radius: .45rem;
   padding: .75rem;
   background: #f8fafc;
+}
+.battle-replay-card.winner-player {
+  border-color: #67a875;
+  background: #f4fbf6;
+}
+.battle-replay-card.winner-boss {
+  border-color: #d66a6a;
+  background: #fff5f5;
 }
 .battle-replay-heading {
   display: flex;
