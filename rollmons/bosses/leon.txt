@@ -27,7 +27,7 @@ Jolly Nature
 - Court Change  
 - Sucker Punch  
 
-Charizard @ Charizardite Y  
+Charizard @ Leftovers  
 Ability: Blaze  
 EVs: 4 Def / 252 SpA / 252 Spe  
 Timid Nature  

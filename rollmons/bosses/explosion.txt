@@ -18,7 +18,7 @@ Jolly Nature
 - U-turn  
 - Explosion  
 
-Glalie-Mega @ Glalitite  
+Glalie @ Leftovers  
 Ability: Refrigerate  
 EVs: 4 HP / 252 Atk / 252 Spe  
 Jolly Nature  
