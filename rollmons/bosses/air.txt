@@ -1,0 +1,58 @@
+Rayquaza @ Life Orb  
+Ability: Air Lock  
+Tera Type: Flying  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Dragon Dance  
+- Dragon Ascent  
+- Earthquake  
+- Extreme Speed  
+
+Zygarde @ Leftovers  
+Ability: Power Construct  
+Tera Type: Water  
+EVs: 252 HP / 252 Def / 4 SpD  
+Impish Nature  
+- Coil  
+- Glare  
+- Thousand Arrows  
+- Rest  
+
+Rillaboom @ Choice Band  
+Ability: Grassy Surge  
+Tera Type: Grass  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Adamant Nature  
+- Grassy Glide  
+- Wood Hammer  
+- U-turn  
+- Knock Off  
+
+Melmetal @ Assault Vest  
+Ability: Iron Fist  
+EVs: 72 HP / 172 Atk / 252 SpD / 12 Spe  
+Adamant Nature  
+- Double Iron Bash  
+- Ice Punch  
+- Thunder Punch  
+- Earthquake  
+
+Moltres @ Heavy-Duty Boots  
+Ability: Flame Body  
+Tera Type: Fairy  
+EVs: 248 HP / 248 Def / 12 Spe  
+Bold Nature  
+- Flamethrower  
+- Roost  
+- U-turn  
+- Roar  
+
+Kangaskhan (F) @ Kangaskhanite  
+Ability: Scrappy  
+Tera Type: Normal  
+EVs: 212 HP / 44 Atk / 252 Spe  
+Adamant Nature  
+- Fake Out  
+- Seismic Toss  
+- Sucker Punch  
+- Low Kick  

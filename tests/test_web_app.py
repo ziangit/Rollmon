@@ -5,7 +5,7 @@ from battle_runner import BattleResult, BattleRunnerConfig, PERMISSIVE_GEN9_FORM
 from rollmons import web_app
 from rollmons import boss_loader
 from rollmons.boss_loader import load_boss_team
-from rollmons.web_app import app, create_app
+from rollmons.web_app import _battle_config_from_environment, app, create_app
 
 
 @pytest.fixture
@@ -104,6 +104,17 @@ async def test_boss_endpoint_exposes_discovered_bosses(client):
 
     assert response.status_code == 200
     assert {"id": "ash", "name": "Ash", "source": "file"} in response.json()
+
+
+def test_battle_config_uses_separate_player_search_time(tmp_path, monkeypatch):
+    monkeypatch.setenv("ROLLMONS_SHOWDOWN_LOG_DIR", str(tmp_path))
+    monkeypatch.delenv("ROLLMONS_SEARCH_TIME_MS", raising=False)
+    monkeypatch.delenv("ROLLMONS_PLAYER_SEARCH_TIME_MS", raising=False)
+
+    config = _battle_config_from_environment()
+
+    assert config.search_time_ms == 25
+    assert config.player_search_time_ms == 100
 
 
 @pytest.mark.anyio

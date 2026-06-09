@@ -1,0 +1,59 @@
+Kyogre @ Choice Scarf  
+Ability: Drizzle  
+Tera Type: Water  
+EVs: 4 Def / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Water Spout  
+- Origin Pulse  
+- Ice Beam  
+- Thunder  
+
+Ferrothorn @ Leftovers  
+Ability: Iron Barbs  
+EVs: 252 HP / 80 Def / 176 SpD  
+Impish Nature  
+- Leech Seed  
+- Knock Off  
+- Power Whip  
+- Stealth Rock  
+
+Tornadus-Therian @ Rocky Helmet  
+Ability: Regenerator  
+EVs: 240 HP / 64 Def / 204 Spe  
+Timid Nature  
+- Hurricane  
+- Knock Off  
+- U-turn  
+- Defog  
+
+Barraskewda @ Choice Band  
+Ability: Swift Swim  
+Tera Type: Water  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Liquidation  
+- Flip Turn  
+- Close Combat  
+- Aqua Jet  
+
+Gastrodon @ Rocky Helmet  
+Ability: Sticky Hold  
+Tera Type: Ghost  
+EVs: 252 HP / 252 Def / 4 SpD  
+Relaxed Nature  
+- Spikes  
+- Earthquake  
+- Ice Beam  
+- Recover  
+
+Blastoise @ Blastoisinite  
+Ability: Torrent  
+Tera Type: Electric  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Modest Nature  
+IVs: 0 Atk  
+- Shell Smash  
+- Surf  
+- Ice Beam  
+- Aura Sphere  

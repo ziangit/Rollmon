@@ -143,6 +143,9 @@ def _config_from_environment() -> BattleRunnerConfig:
         ),
         showdown_log_dir=log_dir,
         search_time_ms=int(os.environ.get("ROLLMONS_SEARCH_TIME_MS", "25")),
+        player_search_time_ms=int(
+            os.environ.get("ROLLMONS_PLAYER_SEARCH_TIME_MS", "100")
+        ),
         search_parallelism=int(os.environ.get("ROLLMONS_SEARCH_PARALLELISM", "1")),
         search_threads=int(os.environ.get("ROLLMONS_SEARCH_THREADS", "1")),
     )
