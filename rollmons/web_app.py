@@ -186,6 +186,138 @@ BOSS_ORDER_MIN = 1
 BOSS_ORDER_MAX = 10
 
 
+def _slot_from_protocol_ident(value: str) -> str:
+    return value.split(":", 1)[0]
+
+
+def _name_from_protocol_ident(value: str) -> str:
+    return value.split(":", 1)[-1].strip()
+
+
+def _species_from_switch_details(value: str) -> str:
+    return value.split(",", 1)[0].strip()
+
+
+def _condition_percent(condition: str) -> float:
+    hp_text = condition.split()[0]
+    if hp_text == "0":
+        return 0.0
+    if "/" not in hp_text:
+        return 0.0
+    current, maximum = hp_text.split("/", 1)
+    try:
+        return max(0.0, min(100.0, 100 * float(current) / float(maximum)))
+    except ValueError:
+        return 0.0
+
+
+def _player_side_from_replay(replay_log: list[str], player_name: str) -> str:
+    from fp.helpers import normalize_name
+
+    normalized_player = normalize_name(player_name)
+    for line in replay_log:
+        parts = line.split("|")
+        if len(parts) >= 4 and parts[1] == "player":
+            side = parts[2]
+            name = parts[3]
+            if normalize_name(name) == normalized_player:
+                return side
+    return "p1"
+
+
+def _damage_by_player_pokemon(result: Any) -> dict[str, float]:
+    replay_log = result.replay_log
+    player_side = _player_side_from_replay(replay_log, result.player_name)
+    opponent_side = "p2" if player_side == "p1" else "p1"
+    active_species_by_slot: dict[str, str] = {}
+    hp_by_slot: dict[str, float] = {}
+    current_player_attacker: str | None = None
+    damage_by_attacker: dict[str, float] = {}
+
+    for line in replay_log:
+        parts = line.split("|")
+        if len(parts) < 2:
+            continue
+        event = parts[1]
+        if event in {"switch", "drag"} and len(parts) >= 5:
+            slot = _slot_from_protocol_ident(parts[2])
+            active_species_by_slot[slot] = _species_from_switch_details(parts[3])
+            hp_by_slot[slot] = _condition_percent(parts[4])
+            current_player_attacker = None
+            continue
+        if event == "move" and len(parts) >= 4:
+            slot = _slot_from_protocol_ident(parts[2])
+            side = slot[:2]
+            if side == player_side:
+                current_player_attacker = active_species_by_slot.get(
+                    slot,
+                    _name_from_protocol_ident(parts[2]),
+                )
+            else:
+                current_player_attacker = None
+            continue
+        if event in {"turn", "upkeep", "win", "tie"}:
+            current_player_attacker = None
+            continue
+        if event == "-heal" and len(parts) >= 4:
+            slot = _slot_from_protocol_ident(parts[2])
+            if slot[:2] == opponent_side:
+                hp_by_slot[slot] = _condition_percent(parts[3])
+            continue
+        if event != "-damage" or len(parts) < 4:
+            continue
+        slot = _slot_from_protocol_ident(parts[2])
+        current_hp = _condition_percent(parts[3])
+        previous_hp = hp_by_slot.get(slot, 100.0)
+        hp_by_slot[slot] = current_hp
+        if slot[:2] != opponent_side or current_player_attacker is None:
+            continue
+        damage = max(0.0, previous_hp - current_hp)
+        if damage <= 0:
+            continue
+        damage_by_attacker[current_player_attacker] = (
+            damage_by_attacker.get(current_player_attacker, 0.0) + damage
+        )
+
+    return damage_by_attacker
+
+
+def _damage_payload_from_totals(totals: dict[str, float] | None) -> dict:
+    totals = totals or {}
+    total_damage = sum(totals.values())
+    entries = [
+        {
+            "name": name,
+            "damage": damage,
+            "contribution": (100 * damage / total_damage) if total_damage else 0.0,
+        }
+        for name, damage in totals.items()
+    ]
+    entries.sort(key=lambda item: item["damage"], reverse=True)
+    mvp = entries[0] if entries and entries[0]["damage"] > 0 else None
+    return {
+        "total": total_damage,
+        "mvp": mvp,
+        "by_pokemon": entries,
+    }
+
+
+def _gauntlet_damage_summary(totals: dict[str, float] | None) -> str | None:
+    damage = _damage_payload_from_totals(totals)
+    mvp = damage["mvp"]
+    if mvp is None:
+        return None
+    contributions = ", ".join(
+        f"{entry['name']} {entry['damage']:.1f}% ({entry['contribution']:.1f}%)"
+        for entry in damage["by_pokemon"]
+    )
+    return (
+        f"Your MVP is {mvp['name']}, dealing {mvp['damage']:.1f}% damage "
+        f"to your opponents ({mvp['contribution']:.1f}% contribution). "
+        f"Team damage: {contributions}."
+    )
+
+
 @dataclass
 class DraftSession:
     draft: Draft
@@ -196,6 +328,7 @@ class DraftSession:
     gauntlet_next_index: int = 0
     gauntlet_results: list[Any] | None = None
     gauntlet_stop_on_loss: bool = False
+    gauntlet_damage_by_species: dict[str, float] | None = None
 
 
 def _battle_config_from_environment():
@@ -244,6 +377,9 @@ def _gauntlet_payload(
         average_turns = sum(result.turns for result in results) / len(results)
         record = f"{wins}-{losses}-{ties}" if ties else f"{wins}-{losses}"
         summary = f"Your record is {record}! Average turn is {average_turns:.1f}."
+        damage_summary = _gauntlet_damage_summary(session.gauntlet_damage_by_species)
+        if damage_summary is not None:
+            summary = f"{summary} {damage_summary}"
     return {
         "bosses": [
             {
@@ -258,6 +394,7 @@ def _gauntlet_payload(
         "complete": complete,
         "summary": summary,
         "stop_on_loss": session.gauntlet_stop_on_loss,
+        "damage": _damage_payload_from_totals(session.gauntlet_damage_by_species),
         "results": [asdict(result) for result in results],
     }
 
@@ -661,6 +798,10 @@ def create_app(
         session.gauntlet_next_index = 0
         session.gauntlet_results = []
         session.gauntlet_stop_on_loss = request.stop_on_loss
+        session.gauntlet_damage_by_species = {
+            legality_data.species[species_id].name: 0.0
+            for species_id in session.draft.picks
+        }
         return serialize_session(session_id, session)
 
     @app.post("/api/drafts/{session_id}/gauntlet/next")
@@ -696,6 +837,15 @@ def create_app(
         if session.gauntlet_results is None:
             session.gauntlet_results = []
         session.gauntlet_results.append(result)
+        if session.gauntlet_damage_by_species is None:
+            session.gauntlet_damage_by_species = {
+                legality_data.species[species_id].name: 0.0
+                for species_id in session.draft.picks
+            }
+        for species, damage in _damage_by_player_pokemon(result).items():
+            session.gauntlet_damage_by_species[species] = (
+                session.gauntlet_damage_by_species.get(species, 0.0) + damage
+            )
         session.battle_result = result
         session.gauntlet_next_index += 1
         if session.gauntlet_stop_on_loss and result.winner != "player":

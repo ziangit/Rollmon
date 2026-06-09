@@ -5,7 +5,14 @@ from battle_runner import BattleResult, BattleRunnerConfig, PERMISSIVE_GEN9_FORM
 from rollmons import web_app
 from rollmons import boss_loader
 from rollmons.boss_loader import load_boss_team
-from rollmons.web_app import _battle_config_from_environment, app, create_app
+from rollmons.web_app import (
+    _battle_config_from_environment,
+    _damage_by_player_pokemon,
+    _damage_payload_from_totals,
+    _gauntlet_damage_summary,
+    app,
+    create_app,
+)
 
 
 @pytest.fixture
@@ -28,6 +35,62 @@ def find_cell(matrix, pokemon_type, generation):
         cell
         for cell in matrix["cells"]
         if cell["type"] == pokemon_type and cell["generation"] == generation
+    )
+
+
+def test_damage_summary_attributes_player_damage_from_replay_logs():
+    result = BattleResult(
+        winner="player",
+        turns=4,
+        battle_id="battle-test-1",
+        player_name="Player",
+        boss_name="Ash",
+        replay_log=[
+            "|player|p1|Player|",
+            "|player|p2|Ash|",
+            "|switch|p1a: Azu|Azumarill, L100|100/100",
+            "|switch|p2a: Lapras|Lapras, L100|100/100",
+            "|move|p1a: Azu|Play Rough|p2a: Lapras",
+            "|-damage|p2a: Lapras|48/100",
+            "|move|p2a: Lapras|Blizzard|p1a: Azu",
+            "|-damage|p1a: Azu|60/100",
+            "|move|p1a: Azu|Aqua Jet|p2a: Lapras",
+            "|-damage|p2a: Lapras|0 fnt",
+            "|faint|p2a: Lapras",
+            "|switch|p2a: Charizard|Charizard, L100|100/100",
+            "|move|p1a: Azu|Aqua Jet|p2a: Charizard",
+            "|-damage|p2a: Charizard|82/100",
+            "|win|Player",
+        ],
+    )
+
+    assert _damage_by_player_pokemon(result) == {"Azumarill": 118.0}
+
+
+def test_damage_payload_reports_total_mvp_and_contribution():
+    payload = _damage_payload_from_totals(
+        {
+            "Azumarill": 75.0,
+            "Staraptor": 90.0,
+            "Breloom": 0.0,
+        }
+    )
+
+    assert payload["total"] == 165.0
+    assert payload["mvp"]["name"] == "Staraptor"
+    assert payload["mvp"]["damage"] == 90.0
+    assert payload["mvp"]["contribution"] == pytest.approx(54.545, abs=0.001)
+    assert (
+        _gauntlet_damage_summary(
+            {
+                "Azumarill": 75.0,
+                "Staraptor": 90.0,
+                "Breloom": 0.0,
+            }
+        )
+        == "Your MVP is Staraptor, dealing 90.0% damage to your opponents "
+        "(54.5% contribution). Team damage: Staraptor 90.0% (54.5%), "
+        "Azumarill 75.0% (45.5%), Breloom 0.0% (0.0%)."
     )
 
 
@@ -398,7 +461,16 @@ async def test_completed_draft_can_run_boss_gauntlet_sequentially(tmp_path, monk
             winner="player",
             turns=10 + len(calls),
             battle_id=f"battle-gen9customgame-{len(calls)}",
-            replay_log=[f"|turn|{10 + len(calls)}", f"|win|{player_name}"],
+            replay_log=[
+                f"|player|p1|{player_name}|",
+                f"|player|p2|{boss_name}|",
+                "|switch|p1a: Azu|Azumarill, L100|100/100",
+                "|switch|p2a: Lapras|Lapras, L100|100/100",
+                "|move|p1a: Azu|Play Rough|p2a: Lapras",
+                f"|-damage|p2a: Lapras|{70 - len(calls) * 10}/100",
+                f"|turn|{10 + len(calls)}",
+                f"|win|{player_name}",
+            ],
             player_name=player_name,
             boss_name=boss_name,
         )
@@ -445,10 +517,28 @@ async def test_completed_draft_can_run_boss_gauntlet_sequentially(tmp_path, monk
     assert first.status_code == 200
     assert first.json()["gauntlet"]["results"][0]["boss_name"] == "Brock"
     assert first.json()["gauntlet"]["complete"] is False
+    first_damage = first.json()["gauntlet"]["damage"]
+    assert first_damage["total"] == 40.0
+    assert first_damage["mvp"] == {
+        "name": "Azumarill",
+        "damage": 40.0,
+        "contribution": 100.0,
+    }
     assert second.status_code == 200
     payload = second.json()["gauntlet"]
     assert payload["complete"] is True
-    assert payload["summary"] == "Your record is 2-0! Average turn is 11.5."
+    assert payload["damage"]["total"] == 90.0
+    assert payload["damage"]["mvp"] == {
+        "name": "Azumarill",
+        "damage": 90.0,
+        "contribution": 100.0,
+    }
+    assert payload["summary"].startswith("Your record is 2-0! Average turn is 11.5.")
+    assert (
+        "Your MVP is Azumarill, dealing 90.0% damage to your opponents "
+        "(100.0% contribution)."
+    ) in payload["summary"]
+    assert "Team damage:" in payload["summary"]
     assert [result["boss_name"] for result in payload["results"]] == ["Brock", "Misty"]
     assert [result["battle_id"] for result in payload["results"]] == [
         "battle-gen9customgame-1",
