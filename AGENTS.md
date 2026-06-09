@@ -110,9 +110,10 @@ two bounded manual cell skips. Thin-cell rerolls do not consume that skip and
 do not bank as extra skip currency.
 
 `rollmons/smogon_sets.py` ingests the Smogon JSON. It first excludes set rows
-whose format is Godly Gift, 1v1/1V1, Battle Stadium Singles/BSS, or Monotype
-using case-insensitive alias matching. It strips `Tera Type:` lines, parses the
-remaining standard Showdown export text, and applies only the existing
+whose format is Godly Gift, 1v1/1V1, Battle Stadium Singles/BSS, Monotype,
+Almost Any Ability/AAA, Mix and Mega, Doubles, or VGC using case-insensitive
+alias matching. It strips `Tera Type:` lines, parses the remaining standard
+Showdown export text, and applies only the existing
 species/move existence pre-flight. Failed sets are reported for manual review
 and do not count as usable; they are not silently fixed. Run
 `python3 -m rollmons.report_smogon_ingestion` to reproduce exclusion counts,
@@ -483,7 +484,7 @@ The earlier 299-line random-battle replay fixture still animates through the
 standard Showdown replay player with no rejected lines or JavaScript errors.
 
 The pure legality matrix is implemented in `rollmons/legality_matrix.py`.
-With the current Smogon primary source, 432 usable atoms produce 155 nonempty
+With the current Smogon primary source, 424 usable atoms produce 155 nonempty
 type-generation cells (113 normal and 42 thin), with seven empty cells
 excluded. The randbats alternate remains 508 atoms and 158 nonempty cells. The
 six-round draft and level-100 team assembly are implemented in

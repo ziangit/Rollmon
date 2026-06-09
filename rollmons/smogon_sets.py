@@ -20,10 +20,15 @@ DEFAULT_SMOGON_SETS_PATH = REPO_ROOT / "rollmons" / "data" / "smogon_sets.json"
 EXCLUDED_FORMAT_ALIASES = {
     "1v1",
     "1v 1",
+    "aaa",
+    "almost any ability",
     "battle stadium singles",
     "bss",
+    "doubles",
     "godly gift",
+    "mix and mega",
     "monotype",
+    "vgc",
 }
 
 

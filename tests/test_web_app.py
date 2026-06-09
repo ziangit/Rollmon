@@ -234,7 +234,7 @@ async def test_matrix_endpoint_exposes_all_cells_and_known_placements(client):
     assert response.status_code == 200
     matrix = response.json()
     assert matrix["set_source"] == "smogon"
-    assert matrix["atom_count"] == 432
+    assert matrix["atom_count"] == 424
     assert matrix["included_cell_count"] == 155
     assert len(matrix["cells"]) == 18 * 9
     assert sum(cell["included"] for cell in matrix["cells"]) == 155

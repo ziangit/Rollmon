@@ -14,6 +14,11 @@ def test_format_exclusion_matches_requested_aliases():
     assert is_format_excluded("Battle Stadium Singles")
     assert is_format_excluded("BSS Series 2")
     assert is_format_excluded("National Dex Monotype")
+    assert is_format_excluded("Almost Any Ability")
+    assert is_format_excluded("AAA")
+    assert is_format_excluded("Mix and Mega")
+    assert is_format_excluded("Doubles")
+    assert is_format_excluded("VGC")
     assert not is_format_excluded("OU")
 
 
@@ -34,17 +39,21 @@ Level: 100
 def test_checked_in_smogon_ingestion_counts_and_validation_report():
     sets, report = ingest_smogon_sets()
 
-    assert len(sets) == 432
+    assert len(sets) == 424
     assert report.input_set_count == 720
-    assert report.usable_set_count == 658
-    assert report.format_excluded_set_count == 62
+    assert report.usable_set_count == 650
+    assert report.format_excluded_set_count == 70
     assert report.matched_format_strings == (
         "1v1",
+        "Almost Any Ability",
         "BSS Series 2",
         "Battle Stadium Singles",
+        "Doubles",
         "Godly Gift",
+        "Mix and Mega",
         "Monotype",
         "National Dex Monotype",
+        "VGC",
     )
     assert report.validation_issues == ()
     assert report.all_sets_excluded_or_failed_species[:3] == (
@@ -64,3 +73,18 @@ def test_checked_in_smogon_json_contains_no_bh_sets():
         for entry in entries
         if entry.get("format") == "BH"
     } == set()
+
+
+def test_checked_in_smogon_ingestion_excludes_om_and_doubles_sets():
+    sets, _report = ingest_smogon_sets()
+
+    assert "polteageist" not in sets
+    assert "regieleki" not in sets
+    assert "gougingfire" not in sets
+    assert "jumpluff" not in sets
+    assert all(
+        set_.format
+        not in {"Almost Any Ability", "Mix and Mega", "Doubles", "VGC"}
+        for entries in sets.values()
+        for set_ in entries
+    )
