@@ -1,0 +1,9 @@
+Garchomp @ Garchompite
+Ability: Rough Skin
+Level: 100
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Swords Dance
+- Scale Shot
+- Earthquake
+- Fire Fang

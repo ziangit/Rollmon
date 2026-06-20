@@ -1,0 +1,18 @@
+Pidgeot @ Pidgeotite
+Ability: Tangled Feet
+Level: 100
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Hurricane
+- Heat Wave
+- Roost
+- U-turn
+
+Pidgeot @ Sharp Beak  
+Ability: Keen Eye  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Roost  
+- Defog  
+- Brave Bird  
+- U-turn

@@ -54,6 +54,7 @@ MIN_CELL_SIZE = 1
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RANDBATS_PATH = REPO_ROOT / "rollmons" / "data" / "gen9randombattle.json"
 DEFAULT_POKEDEX_PATH = REPO_ROOT / "data" / "pokedex.json"
+DEFAULT_SETS_DIR = REPO_ROOT / "rollmons" / "sets"
 DEFAULT_SET_SOURCE = "smogon"
 SET_SOURCE_ENV_VAR = "ROLLMONS_SET_SOURCE"
 
@@ -157,6 +158,22 @@ def _atoms_for_source(
     raise LegalityDataError(
         f"unsupported set source {source!r}; expected 'smogon' or 'randbats'"
     )
+
+
+def _override_atom_candidates(sets_dir: str | Path) -> tuple[str, ...]:
+    """Return species IDs that have a checked-in set override file.
+
+    A ``rollmons/sets/<species-id>.txt`` override makes that species draftable
+    even when the configured set source has no usable set for it (for example a
+    Mega-Stone set whose base species is otherwise absent from the pool). The
+    file stem is the species ID; non-species files are ignored by the caller,
+    which intersects these candidates with the Pokedex.
+    """
+
+    directory = Path(sets_dir)
+    if not directory.is_dir():
+        return ()
+    return tuple(sorted(path.stem for path in directory.glob("*.txt")))
 
 
 def _generation_from_national_dex_number(number: int) -> int:
@@ -264,17 +281,27 @@ def build_legality_data(
     randbats_path: str | Path = DEFAULT_RANDBATS_PATH,
     smogon_path: str | Path | None = None,
     pokedex_path: str | Path = DEFAULT_POKEDEX_PATH,
+    sets_dir: str | Path = DEFAULT_SETS_DIR,
     source: str | None = None,
 ) -> LegalityData:
     """Load source data and return atoms, metadata, and the filtered matrix."""
 
     selected_source = (source or configured_set_source()).lower()
     pokedex = _load_json(pokedex_path)
-    atoms = _atoms_for_source(
+    source_atoms = _atoms_for_source(
         source=selected_source,
         randbats_path=randbats_path,
         smogon_path=smogon_path,
     )
+    # Checked-in set overrides contribute draftable atoms so a species with a
+    # custom set (e.g. a Mega-Stone set) is draftable even when the configured
+    # source has no usable set for it. Non-species files are filtered out here.
+    override_atoms = tuple(
+        species_id
+        for species_id in _override_atom_candidates(sets_dir)
+        if species_id in pokedex
+    )
+    atoms = tuple(sorted(set(source_atoms) | set(override_atoms)))
     species = {}
 
     for species_id in atoms:

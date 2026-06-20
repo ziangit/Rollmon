@@ -1,0 +1,10 @@
+Venusaur @ Venusaurite
+Ability: Chlorophyll
+Level: 100
+EVs: 248 HP / 252 SpA / 8 Spe
+Modest Nature
+IVs: 0 Atk
+- Giga Drain
+- Sludge Bomb
+- Synthesis
+- Earth Power

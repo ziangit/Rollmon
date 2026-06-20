@@ -1,0 +1,9 @@
+Heracross @ Heracronite
+Ability: Moxie
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Adamant Nature
+- Trailblaze
+- Swords Dance
+- Close Combat
+- Rock Blast

@@ -1,0 +1,18 @@
+Absol @ Absolite
+Ability: Pressure
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Swords Dance
+- Knock Off
+- Sucker Punch
+- Close Combat
+
+Absol @ Life Orb  
+Ability: Justified  
+EVs: 252 Atk / 4 SpA / 252 Spe  
+Hasty Nature  
+- Knock Off  
+- Ice Beam  
+- Flamethrower  
+- Sucker Punch

@@ -1,0 +1,18 @@
+Pinsir @ Pinsirite
+Ability: Hyper Cutter
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Adamant Nature
+- Swords Dance
+- Double-Edge
+- Quick Attack
+- Close Combat
+
+Pinsir @ Heavy-Duty Boots  
+Ability: Hyper Cutter  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- X-Scissor  
+- Close Combat  
+- Stone Edge  
+- Knock Off

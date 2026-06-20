@@ -1,0 +1,10 @@
+Latias (F) @ Latiasite
+Ability: Levitate
+Level: 100
+EVs: 252 HP / 4 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Calm Mind
+- Roost
+- Stored Power
+- Draining Kiss

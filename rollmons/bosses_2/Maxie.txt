@@ -1,0 +1,57 @@
+Mightyena @ Expert Belt  
+Ability: Intimidate  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Crunch  
+- Play Rough  
+- Sucker Punch  
+- Fire Fang  
+
+Crobat @ Black Sludge  
+Ability: Infiltrator  
+EVs: 4 Def / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Nasty Plot  
+- Sludge Bomb  
+- Air Slash  
+- Roost  
+
+Camerupt @ Cameruptite  
+Ability: Solid Rock  
+EVs: 248 HP / 252 SpA / 8 SpD  
+Quiet Nature  
+IVs: 0 Atk / 0 Spe  
+- Stealth Rock  
+- Earth Power  
+- Fire Blast  
+- Ancient Power  
+
+Weezing @ Leftovers  
+Ability: Levitate  
+EVs: 252 HP / 4 SpA / 252 SpD  
+Calm Nature  
+IVs: 0 Atk  
+- Toxic Spikes  
+- Sludge Bomb  
+- Will-O-Wisp  
+- Pain Split  
+
+Shiftry @ Life Orb  
+Ability: Wind Rider  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Tailwind  
+- Leaf Blade  
+- Knock Off  
+- Explosion  
+
+Torkoal @ Heat Rock  
+Ability: Drought  
+EVs: 252 HP / 252 SpA / 4 Spe  
+Modest Nature  
+- Fire Blast  
+- Eruption  
+- Earth Power  
+- Rapid Spin  
+

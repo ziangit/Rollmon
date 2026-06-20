@@ -1,0 +1,19 @@
+Charizard @ Charizardite Y
+Ability: Blaze
+Level: 100
+EVs: 252 SpA / 4 SpD / 252 Spe
+Modest Nature
+IVs: 0 Atk
+- Weather Ball
+- Solar Beam
+- Roost
+- Air Slash
+
+Charizard @ Charizardite X  
+Ability: Blaze  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Adamant Nature  
+- Dragon Dance  
+- Flare Blitz  
+- Earthquake  
+- Roost

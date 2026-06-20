@@ -1,0 +1,19 @@
+Manectric @ Manectite
+Ability: Lightning Rod
+Level: 100
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Thunderbolt
+- Overheat
+- Volt Switch
+
+Manectric @ Choice Specs  
+Ability: Lightning Rod  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Thunderbolt  
+- Volt Switch  
+- Overheat  
+- Thunder

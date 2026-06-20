@@ -9,7 +9,7 @@ import re
 import uuid
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
@@ -47,10 +47,11 @@ from rollmons.team_assembly import (
     NEUTRAL_EVS,
     NEUTRAL_NATURE,
     STATS,
-    assemble_team,
     load_random_battle_sets,
+    load_set_override,
     representative_random_battle_set,
     representative_smogon_set,
+    selectable_sets,
 )
 
 STATIC_DIR = Path(__file__).resolve().parent / "web_static"
@@ -168,6 +169,11 @@ class PickRequest(BaseModel):
     species_id: str
 
 
+class LoadoutRequest(BaseModel):
+    species_id: str
+    set_id: str
+
+
 class BattleRequest(BaseModel):
     boss_id: str = "ash"
 
@@ -192,6 +198,20 @@ def _slot_from_protocol_ident(value: str) -> str:
 
 def _name_from_protocol_ident(value: str) -> str:
     return value.split(":", 1)[-1].strip()
+
+
+def _normalize_species_key(value: str) -> str:
+    """Canonical species key shared by roster metadata and replay protocol.
+
+    Replicates ``fp.helpers.normalize_name`` so pure matrix/draft routes never
+    import foul-play. Roster names (e.g. ``"iron moth"``) and replay names
+    (e.g. ``"Iron Moth"``) must collapse to one key so per-Pokemon damage is
+    not double-counted.
+    """
+
+    for character in " -.'%*:()":
+        value = value.replace(character, "")
+    return value.strip().lower().encode("ascii", "ignore").decode("utf-8")
 
 
 def _species_from_switch_details(value: str) -> str:
@@ -282,16 +302,20 @@ def _damage_by_player_pokemon(result: Any) -> dict[str, float]:
     return damage_by_attacker
 
 
-def _damage_payload_from_totals(totals: dict[str, float] | None) -> dict:
+def _damage_payload_from_totals(
+    totals: dict[str, float] | None,
+    display_names: dict[str, str] | None = None,
+) -> dict:
     totals = totals or {}
+    display_names = display_names or {}
     total_damage = sum(totals.values())
     entries = [
         {
-            "name": name,
+            "name": display_names.get(key, key),
             "damage": damage,
             "contribution": (100 * damage / total_damage) if total_damage else 0.0,
         }
-        for name, damage in totals.items()
+        for key, damage in totals.items()
     ]
     entries.sort(key=lambda item: item["damage"], reverse=True)
     mvp = entries[0] if entries and entries[0]["damage"] > 0 else None
@@ -302,8 +326,11 @@ def _damage_payload_from_totals(totals: dict[str, float] | None) -> dict:
     }
 
 
-def _gauntlet_damage_summary(totals: dict[str, float] | None) -> str | None:
-    damage = _damage_payload_from_totals(totals)
+def _gauntlet_damage_summary(
+    totals: dict[str, float] | None,
+    display_names: dict[str, str] | None = None,
+) -> str | None:
+    damage = _damage_payload_from_totals(totals, display_names)
     mvp = damage["mvp"]
     if mvp is None:
         return None
@@ -318,17 +345,53 @@ def _gauntlet_damage_summary(totals: dict[str, float] | None) -> str | None:
     )
 
 
+def _seed_damage_tracking(
+    species_names: Sequence[str],
+) -> tuple[dict[str, float], dict[str, str]]:
+    """Seed zeroed per-Pokemon damage totals plus a normalized->display map.
+
+    Roster names and replay names are normalized to one key so the same
+    Pokemon is never tracked under two keys (e.g. ``"iron moth"`` vs the
+    replay's ``"Iron Moth"``).
+    """
+
+    totals: dict[str, float] = {}
+    display: dict[str, str] = {}
+    for name in species_names:
+        key = _normalize_species_key(name)
+        totals.setdefault(key, 0.0)
+        display.setdefault(key, name)
+    return totals, display
+
+
+def _accumulate_player_damage(
+    totals: dict[str, float],
+    display: dict[str, str],
+    result: Any,
+) -> None:
+    """Fold one battle's replay damage into normalized per-Pokemon totals."""
+
+    for species, damage in _damage_by_player_pokemon(result).items():
+        key = _normalize_species_key(species)
+        totals[key] = totals.get(key, 0.0) + damage
+        # Keep the seeded roster name (matches the team panel/gauntlet list);
+        # only fall back to the replay name for an attacker not in the roster.
+        display.setdefault(key, species)
+
+
 @dataclass
 class DraftSession:
     draft: Draft
     assembly_rng: random.Random
     team_export: str | None = None
+    loadout: dict[str, str] | None = None
     battle_result: Any | None = None
     gauntlet_boss_ids: tuple[str, ...] = ()
     gauntlet_next_index: int = 0
     gauntlet_results: list[Any] | None = None
     gauntlet_stop_on_loss: bool = False
     gauntlet_damage_by_species: dict[str, float] | None = None
+    gauntlet_damage_display: dict[str, str] | None = None
 
 
 def _battle_config_from_environment():
@@ -377,7 +440,10 @@ def _gauntlet_payload(
         average_turns = sum(result.turns for result in results) / len(results)
         record = f"{wins}-{losses}-{ties}" if ties else f"{wins}-{losses}"
         summary = f"Your record is {record}! Average turn is {average_turns:.1f}."
-        damage_summary = _gauntlet_damage_summary(session.gauntlet_damage_by_species)
+        damage_summary = _gauntlet_damage_summary(
+            session.gauntlet_damage_by_species,
+            session.gauntlet_damage_display,
+        )
         if damage_summary is not None:
             summary = f"{summary} {damage_summary}"
     return {
@@ -394,7 +460,10 @@ def _gauntlet_payload(
         "complete": complete,
         "summary": summary,
         "stop_on_loss": session.gauntlet_stop_on_loss,
-        "damage": _damage_payload_from_totals(session.gauntlet_damage_by_species),
+        "damage": _damage_payload_from_totals(
+            session.gauntlet_damage_by_species,
+            session.gauntlet_damage_display,
+        ),
         "results": [asdict(result) for result in results],
     }
 
@@ -406,7 +475,27 @@ def _species_payload(
     set_source: str,
     pokedex,
 ) -> dict:
-    if set_source == "smogon" and metadata.species_id in smogon_sets:
+    override_export = load_set_override(metadata.species_id)
+    if override_export is not None:
+        # A checked-in override is exactly the set assembly will use, so it
+        # drives the representative display (and is the only set available for
+        # override-only atoms with no source set, e.g. a pooled Mega Stone set).
+        member = parse_showdown_export(
+            override_export, expected_members=1, source=metadata.species_id
+        )[0]
+        set_payload = {
+            "source": "override",
+            "label": "Custom set",
+            "format": None,
+            "export": override_export,
+            "item": member.get("item", ""),
+            "ability": member.get("ability", ""),
+            "moves": list(member.get("moves", [])),
+            "observed_count": 1,
+            "role_count": 1,
+            "item_icon": _item_icon_payload(member.get("item", "")),
+        }
+    elif set_source == "smogon" and metadata.species_id in smogon_sets:
         representative = representative_smogon_set(metadata.species_id, smogon_sets)
         set_payload = {
             "source": "smogon",
@@ -555,6 +644,78 @@ def create_app(
             raise HTTPException(status_code=404, detail="draft session not found")
         return session
 
+    def species_set_options(species_id: str):
+        return selectable_sets(
+            species_id,
+            smogon_sets=smogon_sets,
+            randbats_sets=random_battle_sets,
+            pokedex=pokedex,
+            set_source=set_source,
+        )
+
+    def default_loadout(picks) -> dict[str, str]:
+        loadout: dict[str, str] = {}
+        for species_id in picks:
+            options = species_set_options(species_id)
+            if not options:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"no selectable sets for {species_id}",
+                )
+            # Default to a non-Mega set so Mega is an opt-in choice and a fresh
+            # team is not all-Mega (only one Mega can evolve per battle anyway).
+            non_mega = next(
+                (option for option in options if not option.is_mega), None
+            )
+            loadout[species_id] = (non_mega or options[0]).set_id
+        return loadout
+
+    def assemble_from_loadout(loadout: dict[str, str]) -> str:
+        members = []
+        for species_id, set_id in loadout.items():
+            options = species_set_options(species_id)
+            chosen = next(
+                (option for option in options if option.set_id == set_id),
+                options[0],
+            )
+            members.append(chosen.export)
+        return "\n\n".join(members)
+
+    def loadout_payload(session: DraftSession) -> list[dict] | None:
+        if not session.draft.complete or session.loadout is None:
+            return None
+        entries = []
+        for species_id in session.draft.picks:
+            metadata = legality_data.species[species_id]
+            options = species_set_options(species_id)
+            entries.append(
+                {
+                    "species_id": species_id,
+                    "name": metadata.name,
+                    "sprite_url": (
+                        f"{SHOWDOWN_ASSET_ROOT}/home-centered/"
+                        f"{_showdown_sprite_id(metadata, pokedex[species_id])}.png"
+                    ),
+                    "chosen_set_id": session.loadout.get(species_id),
+                    "locked": bool(session.gauntlet_boss_ids)
+                    or session.battle_result is not None,
+                    "sets": [
+                        {
+                            "set_id": option.set_id,
+                            "source": option.source,
+                            "label": option.label,
+                            "item": option.item,
+                            "item_icon": _item_icon_payload(option.item),
+                            "ability": option.ability,
+                            "moves": list(option.moves),
+                            "is_mega": option.is_mega,
+                        }
+                        for option in options
+                    ],
+                }
+            )
+        return entries
+
     def serialize_session(session_id: str, session: DraftSession) -> dict:
         draft = session.draft
         return {
@@ -586,6 +747,7 @@ def create_app(
             "skips_remaining": draft.skips_remaining,
             "draft_config": asdict(draft_config),
             "team_export": session.team_export,
+            "loadout": loadout_payload(session),
             "battle_result": (
                 asdict(session.battle_result)
                 if session.battle_result is not None
@@ -728,10 +890,33 @@ def create_app(
         except DraftError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         if session.draft.complete:
-            session.team_export = assemble_team(
-                session.draft.picks,
-                rng=session.assembly_rng,
+            session.loadout = default_loadout(session.draft.picks)
+            session.team_export = assemble_from_loadout(session.loadout)
+        return serialize_session(session_id, session)
+
+    @app.post("/api/drafts/{session_id}/loadout")
+    def choose_set(session_id: str, request: LoadoutRequest):
+        session = get_session(session_id)
+        if not session.draft.complete or session.loadout is None:
+            raise HTTPException(status_code=409, detail="draft is not complete")
+        if session.gauntlet_boss_ids or session.battle_result is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="loadout is locked once battles have started",
             )
+        if request.species_id not in session.loadout:
+            raise HTTPException(
+                status_code=404, detail="species is not on the drafted team"
+            )
+        valid_set_ids = {
+            option.set_id for option in species_set_options(request.species_id)
+        }
+        if request.set_id not in valid_set_ids:
+            raise HTTPException(
+                status_code=422, detail="unknown set for this species"
+            )
+        session.loadout[request.species_id] = request.set_id
+        session.team_export = assemble_from_loadout(session.loadout)
         return serialize_session(session_id, session)
 
     @app.post("/api/drafts/{session_id}/skip")
@@ -798,10 +983,12 @@ def create_app(
         session.gauntlet_next_index = 0
         session.gauntlet_results = []
         session.gauntlet_stop_on_loss = request.stop_on_loss
-        session.gauntlet_damage_by_species = {
-            legality_data.species[species_id].name: 0.0
-            for species_id in session.draft.picks
-        }
+        (
+            session.gauntlet_damage_by_species,
+            session.gauntlet_damage_display,
+        ) = _seed_damage_tracking(
+            [legality_data.species[species_id].name for species_id in session.draft.picks]
+        )
         return serialize_session(session_id, session)
 
     @app.post("/api/drafts/{session_id}/gauntlet/next")
@@ -837,15 +1024,24 @@ def create_app(
         if session.gauntlet_results is None:
             session.gauntlet_results = []
         session.gauntlet_results.append(result)
-        if session.gauntlet_damage_by_species is None:
-            session.gauntlet_damage_by_species = {
-                legality_data.species[species_id].name: 0.0
-                for species_id in session.draft.picks
-            }
-        for species, damage in _damage_by_player_pokemon(result).items():
-            session.gauntlet_damage_by_species[species] = (
-                session.gauntlet_damage_by_species.get(species, 0.0) + damage
+        if (
+            session.gauntlet_damage_by_species is None
+            or session.gauntlet_damage_display is None
+        ):
+            (
+                session.gauntlet_damage_by_species,
+                session.gauntlet_damage_display,
+            ) = _seed_damage_tracking(
+                [
+                    legality_data.species[species_id].name
+                    for species_id in session.draft.picks
+                ]
             )
+        _accumulate_player_damage(
+            session.gauntlet_damage_by_species,
+            session.gauntlet_damage_display,
+            result,
+        )
         session.battle_result = result
         session.gauntlet_next_index += 1
         if session.gauntlet_stop_on_loss and result.winner != "player":

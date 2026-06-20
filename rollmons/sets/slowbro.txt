@@ -1,0 +1,10 @@
+Slowbro @ Slowbronite
+Ability: Regenerator
+Level: 100
+EVs: 252 HP / 252 Def / 4 SpA
+Bold Nature
+IVs: 0 Atk
+- Calm Mind
+- Slack Off
+- Scald
+- Psyshock

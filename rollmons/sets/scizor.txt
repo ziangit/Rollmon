@@ -1,0 +1,9 @@
+Scizor @ Scizorite
+Ability: Technician
+Level: 100
+EVs: 248 HP / 252 Atk / 8 SpD
+Adamant Nature
+- Swords Dance
+- Roost
+- Bullet Punch
+- Close Combat

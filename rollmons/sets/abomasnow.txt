@@ -1,0 +1,10 @@
+Abomasnow @ Abomasite
+Ability: Snow Warning
+Level: 100
+EVs: 252 HP / 4 Def / 252 SpA
+Quiet Nature
+IVs: 0 Atk
+- Blizzard
+- Giga Drain
+- Aurora Veil
+- Earth Power

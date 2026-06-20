@@ -1,0 +1,18 @@
+Beedrill @ Beedrillite
+Ability: Swarm
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- U-turn
+- Knock Off
+- Toxic Spikes
+- Poison Jab
+
+Beedrill @ Focus Sash  
+Ability: Swarm  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Toxic Spikes  
+- Endeavor  
+- String Shot  
+- Poison Jab

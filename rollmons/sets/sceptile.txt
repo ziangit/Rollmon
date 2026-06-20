@@ -1,0 +1,9 @@
+Sceptile @ Sceptilite
+Ability: Overgrow
+Level: 100
+EVs: 4 Atk / 252 SpA / 252 Spe
+Hasty Nature
+- Dragon Pulse
+- Leaf Storm
+- Earthquake
+- Rock Slide

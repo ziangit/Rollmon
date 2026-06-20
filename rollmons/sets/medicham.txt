@@ -1,0 +1,9 @@
+Medicham @ Medichamite
+Ability: Pure Power
+Level: 100
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Fake Out
+- Close Combat
+- Zen Headbutt
+- Ice Punch

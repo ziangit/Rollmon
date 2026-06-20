@@ -90,8 +90,10 @@ def test_smogon_set_selection_is_uniform_and_seedable():
     assert "Tera Type:" not in chosen.export
 
 
-def test_neutral_spread_is_the_legal_510_ev_cap():
-    export = assemble_team(DRAFTED_TEAM, rng=random.Random(8), source="randbats")
+def test_neutral_spread_is_the_legal_510_ev_cap(tmp_path):
+    export = assemble_team(
+        DRAFTED_TEAM, rng=random.Random(8), source="randbats", sets_dir=tmp_path
+    )
     ev_line = export.split("\n\n")[0].splitlines()[3]
     ev_values = [
         int(part.strip().split(" ", 1)[0])
@@ -104,12 +106,14 @@ def test_neutral_spread_is_the_legal_510_ev_cap():
     assert all(value <= 252 for value in ev_values)
 
 
-def test_fixed_level_replaces_randbats_scaled_level():
+def test_fixed_level_replaces_randbats_scaled_level(tmp_path):
     source = json.loads(DEFAULT_RANDBATS_PATH.read_text(encoding="utf-8"))
     first_charizard_set = next(iter(source["charizard"]))
     assert first_charizard_set.split(",", 1)[0] == "85"
 
-    export = assemble_team(DRAFTED_TEAM, rng=RecordingRng(), source="randbats")
+    export = assemble_team(
+        DRAFTED_TEAM, rng=RecordingRng(), source="randbats", sets_dir=tmp_path
+    )
 
     assert "Level: 85" not in export
     assert export.count("Level: 100") == 6

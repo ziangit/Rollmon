@@ -1,0 +1,18 @@
+Lopunny @ Lopunnite
+Ability: Limber
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Fake Out
+- Close Combat
+- Triple Axel
+- U-turn
+
+Lopunny @ Assault Vest  
+Ability: Klutz  
+EVs: 252 Atk / 252 Spe  
+Jolly Nature  
+- U-turn  
+- Close Combat  
+- Fake Out  
+- Triple Axel

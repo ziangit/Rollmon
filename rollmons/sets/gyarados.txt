@@ -1,0 +1,9 @@
+Gyarados @ Gyaradosite
+Ability: Intimidate
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Adamant Nature
+- Dragon Dance
+- Crunch
+- Waterfall
+- Earthquake

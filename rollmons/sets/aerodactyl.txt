@@ -1,0 +1,18 @@
+Aerodactyl @ Aerodactylite
+Ability: Rock Head
+Level: 100
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Hone Claws
+- Stone Edge
+- Dual Wingbeat
+- Ice Fang
+
+Aerodactyl @ Focus Sash  
+Ability: Unnerve  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Stealth Rock  
+- Stone Edge  
+- Taunt  
+- Earthquake

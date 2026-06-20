@@ -1,0 +1,61 @@
+Mienfoo @ Eviolite  
+Ability: Regenerator  
+Tera Type: Water  
+EVs: 76 HP / 236 Atk / 196 SpD  
+Adamant Nature  
+- High Jump Kick  
+- Knock Off  
+- U-turn  
+- Fake Out  
+
+Toedscool @ Eviolite  
+Ability: Mycelium Might  
+Tera Type: Fairy  
+EVs: 36 HP / 236 Def / 36 SpA / 196 Spe  
+Timid Nature  
+- Rapid Spin  
+- Dazzling Gleam  
+- Earth Power  
+- Giga Drain  
+
+Tinkatink @ Air Balloon  
+Ability: Pickpocket  
+Tera Type: Fairy  
+EVs: 36 HP / 236 Def / 4 SpD / 212 Spe  
+Timid Nature  
+- Draining Kiss  
+- Knock Off  
+- Encore  
+- Stealth Rock  
+
+Mareanie @ Eviolite  
+Ability: Regenerator  
+Tera Type: Ghost  
+EVs: 116 HP / 100 Def / 92 SpA / 20 SpD / 156 Spe  
+Modest Nature  
+IVs: 0 Atk  
+- Mud Shot  
+- Sludge Bomb  
+- Ice Beam  
+- Recover  
+
+Vullaby @ Eviolite  
+Ability: Weak Armor  
+Tera Type: Dragon  
+EVs: 236 Atk / 76 Def / 196 Spe  
+Jolly Nature  
+- Brave Bird  
+- Knock Off  
+- Roost  
+- U-turn  
+
+Growlithe-Hisui @ Choice Scarf  
+Ability: Rock Head  
+Tera Type: Fire  
+EVs: 36 HP / 236 Atk / 236 Spe  
+Adamant Nature  
+- Flare Blitz  
+- Head Smash  
+- Psychic Fangs  
+- Rock Blast  
+

@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rollmons — Draft & Battle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   ROLLMONS — Scarlet/Violet-flavored front end
+   Single self-contained file. Talks to the same /api/* backend
+   as the original harness; falls back to demo data when offline.
+   The battle viewport keeps the Pokémon Showdown replay embed.
+   ============================================================ */
+:root{
+  --bg:        oklch(97% 0.013 255);
+  --bg-2:      oklch(94% 0.022 270);
+  --surface:   oklch(100% 0 0);
+  --surface-2: oklch(98% 0.008 260);
+  --ink:       oklch(28% 0.04 268);
+  --muted:     oklch(55% 0.03 268);
+  --faint:     oklch(70% 0.02 268);
+  --border:    oklch(91% 0.012 268);
+  --line:      oklch(88% 0.014 268);
+  --scarlet:   oklch(60% 0.205 22);
+  --violet:    oklch(52% 0.20 295);
+  --gold:      oklch(82% 0.16 86);
+  --good:      oklch(64% 0.16 150);
+  --bad:       oklch(60% 0.20 22);
+  --shadow:    0 1px 2px rgba(40,30,70,.06), 0 8px 24px -12px rgba(40,30,70,.22);
+  --shadow-lg: 0 2px 6px rgba(40,30,70,.08), 0 28px 60px -28px rgba(40,30,70,.36);
+  --r:   18px;
+  --r-sm:12px;
+  --font-display:'Fredoka','Hiragino Maru Gothic ProN',system-ui,sans-serif;
+  --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:var(--font-body);
+  color:var(--ink);
+  background:
+    radial-gradient(1100px 700px at 12% -8%, color-mix(in oklch, var(--violet) 16%, transparent), transparent 60%),
+    radial-gradient(1000px 700px at 100% 0%, color-mix(in oklch, var(--scarlet) 13%, transparent), transparent 55%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+  background-attachment:fixed;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;margin:0;letter-spacing:-.01em}
+button{font:inherit;cursor:pointer;border:0;background:none}
+button:disabled{cursor:not-allowed;opacity:.42}
+.mono{font-family:var(--font-mono)}
+.hidden{display:none!important}
+
+/* ---- buttons ---- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.5em;
+  font-family:var(--font-display);font-weight:600;
+  padding:.72em 1.25em;border-radius:999px;line-height:1;
+  transition:transform .08s ease, box-shadow .15s ease, background .15s ease;
+  white-space:nowrap;
+}
+.btn:active{transform:translateY(1px)}
+.btn-primary{
+  color:#fff;
+  background:linear-gradient(135deg, var(--scarlet), var(--violet));
+  box-shadow:0 6px 18px -6px color-mix(in oklch,var(--scarlet) 60%,transparent);
+}
+.btn-primary:hover{box-shadow:0 10px 26px -8px color-mix(in oklch,var(--scarlet) 70%,transparent)}
+.btn-ghost{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn-ghost:hover{box-shadow:inset 0 0 0 1.5px var(--faint)}
+.btn-warn{background:color-mix(in oklch,var(--gold) 24%,white);color:oklch(40% 0.08 80);box-shadow:inset 0 0 0 1.5px color-mix(in oklch,var(--gold) 55%,white)}
+.btn-sm{padding:.5em .85em;font-size:.82rem}
+.btn-lg{padding:.95em 1.8em;font-size:1.08rem}
+.btn-danger{background:color-mix(in oklch,var(--bad) 12%,white);color:var(--bad);box-shadow:inset 0 0 0 1.5px color-mix(in oklch,var(--bad) 35%,white)}
+
+/* ---- topbar ---- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;gap:1rem;
+  padding:.7rem clamp(1rem,3vw,2.2rem);
+  background:color-mix(in oklch,var(--surface) 78%,transparent);
+  backdrop-filter:saturate(1.4) blur(14px);
+  border-bottom:1px solid var(--border);
+}
+.brand{display:flex;align-items:center;gap:.6rem;font-family:var(--font-display);font-weight:700;font-size:1.15rem}
+.brand .pokeball{width:24px;height:24px}
+.steps{display:flex;gap:.3rem;margin-left:.4rem;flex-wrap:wrap}
+.step{
+  font-family:var(--font-display);font-weight:500;font-size:.82rem;
+  color:var(--muted);padding:.32rem .7rem;border-radius:999px;
+}
+.step.active{color:#fff;background:linear-gradient(135deg,var(--scarlet),var(--violet))}
+.step.done{color:var(--violet);background:color-mix(in oklch,var(--violet) 12%,white)}
+.topbar .spacer{flex:1}
+.offline-tag{
+  font-family:var(--font-mono);font-size:.7rem;letter-spacing:.04em;
+  color:oklch(45% 0.09 80);background:color-mix(in oklch,var(--gold) 22%,white);
+  padding:.3rem .55rem;border-radius:999px;border:1px solid color-mix(in oklch,var(--gold) 45%,white);
+}
+
+/* ---- layout ---- */
+.screen{display:none;animation:rise .35s cubic-bezier(.2,.7,.2,1)}
+.screen.active{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.wrap{max-width:1180px;margin:0 auto;padding:clamp(1.1rem,3vw,2.4rem)}
+.eyebrow{
+  font-family:var(--font-mono);font-size:.72rem;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--violet);margin:0 0 .35rem;
+}
+.lead{color:var(--muted);font-size:1rem;margin:.4rem 0 0}
+.section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:1.3rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
+
+/* pokeball glyph */
+.pokeball{border-radius:50%;background:
+  linear-gradient(#f25b62 0 50%, #fff 50% 100%);
+  position:relative;box-shadow:inset 0 0 0 2px rgba(20,16,40,.85)}
+.pokeball::after{content:"";position:absolute;inset:0;margin:auto;width:30%;height:30%;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 2px rgba(20,16,40,.85),0 0 0 2px rgba(20,16,40,.85)}
+
+/* ============ TITLE ============ */
+#screen-title{min-height:100vh;display:none;place-items:center;text-align:center;position:relative;overflow:hidden}
+#screen-title.active{display:grid}
+.orb{position:absolute;border-radius:50%;filter:blur(8px);opacity:.5;animation:float 9s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-26px)}}
+.title-inner{position:relative;z-index:2;padding:2rem}
+.logo{
+  font-family:var(--font-display);font-weight:700;
+  font-size:clamp(3.4rem,12vw,8rem);line-height:.92;letter-spacing:-.03em;
+  background:linear-gradient(135deg,var(--scarlet) 10%,var(--violet) 90%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 14px 30px rgba(80,30,120,.28));
+}
+.logo .tail{display:block;font-size:clamp(.95rem,2.4vw,1.4rem);letter-spacing:.42em;
+  text-transform:uppercase;color:var(--muted);-webkit-text-fill-color:var(--muted);margin-top:.7rem;font-weight:500}
+.title-sub{max-width:34rem;margin:1.4rem auto 2.2rem;color:var(--muted);font-size:1.08rem;line-height:1.5}
+.title-actions{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
+.title-foot{margin-top:2.2rem;font-family:var(--font-mono);font-size:.72rem;color:var(--faint)}
+
+/* ============ DRAFT ============ */
+.round-bar{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;margin-bottom:1.1rem}
+.pips{display:flex;gap:.4rem}
+.pip{width:14px;height:14px;border-radius:50%;background:var(--line);box-shadow:inset 0 0 0 2px var(--border)}
+.pip.filled{background:linear-gradient(135deg,var(--scarlet),var(--violet));box-shadow:none}
+.pip.current{background:var(--gold);box-shadow:0 0 0 4px color-mix(in oklch,var(--gold) 35%,transparent);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px color-mix(in oklch,var(--gold) 12%,transparent)}}
+
+.encounter{
+  display:flex;align-items:center;gap:1rem;flex-wrap:wrap;justify-content:space-between;
+  padding:1rem 1.2rem;border-radius:var(--r);margin-bottom:1.2rem;
+  background:linear-gradient(120deg,color-mix(in oklch,var(--violet) 10%,var(--surface)),var(--surface));
+  border:1px solid var(--border);box-shadow:var(--shadow);
+}
+.encounter .cell-name{font-family:var(--font-display);font-size:1.5rem;font-weight:700}
+.encounter .thin-note{color:var(--violet);font-weight:600;font-size:.85rem;margin:.25rem 0 0}
+.encounter-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+
+.draft-grid{display:grid;grid-template-columns:1fr 320px;gap:1.3rem;align-items:start}
+.candidate-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:1rem}
+.mon{
+  position:relative;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;transition:transform .12s ease,box-shadow .18s ease;
+}
+.mon:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.mon.suggested{border-color:color-mix(in oklch,var(--gold) 60%,white);box-shadow:0 0 0 2px color-mix(in oklch,var(--gold) 45%,white),var(--shadow)}
+.mon-top{position:relative;padding:1rem 1rem .6rem;text-align:center;
+  background:radial-gradient(120% 90% at 50% 0%, var(--tint,rgba(0,0,0,.04)), transparent 70%)}
+.mon-badge{position:absolute;top:.6rem;left:.6rem;font-family:var(--font-mono);font-size:.66rem;
+  font-weight:600;letter-spacing:.04em;color:var(--muted);background:var(--surface-2);
+  padding:.22rem .5rem;border-radius:999px;border:1px solid var(--border)}
+.star{position:absolute;top:.55rem;right:.6rem;color:oklch(62% 0.16 86);font-size:1.1rem;filter:drop-shadow(0 1px 2px rgba(0,0,0,.15))}
+.sprite-frame{width:104px;height:104px;margin:0 auto;display:grid;place-items:center}
+.sprite-frame img{max-width:100%;max-height:100%;image-rendering:auto;
+  filter:drop-shadow(0 6px 8px rgba(40,30,70,.18))}
+.mon-name{font-family:var(--font-display);font-weight:600;font-size:1.18rem;margin:.3rem 0 .1rem;text-transform:capitalize}
+.mon-meta{font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
+.chips{display:flex;gap:.35rem;justify-content:center;flex-wrap:wrap;margin:.55rem 0 0}
+.chip{
+  font-family:var(--font-display);font-weight:500;font-size:.72rem;
+  padding:.24rem .62rem;border-radius:999px;color:#fff;text-transform:capitalize;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 1px 2px rgba(0,0,0,.12);
+}
+.chip.legend{background:linear-gradient(135deg,#caa23a,#a8812a);color:#fff}
+.mon-body{padding:.4rem .9rem 1rem;display:flex;flex-direction:column;gap:.6rem;flex:1}
+.prob{display:flex;align-items:center;gap:.5rem;font-size:.74rem;color:var(--muted)}
+.prob .bar{flex:1;height:7px;border-radius:99px;background:var(--line);overflow:hidden}
+.prob .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--violet),var(--scarlet))}
+.setbox{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-sm);padding:.6rem .7rem;font-size:.76rem}
+.setbox .row{color:var(--muted);font-family:var(--font-mono);font-size:.7rem;line-height:1.5;overflow-wrap:anywhere}
+.setbox .row b{color:var(--ink);font-weight:600}
+.moves{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.45rem}
+.move{font-size:.68rem;font-family:var(--font-mono);padding:.2rem .5rem;border-radius:7px;
+  background:var(--surface);border:1px solid var(--border);color:var(--ink)}
+details.raw{margin-top:.4rem}
+details.raw summary{font-size:.68rem;color:var(--faint);cursor:pointer;font-family:var(--font-mono)}
+details.raw pre{margin:.4rem 0 0;font-size:.7rem;line-height:1.45;white-space:pre-wrap;
+  font-family:var(--font-mono);color:var(--muted);background:transparent}
+.pick{margin:0 .9rem 1rem;width:calc(100% - 1.8rem)}
+
+/* party tray */
+.party{position:sticky;top:78px;align-self:start}
+.party h3{font-size:1.05rem;margin-bottom:.2rem}
+.party .sub{color:var(--muted);font-size:.8rem;margin:0 0 .8rem}
+.party-list{display:flex;flex-direction:column;gap:.5rem;list-style:none;margin:0 0 .9rem;padding:0}
+.slot{display:flex;align-items:center;gap:.7rem;padding:.5rem .6rem;border-radius:var(--r-sm);
+  border:1px solid var(--border);background:var(--surface-2);min-height:58px}
+.slot.empty{border-style:dashed;color:var(--faint);justify-content:flex-start;background:transparent}
+.slot .ball{width:30px;height:30px;flex:0 0 30px;opacity:.4}
+.slot .mini{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;
+  background:var(--surface);border-radius:10px}
+.slot .mini img{max-width:40px;max-height:40px;filter:drop-shadow(0 2px 3px rgba(40,30,70,.2))}
+.slot .info{min-width:0}
+.slot .info strong{display:block;font-family:var(--font-display);font-size:.92rem;text-transform:capitalize;overflow-wrap:anywhere}
+.slot .info span{font-family:var(--font-mono);font-size:.66rem;color:var(--muted)}
+
+/* ============ BOSSES ============ */
+.ladder{display:flex;flex-direction:column;gap:.7rem;margin:0;padding:0;list-style:none}
+.boss{
+  display:flex;align-items:center;gap:.9rem;padding:.8rem 1rem;border-radius:var(--r);
+  background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);
+}
+.boss.dragging{opacity:.5}
+.boss.drag-over{border-color:var(--violet);box-shadow:0 0 0 2px color-mix(in oklch,var(--violet) 30%,white)}
+.boss .num{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:10px;
+  font-family:var(--font-display);font-weight:700;color:#fff;
+  background:linear-gradient(135deg,var(--violet),var(--scarlet))}
+.boss .handle{cursor:grab;color:var(--faint);font-size:1.1rem;letter-spacing:-.1em;user-select:none}
+.boss .bname{flex:1;font-family:var(--font-display);font-weight:600;overflow-wrap:anywhere}
+.boss .tag{font-family:var(--font-mono);font-size:.66rem;color:var(--muted);padding:.18rem .45rem;
+  border-radius:999px;background:var(--surface-2);border:1px solid var(--border)}
+.boss .acts{display:flex;gap:.35rem}
+.field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.8rem;font-size:.82rem;font-weight:600}
+.field input,.field textarea,.field select{
+  width:100%;border:1px solid var(--line);border-radius:var(--r-sm);padding:.65rem .75rem;
+  font:inherit;color:var(--ink);background:var(--surface);
+}
+.field textarea{min-height:9rem;resize:vertical;font-family:var(--font-mono);font-size:.78rem}
+.field input:focus,.field textarea:focus,.field select:focus{outline:2px solid color-mix(in oklch,var(--violet) 45%,white);border-color:transparent}
+.status-line{min-height:1.2rem;font-size:.82rem;color:var(--muted);margin:.3rem 0 0}
+.boss-cols{display:grid;grid-template-columns:1fr 360px;gap:1.4rem;align-items:start}
+
+/* ============ BATTLE ============ */
+.battle-cols{display:grid;grid-template-columns:240px 1fr;gap:1.3rem;align-items:start}
+.rail{position:sticky;top:78px;display:flex;flex-direction:column;gap:.5rem;list-style:none;margin:0;padding:0}
+.rail li{display:flex;align-items:center;gap:.6rem;padding:.55rem .7rem;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--border);font-size:.86rem;font-weight:500}
+.rail li .dot{width:11px;height:11px;border-radius:50%;background:var(--line);flex:0 0 11px}
+.rail li.current{border-color:var(--gold);box-shadow:0 0 0 2px color-mix(in oklch,var(--gold) 30%,white)}
+.rail li.current .dot{background:var(--gold);animation:pulse 1.4s infinite}
+.rail li.win .dot{background:var(--good)}
+.rail li.loss .dot{background:var(--bad)}
+.rail li small{margin-left:auto;font-family:var(--font-mono);font-size:.64rem;color:var(--muted)}
+.theater{display:flex;flex-direction:column;gap:1.3rem}
+.match{
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.85rem 1.2rem;border-radius:var(--r);color:#fff;
+  background:linear-gradient(120deg,var(--violet),var(--scarlet));box-shadow:var(--shadow);
+}
+.match .side{font-family:var(--font-display);font-weight:600}
+.match .vs{font-family:var(--font-mono);font-weight:700;opacity:.85;font-size:.8rem;padding:.25rem .6rem;
+  background:rgba(255,255,255,.18);border-radius:999px}
+.match.win{background:linear-gradient(120deg,var(--good),oklch(58% 0.14 175))}
+.match.loss{background:linear-gradient(120deg,var(--bad),oklch(52% 0.18 8))}
+.replay-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  box-shadow:var(--shadow);overflow:hidden}
+.replay-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;
+  padding:.8rem 1.1rem;border-bottom:1px solid var(--border)}
+.replay-head h3{font-size:1.05rem}
+.replay-head .res{font-family:var(--font-display);font-weight:600;font-size:.82rem;padding:.28rem .7rem;border-radius:999px}
+.res.win{color:var(--good);background:color-mix(in oklch,var(--good) 14%,white)}
+.res.loss{color:var(--bad);background:color-mix(in oklch,var(--bad) 12%,white)}
+.res.tie{color:var(--muted);background:var(--surface-2)}
+.replay-frame{width:100%;min-height:680px;border:0;background:#f5f7fb;display:block}
+.replay-ph{min-height:340px;display:grid;place-items:center;text-align:center;padding:2rem;
+  background:repeating-linear-gradient(135deg,var(--surface-2),var(--surface-2) 14px,var(--surface) 14px,var(--surface) 28px)}
+.replay-ph .big{font-family:var(--font-display);font-weight:600;font-size:1.1rem;color:var(--muted)}
+.replay-ph .sm{color:var(--faint);font-size:.85rem;margin-top:.4rem;max-width:30rem}
+
+/* ============ RESULTS ============ */
+.result-hero{text-align:center;padding:2.4rem 1.5rem;border-radius:24px;color:#fff;margin-bottom:1.4rem;
+  box-shadow:var(--shadow-lg);position:relative;overflow:hidden}
+.result-hero.victory{background:linear-gradient(135deg,var(--gold),oklch(66% 0.17 60))}
+.result-hero.defeat{background:linear-gradient(135deg,oklch(48% 0.08 268),oklch(38% 0.06 280))}
+.result-hero.mixed{background:linear-gradient(135deg,var(--violet),var(--scarlet))}
+.result-hero h2{font-size:clamp(2.2rem,7vw,3.6rem);line-height:1;text-shadow:0 4px 20px rgba(0,0,0,.18)}
+.result-hero p{margin:.7rem 0 0;opacity:.92;font-size:1.05rem}
+.record{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin:1.4rem 0}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.6rem;
+  text-align:center;min-width:120px;box-shadow:var(--shadow)}
+.stat .v{font-family:var(--font-display);font-weight:700;font-size:2rem;line-height:1}
+.stat .k{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:.3rem}
+.result-chips{display:flex;flex-wrap:wrap;gap:.55rem;justify-content:center;margin:1.2rem 0}
+.rchip{display:flex;align-items:center;gap:.45rem;padding:.45rem .8rem;border-radius:999px;
+  font-size:.84rem;font-weight:500;background:var(--surface);border:1px solid var(--border)}
+.rchip .dot{width:9px;height:9px;border-radius:50%}
+.rchip.win .dot{background:var(--good)} .rchip.loss .dot{background:var(--bad)} .rchip.tie .dot{background:var(--faint)}
+.result-actions{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;margin-top:.5rem}
+
+/* ============ POOL / POKÉDEX ============ */
+.matrix-wrap{display:grid;grid-template-columns:1fr 320px;gap:1.3rem;align-items:start}
+.matrix{display:grid;grid-template-columns:5.2rem repeat(9,minmax(2.6rem,1fr));gap:.32rem;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:.7rem;box-shadow:var(--shadow);overflow-x:auto}
+.mhead,.mcell{min-height:3rem;border-radius:9px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-weight:600;font-size:.74rem}
+.mhead{background:var(--surface-2);color:var(--muted);text-transform:capitalize}
+.mhead.type{color:#fff;justify-content:flex-start;padding-left:.5rem}
+.mcell{flex-direction:column;gap:.05rem;border:1px solid var(--border);background:var(--surface-2);color:var(--faint);transition:transform .1s}
+.mcell:hover{transform:scale(1.06)}
+.mcell small{font-family:var(--font-mono);font-size:.55rem;text-transform:uppercase;letter-spacing:.04em;opacity:.7}
+.mcell.normal{background:color-mix(in oklch,var(--good) 16%,white);border-color:color-mix(in oklch,var(--good) 35%,white);color:oklch(40% 0.1 150);font-weight:700}
+.mcell.thin{background:color-mix(in oklch,var(--violet) 13%,white);border-color:color-mix(in oklch,var(--violet) 30%,white);color:var(--violet)}
+.mcell.selected{outline:3px solid var(--violet);outline-offset:1px}
+.legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.78rem;color:var(--muted)}
+.legend i{display:inline-block;width:.8rem;height:.8rem;border-radius:4px;margin-right:.35rem;vertical-align:-1px}
+.detail h3{margin-bottom:.3rem}
+.detail .dlist{list-style:none;margin:.7rem 0 0;padding:0;display:flex;flex-direction:column;gap:.5rem}
+.detail .dlist li{display:flex;gap:.6rem;align-items:center}
+.detail .dlist .mini{width:44px;height:44px;flex:0 0 44px;display:grid;place-items:center;background:var(--surface-2);border-radius:10px}
+.detail .dlist .mini img{max-width:40px;max-height:40px}
+.detail .dlist strong{font-family:var(--font-display);text-transform:capitalize;font-size:.9rem}
+.detail .dlist .meta{font-family:var(--font-mono);font-size:.66rem;color:var(--muted)}
+
+/* type colors */
+.t-bug{background:#92bc2c}.t-dark{background:#595761}.t-dragon{background:#0c69c8}.t-electric{background:#eab911}
+.t-fairy{background:#ee90e6}.t-fighting{background:#d3425f}.t-fire{background:#fba54c}.t-flying{background:#7ab9e0}
+.t-ghost{background:#5f6dbc}.t-grass{background:#5fbd58}.t-ground{background:#da7c4d}.t-ice{background:#75d0c1}
+.t-normal{background:#a0a29f}.t-poison{background:#b763cf}.t-psychic{background:#fa8581}.t-rock{background:#c9bb8a}
+.t-steel{background:#5695a3}.t-water{background:#539ddf}
+.asset-failed{display:none}
+
+@media(max-width:980px){
+  .draft-grid,.boss-cols,.battle-cols,.matrix-wrap{grid-template-columns:1fr}
+  .party,.rail{position:static}
+  .rail{flex-direction:row;flex-wrap:wrap}
+  .steps{display:none}
+}
+@media(max-width:560px){
+  .candidate-grid{grid-template-columns:1fr}
+  .match{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<header class="topbar hidden" id="topbar">
+  <div class="brand" role="button" tabindex="0" onclick="go('title')">
+    <span class="pokeball"></span>Rollmons
+  </div>
+  <nav class="steps" id="steps">
+    <span class="step" data-step="draft">Draft</span>
+    <span class="step" data-step="bosses">Gauntlet</span>
+    <span class="step" data-step="battle">Battle</span>
+    <span class="step" data-step="results">Results</span>
+  </nav>
+  <span class="spacer"></span>
+  <span class="offline-tag hidden" id="offline-tag">DEMO · backend offline</span>
+  <button class="btn btn-ghost btn-sm" onclick="go('pool')">Pokédex</button>
+</header>
+
+<!-- ============ TITLE ============ -->
+<section class="screen" id="screen-title">
+  <span class="orb t-fire"   style="width:120px;height:120px;left:8%;top:18%"></span>
+  <span class="orb t-water"  style="width:90px;height:90px;left:80%;top:14%;animation-delay:-2s"></span>
+  <span class="orb t-grass"  style="width:70px;height:70px;left:16%;top:72%;animation-delay:-4s"></span>
+  <span class="orb t-electric" style="width:60px;height:60px;left:72%;top:70%;animation-delay:-1s"></span>
+  <span class="orb t-psychic" style="width:100px;height:100px;left:48%;top:80%;animation-delay:-3s"></span>
+  <div class="title-inner">
+    <h1 class="logo">Rollmons<span class="tail">Draft · Battle · Conquer</span></h1>
+    <p class="title-sub">Roll a team of six. Climb the boss gauntlet. Every battle plays out in a live Pokémon Showdown engine — you just build the squad and watch them fight.</p>
+    <div class="title-actions">
+      <button class="btn btn-primary btn-lg" onclick="newRun()">▶ Start a new run</button>
+      <button class="btn btn-ghost btn-lg" onclick="go('pool')">Browse the pool</button>
+    </div>
+    <p class="title-foot" id="title-foot">Level 100 · Gen 9 · engine-enforced dedupe</p>
+  </div>
+</section>
+
+<!-- ============ DRAFT ============ -->
+<section class="screen" id="screen-draft">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Step 1 — Build your team</p>
+        <h1>Draft your six</h1>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="copy-export" disabled onclick="copyExport()">Copy team export</button>
+    </div>
+    <div class="round-bar">
+      <div class="pips" id="pips"></div>
+      <span id="round-label" class="mono" style="font-size:.82rem;color:var(--muted)"></span>
+    </div>
+
+    <div id="draft-live">
+      <div class="encounter" id="encounter"></div>
+      <div class="draft-grid">
+        <div class="candidate-grid" id="candidates"></div>
+        <aside class="party card" style="padding:1.1rem">
+          <h3>Your party</h3>
+          <p class="sub" id="party-count">0 / 6 drafted</p>
+          <ul class="party-list" id="party"></ul>
+        </aside>
+      </div>
+    </div>
+
+    <div id="draft-done" class="hidden card" style="padding:1.6rem;text-align:center">
+      <h2 style="font-size:1.6rem">Team assembled 🎉</h2>
+      <p class="lead">Six unique Pokémon, locked at level 100. Time to face the gauntlet.</p>
+      <div style="display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;margin-top:1.2rem">
+        <button class="btn btn-primary btn-lg" onclick="go('bosses')">To the gauntlet →</button>
+        <button class="btn btn-ghost" onclick="copyExport()">Copy team export</button>
+      </div>
+      <ul class="party-list" id="party-done" style="max-width:420px;margin:1.6rem auto 0;text-align:left"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BOSSES ============ -->
+<section class="screen" id="screen-bosses">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Step 2 — Set the ladder</p>
+        <h1>Boss gauntlet</h1>
+        <p class="lead">Drag to set the order your team will climb. Add your own bosses from a PokéPaste.</p>
+      </div>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" id="exhibition-btn" onclick="startRun(false)">Exhibition (play all)</button>
+        <button class="btn btn-primary" id="run-btn" onclick="startRun(true)">⚔ Start run</button>
+      </div>
+    </div>
+    <p class="status-line" id="boss-status"></p>
+    <div class="boss-cols">
+      <ol class="ladder" id="ladder"></ol>
+      <aside class="card" style="padding:1.2rem">
+        <h3 id="boss-form-title" style="margin-bottom:.2rem">Add a boss</h3>
+        <p class="sub" style="color:var(--muted);font-size:.82rem;margin:0 0 .9rem">Paste a Showdown team export.</p>
+        <form id="boss-form">
+          <input type="hidden" id="boss-id">
+          <label class="field">Boss name<input id="boss-name" autocomplete="off" placeholder="e.g. Champion Geeta"></label>
+          <label class="field">PokéPaste export<textarea id="boss-export" rows="8" placeholder="Garchomp @ Life Orb&#10;Ability: Rough Skin&#10;..."></textarea></label>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" type="submit" id="boss-save">Add boss</button>
+            <button class="btn btn-ghost btn-sm hidden" type="button" id="boss-cancel" onclick="resetBossForm()">Cancel</button>
+          </div>
+          <p class="status-line" id="boss-form-status"></p>
+        </form>
+        <details class="raw" style="margin-top:1rem">
+          <summary>Advanced: single-boss test</summary>
+          <div style="margin-top:.7rem">
+            <label class="field">Boss<select id="boss-select"></select></label>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="battleOne()">Battle this boss</button>
+          </div>
+        </details>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BATTLE ============ -->
+<section class="screen" id="screen-battle">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Step 3 — The arena</p>
+        <h1>Battle</h1>
+        <p class="lead" id="battle-lead">Each matchup plays out in the live Showdown engine.</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="to-results" onclick="go('results')" disabled>View run summary →</button>
+    </div>
+    <div class="battle-cols">
+      <ol class="rail" id="rail"></ol>
+      <div class="theater" id="theater"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section class="screen" id="screen-results">
+  <div class="wrap" style="max-width:860px">
+    <div class="result-hero" id="result-hero">
+      <h2 id="result-title">Run complete</h2>
+      <p id="result-sub"></p>
+    </div>
+    <div class="record" id="record"></div>
+    <div class="result-chips" id="result-chips"></div>
+    <div class="result-actions">
+      <button class="btn btn-ghost" onclick="go('battle')">Rewatch battles</button>
+      <button class="btn btn-primary" onclick="newRun()">↻ New run</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ POOL / POKÉDEX ============ -->
+<section class="screen" id="screen-pool">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Reference</p>
+        <h1>Draft pool</h1>
+        <p class="lead" id="matrix-summary">Loading pool…</p>
+      </div>
+      <div class="legend">
+        <span><i class="mcell normal" style="width:.8rem;height:.8rem;min-height:0;padding:0"></i>Normal</span>
+        <span><i class="mcell thin" style="width:.8rem;height:.8rem;min-height:0;padding:0"></i>Thin</span>
+        <span><i style="background:var(--surface-2);border:1px solid var(--border)"></i>Excluded</span>
+      </div>
+    </div>
+    <div class="matrix-wrap">
+      <div class="matrix" id="matrix"></div>
+      <aside class="card detail" id="detail" style="padding:1.2rem">
+        <h3>Pick a cell</h3>
+        <p style="color:var(--muted);font-size:.88rem">Tap any type × generation cell to see who lives there.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<script>
+/* =====================================================================
+   STATE + API  (same contract as the original harness)
+   ===================================================================== */
+const state = { sessionId:null, bosses:[], teamExport:"", gauntletRunning:false, matrix:null };
+const MIN_BOSSES = 1, MAX_BOSSES = 10;
+let OFFLINE = false;
+
+async function realApi(path, options={}){
+  const r = await fetch(path,{headers:{"Content-Type":"application/json"},...options});
+  const payload = await r.json();
+  if(!r.ok) throw new Error(payload.detail || "Request failed");
+  return payload;
+}
+async function api(path, options={}){
+  if(OFFLINE) return demoApi(path, options);
+  return realApi(path, options);
+}
+
+/* =====================================================================
+   ROUTER
+   ===================================================================== */
+const SCREENS = ["title","draft","bosses","battle","results","pool"];
+function go(name){
+  SCREENS.forEach(s=>document.getElementById("screen-"+s).classList.toggle("active", s===name));
+  document.getElementById("topbar").classList.toggle("hidden", name==="title");
+  updateSteps(name);
+  try{ localStorage.setItem("rollmons-screen", name); }catch(e){}
+  window.scrollTo(0,0);
+}
+function updateSteps(name){
+  const order = {draft:0,bosses:1,battle:2,results:3};
+  const cur = order[name];
+  document.querySelectorAll("#steps .step").forEach(el=>{
+    const i = order[el.dataset.step];
+    el.classList.toggle("active", el.dataset.step===name);
+    el.classList.toggle("done", cur!==undefined && i<cur);
+  });
+}
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+function esc(v){return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");}
+function titleCase(v){return String(v).replaceAll("-"," ").replace(/\b\w/g,c=>c.toUpperCase());}
+function typeChips(p){
+  const t = (p.types||[]).map(x=>`<span class="chip t-${x.toLowerCase()}">${x}</span>`).join("");
+  return t + (p.legendary?`<span class="chip legend">Legendary</span>`:"");
+}
+function tintFor(p){
+  const t=(p.types&&p.types[0]||"normal").toLowerCase();
+  return `color-mix(in oklch, var(--t-seed,#888) 18%, transparent)`;
+}
+function fixImages(root){
+  root.querySelectorAll(".asset").forEach(img=>{
+    const hide=()=>{const f=img.closest(".asset-host"); if(f) f.classList.add("asset-failed"); img.remove();};
+    img.addEventListener("error",hide,{once:true});
+    if(img.complete && img.naturalWidth===0) hide();
+  });
+}
+function sprite(p,cls=""){
+  return `<span class="asset-host ${cls}"><img class="asset" src="${p.sprite_url||""}" alt="" loading="lazy"></span>`;
+}
+
+/* =====================================================================
+   DRAFT
+   ===================================================================== */
+function renderDraft(draft){
+  state.sessionId = draft.session_id;
+  state.teamExport = draft.complete ? (draft.team_export||"") : "";
+  const copyBtn = document.getElementById("copy-export");
+  if(copyBtn) copyBtn.disabled = !state.teamExport;
+
+  renderPips(draft);
+  renderParty(draft.team, "party");
+  document.getElementById("party-count").textContent = `${draft.team.length} / 6 drafted`;
+
+  const live = document.getElementById("draft-live");
+  const done = document.getElementById("draft-done");
+  if(draft.complete){
+    live.classList.add("hidden"); done.classList.remove("hidden");
+    renderParty(draft.team, "party-done");
+    // remember the assembled team so the gauntlet & battle screens have it
+    state.team = draft.team;
+    return;
+  }
+  live.classList.remove("hidden"); done.classList.add("hidden");
+  renderEncounter(draft);
+  renderCandidates(draft.offer, draft);
+}
+function renderPips(draft){
+  const filled = draft.team.length;
+  const pips = document.getElementById("pips");
+  pips.innerHTML = Array.from({length:6},(_,i)=>{
+    const cls = i<filled?"filled":(i===filled && !draft.complete?"current":"");
+    return `<span class="pip ${cls}"></span>`;
+  }).join("");
+  const rl = document.getElementById("round-label");
+  rl.textContent = draft.complete ? "Complete" : `Round ${draft.offer.round_number} of 6`;
+}
+function renderEncounter(draft){
+  const o = draft.offer;
+  const totalSkips = draft.draft_config.manual_skip_count;
+  const thin = o.thin_reroll_available
+    ? `<button class="btn btn-warn btn-sm" onclick="thinReroll()">↻ Free re-spin</button>` : "";
+  document.getElementById("encounter").innerHTML = `
+    <div>
+      <p class="eyebrow" style="margin:0 0 .25rem">Wild cell</p>
+      <div class="cell-name">${o.cell.type} · Gen ${o.cell.generation}</div>
+      ${o.thin_reroll_available?`<p class="thin-note">Thin cell — fewer than ${o.thin_cell_threshold} choices left, this re-spin is free.</p>`:""}
+    </div>
+    <div class="encounter-actions">
+      ${thin}
+      <button class="btn btn-ghost btn-sm" onclick="skip()" ${draft.skips_remaining?"":"disabled"}>
+        Skip cell (${draft.skips_remaining}/${totalSkips})
+      </button>
+    </div>`;
+}
+function setSummary(p){
+  const s=p.randbats_set, sp=p.assembly_spread;
+  const item = s.item?` @ ${titleCase(s.item)}`:"";
+  const moves = (s.moves||[]).map(m=>`<span class="move">${titleCase(m)}</span>`).join("");
+  let evLine = sp&&sp.evs?Object.entries(sp.evs).map(([k,v])=>`${v} ${k}`).join(" / "):"";
+  return `
+    <div class="setbox">
+      <div class="row"><b>${titleCase(p.name)}</b>${item}</div>
+      <div class="row">Ability: <b>${titleCase(s.ability||"—")}</b>${sp?` · ${sp.nature} · Lv ${sp.level}`:""}</div>
+      ${evLine?`<div class="row">EVs: ${evLine}</div>`:""}
+      <div class="moves">${moves}</div>
+      ${s.export?`<details class="raw"><summary>Raw PokéPaste</summary><pre>${esc(s.export)}</pre></details>`:""}
+    </div>`;
+}
+function renderCandidates(offer, draft){
+  const root = document.getElementById("candidates");
+  root.innerHTML = offer.candidates.map(p=>{
+    const suggested = p.id===offer.suggested_species;
+    const prob = (p.selection_probability*100);
+    return `
+    <article class="mon ${suggested?"suggested":""}">
+      <div class="mon-top">
+        <span class="mon-badge">Gen ${p.debut_generation} · BST ${p.base_stat_total}</span>
+        ${suggested?`<span class="star" title="Suggested pick">★</span>`:""}
+        <div class="sprite-frame">${sprite(p)}</div>
+        <div class="mon-name">${titleCase(p.name)}</div>
+        <div class="chips">${typeChips(p)}</div>
+      </div>
+      <div class="mon-body">
+        <div class="prob" title="Suggestion probability">
+          <span>${suggested?"Suggested":"Eligible"}</span>
+          <span class="bar"><i style="width:${Math.min(100,prob)}%"></i></span>
+          <span class="mono">${prob.toFixed(1)}%</span>
+        </div>
+        ${setSummary(p)}
+      </div>
+      <button class="btn btn-primary pick" onclick="pick('${p.id}')">Pick ${titleCase(p.name)}</button>
+    </article>`;
+  }).join("");
+  fixImages(root);
+}
+function renderParty(team, targetId){
+  const root = document.getElementById(targetId);
+  const slots = [...team]; while(slots.length<6) slots.push(null);
+  root.innerHTML = slots.map((p,i)=> p
+    ? `<li class="slot"><span class="mini">${sprite(p)}</span>
+         <span class="info"><strong>${titleCase(p.name)}</strong>
+         <span>Gen ${p.debut_generation} · BST ${p.base_stat_total}</span></span></li>`
+    : `<li class="slot empty"><span class="pokeball ball"></span><span class="info"><strong>Slot ${i+1}</strong><span>Empty</span></span></li>`
+  ).join("");
+  fixImages(root);
+}
+
+async function newRun(){
+  go("draft");
+  document.getElementById("encounter").innerHTML = `<div><p class="lead">Rolling the first cell…</p></div>`;
+  try{ renderDraft(await api("/api/drafts",{method:"POST",body:JSON.stringify({level:100})})); }
+  catch(e){ document.getElementById("encounter").innerHTML = `<div><p class="lead">${esc(e.message)}</p></div>`; }
+}
+async function pick(id){ renderDraft(await api(`/api/drafts/${state.sessionId}/pick`,{method:"POST",body:JSON.stringify({species_id:id})})); }
+async function skip(){ renderDraft(await api(`/api/drafts/${state.sessionId}/skip`,{method:"POST"})); }
+async function thinReroll(){ renderDraft(await api(`/api/drafts/${state.sessionId}/thin-reroll`,{method:"POST"})); }
+
+async function copyExport(){
+  if(!state.teamExport) return;
+  try{ await navigator.clipboard.writeText(state.teamExport);
+    document.querySelectorAll("#copy-export").forEach(b=>{const t=b.textContent;b.textContent="Copied ✓";setTimeout(()=>b.textContent=t,1200);});
+  }catch(e){}
+}
+
+/* =====================================================================
+   BOSSES
+   ===================================================================== */
+function bossName(b){ return b.source==="custom"?`${b.name} (pasted)`:b.source==="edited"?`${b.name} (edited)`:b.name; }
+function renderBosses(bosses){
+  state.bosses = bosses;
+  const ladder = document.getElementById("ladder");
+  ladder.innerHTML = bosses.map((b,i)=>`
+    <li class="boss" draggable="true" data-index="${i}">
+      <span class="handle" aria-hidden="true">⠿</span>
+      <span class="num">${i+1}</span>
+      <span class="bname">${esc(b.name)}</span>
+      ${b.source==="custom"||b.source==="edited"?`<span class="tag">${b.source}</span>`:""}
+      <span class="acts">
+        <button class="btn btn-ghost btn-sm" onclick="editBoss(${i})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="discardBoss(${i})" ${bosses.length<=MIN_BOSSES?"disabled":""}>✕</button>
+      </span>
+    </li>`).join("");
+  wireDrag(ladder);
+  // advanced select
+  const sel = document.getElementById("boss-select");
+  if(sel) sel.replaceChildren(...bosses.map(b=>{const o=document.createElement("option");o.value=b.id;o.textContent=bossName(b);return o;}));
+  const runBtn=document.getElementById("run-btn"), exBtn=document.getElementById("exhibition-btn");
+  if(runBtn) runBtn.disabled = bosses.length===0;
+  if(exBtn) exBtn.disabled = bosses.length===0;
+  if(bosses.length===0) document.getElementById("boss-status").textContent="No bosses found under rollmons/bosses/.";
+}
+function wireDrag(root){
+  root.querySelectorAll(".boss").forEach(item=>{
+    item.addEventListener("dragstart",e=>{e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",item.dataset.index);item.classList.add("dragging");});
+    item.addEventListener("dragend",()=>item.classList.remove("dragging"));
+    item.addEventListener("dragover",e=>{e.preventDefault();item.classList.add("drag-over");});
+    item.addEventListener("dragleave",()=>item.classList.remove("drag-over"));
+    item.addEventListener("drop",e=>{e.preventDefault();root.querySelectorAll(".drag-over").forEach(r=>r.classList.remove("drag-over"));
+      moveBoss(Number(e.dataTransfer.getData("text/plain")),Number(item.dataset.index));});
+  });
+}
+function moveBoss(from,to){
+  if(Number.isNaN(from)||Number.isNaN(to)||from===to) return;
+  const b=[...state.bosses]; const [m]=b.splice(from,1); b.splice(to,0,m); renderBosses(b);
+}
+function discardBoss(i){
+  if(state.bosses.length<=MIN_BOSSES){document.getElementById("boss-form-status").textContent="At least one boss must remain.";return;}
+  renderBosses(state.bosses.filter((_,j)=>j!==i)); resetBossForm();
+}
+async function editBoss(i){
+  const b=state.bosses[i]; const st=document.getElementById("boss-form-status"); st.textContent=`Loading ${b.name}…`;
+  try{
+    const d=await api(`/api/bosses/${b.id}`);
+    document.getElementById("boss-id").value=d.id;
+    document.getElementById("boss-name").value=d.name;
+    document.getElementById("boss-export").value=d.export;
+    document.getElementById("boss-form-title").textContent=`Edit ${d.name}`;
+    document.getElementById("boss-save").textContent="Save boss";
+    document.getElementById("boss-cancel").classList.remove("hidden");
+    st.textContent="Validate and save to apply.";
+  }catch(e){st.textContent=e.message;}
+}
+function resetBossForm(){
+  document.getElementById("boss-form").reset();
+  document.getElementById("boss-id").value="";
+  document.getElementById("boss-form-title").textContent="Add a boss";
+  document.getElementById("boss-save").textContent="Add boss";
+  document.getElementById("boss-cancel").classList.add("hidden");
+}
+async function saveBoss(e){
+  e.preventDefault();
+  const st=document.getElementById("boss-form-status");
+  const id=document.getElementById("boss-id").value;
+  const name=document.getElementById("boss-name").value.trim();
+  const exp=document.getElementById("boss-export").value.trim();
+  if(!name||!exp){st.textContent="Name and export are required.";return;}
+  if(!id && state.bosses.length>=MAX_BOSSES){st.textContent=`A run can hold at most ${MAX_BOSSES} bosses.`;return;}
+  st.textContent="Validating…";
+  try{
+    const boss=await api(id?`/api/bosses/${id}`:"/api/bosses/custom",{method:id?"PUT":"POST",body:JSON.stringify({name,export:exp})});
+    renderBosses(id?state.bosses.map(b=>b.id===boss.id?boss:b):[...state.bosses,boss]);
+    resetBossForm(); st.textContent=id?`Saved ${boss.name}.`:`Added ${boss.name}.`;
+  }catch(err){st.textContent=`Does not validate: ${err.message}`;}
+}
+
+/* =====================================================================
+   RUN / BATTLE  (Showdown replay viewport untouched)
+   ===================================================================== */
+function replayDoc(log){
+  const protocol = esc((log||[]).join("\n"));
+  return `<!doctype html><meta charset="utf-8">
+<style>html,body{margin:0;padding:0;font-family:Verdana,sans-serif;background:#f5f7fb}.wrapper{max-width:1180px;margin:0 auto}</style>
+<div class="wrapper replay-wrapper"><div class="battle"></div><div class="battle-log"></div>
+<div class="replay-controls"></div><div class="replay-controls-2"></div>
+<script type="text/plain" class="battle-log-data">${protocol}<\/script></div>
+<script src="https://play.pokemonshowdown.com/js/replay-embed.js"><\/script>`;
+}
+function renderRail(gauntlet){
+  const rail=document.getElementById("rail");
+  if(!gauntlet||!gauntlet.bosses||!gauntlet.bosses.length){rail.innerHTML="";return;}
+  rail.innerHTML = gauntlet.bosses.map((b,i)=>{
+    const r=gauntlet.results[i];
+    let cls="",label="Waiting";
+    if(r){cls=r.winner==="player"?"win":r.winner==="boss"?"loss":"tie";label=`${r.turns}t`;}
+    else if(b.current){cls="current";label="Now";}
+    return `<li class="${cls}"><span class="dot"></span><span>${i+1}. ${esc(b.name)}</span><small>${label}</small></li>`;
+  }).join("");
+}
+function renderTheater(results){
+  const theater=document.getElementById("theater");
+  if(!results||!results.length){
+    theater.innerHTML=`<div class="replay-card"><div class="replay-ph"><div><div class="big">Waiting for the first battle…</div><div class="sm">Matchups stream in here as your team climbs the ladder.</div></div></div></div>`;
+    return;
+  }
+  const seen=new Set([...theater.querySelectorAll("[data-bid]")].map(n=>n.dataset.bid));
+  results.forEach((r,i)=>{
+    if(seen.has(r.battle_id)) return;
+    const cls=r.winner==="player"?"win":r.winner==="boss"?"loss":"tie";
+    const resLabel=r.winner==="tie"?"Tie":`${r.winner==="player"?r.player_name:r.boss_name} wins`;
+    const card=document.createElement("div");
+    card.className="replay-card"; card.dataset.bid=r.battle_id;
+    const hasLog = r.replay_log && r.replay_log.length;
+    card.innerHTML=`
+      <div class="replay-head">
+        <h3>${esc(r.player_name)} <span style="color:var(--faint)">vs</span> ${esc(r.boss_name)}</h3>
+        <span class="res ${cls}">${esc(resLabel)} · ${r.turns}t</span>
+      </div>`;
+    if(hasLog){
+      const f=document.createElement("iframe"); f.className="replay-frame";
+      f.title=`${r.player_name} vs ${r.boss_name} replay`; f.srcdoc=replayDoc(r.replay_log);
+      card.appendChild(f);
+    }else{
+      const ph=document.createElement("div"); ph.className="replay-ph";
+      ph.innerHTML=`<div><div class="big">▶ Live Showdown replay renders here</div><div class="sm">Connect the backend to stream the full turn-by-turn battle. (${esc(resLabel)} in ${r.turns} turns.)</div></div>`;
+      card.appendChild(ph);
+    }
+    theater.appendChild(card);
+  });
+}
+function renderRun(draft){
+  const g=draft.gauntlet;
+  renderRail(g);
+  const results = g&&g.results&&g.results.length ? g.results : (draft.battle_result?[draft.battle_result]:[]);
+  if(results.length===0) document.getElementById("theater").innerHTML="";
+  renderTheater(results);
+  const matchTitle=document.getElementById("battle-lead");
+  if(g&&!g.complete && g.bosses){
+    const nb=g.bosses[g.next_index];
+    if(nb) matchTitle.textContent=`Now battling ${nb.name} — ${g.next_index+1} of ${g.bosses.length}.`;
+  }
+  const toRes=document.getElementById("to-results");
+  if(toRes) toRes.disabled = !(g&&g.complete);
+}
+
+function orderedBossIds(){ return state.bosses.map(b=>b.id); }
+
+async function startRun(stopOnLoss){
+  if(state.bosses.length<MIN_BOSSES){document.getElementById("boss-status").textContent="Add at least one boss first.";return;}
+  go("battle");
+  document.getElementById("battle-lead").textContent = stopOnLoss?"Climbing the ladder — one loss ends the run.":"Exhibition — playing every boss.";
+  document.getElementById("theater").innerHTML="";
+  state.gauntletRunning=true;
+  try{
+    const cur=await api(`/api/drafts/${state.sessionId}`);
+    if(cur.gauntlet && cur.gauntlet.bosses.length && !cur.gauntlet.complete){ renderRun(cur); }
+    else{
+      renderRun(await api(`/api/drafts/${state.sessionId}/gauntlet/start`,{method:"POST",
+        body:JSON.stringify({boss_ids:orderedBossIds(),stop_on_loss:stopOnLoss})}));
+    }
+    setTimeout(runNext,0);
+  }catch(e){ document.getElementById("battle-lead").textContent=e.message; state.gauntletRunning=false; }
+}
+async function runNext(){
+  try{
+    const cur=await api(`/api/drafts/${state.sessionId}`);
+    if(cur.gauntlet.complete){ finishRun(cur); return; }
+    renderRail(cur.gauntlet);
+    const next=await api(`/api/drafts/${state.sessionId}/gauntlet/next`,{method:"POST"});
+    renderRun(next);
+    if(!next.gauntlet.complete){ if(state.gauntletRunning) setTimeout(runNext,650); }
+    else finishRun(next);
+  }catch(e){ document.getElementById("battle-lead").textContent=e.message; state.gauntletRunning=false; }
+}
+function finishRun(draft){
+  state.gauntletRunning=false;
+  renderRun(draft);
+  document.getElementById("to-results").disabled=false;
+  renderResults(draft.gauntlet);
+  setTimeout(()=>go("results"),500);
+}
+
+async function battleOne(){
+  const sel=document.getElementById("boss-select"); const id=sel&&sel.value;
+  if(!id){document.getElementById("boss-status").textContent="Pick a boss to test.";return;}
+  go("battle");
+  document.getElementById("battle-lead").textContent="Single exhibition battle.";
+  document.getElementById("theater").innerHTML="";
+  try{ renderRun(await api(`/api/drafts/${state.sessionId}/battle`,{method:"POST",body:JSON.stringify({boss_id:id})})); }
+  catch(e){ document.getElementById("battle-lead").textContent=e.message; }
+}
+
+/* =====================================================================
+   RESULTS
+   ===================================================================== */
+function renderResults(g){
+  if(!g||!g.results) return;
+  const results=g.results;
+  const wins=results.filter(r=>r.winner==="player").length;
+  const losses=results.filter(r=>r.winner==="boss").length;
+  const ties=results.filter(r=>r.winner==="tie").length;
+  const avg=results.length?results.reduce((s,r)=>s+r.turns,0)/results.length:0;
+  const cleared = wins===g.bosses.length;
+  const lastLoss = g.stop_on_loss && results.length && results[results.length-1].winner!=="player";
+
+  const hero=document.getElementById("result-hero");
+  hero.className="result-hero "+(cleared?"victory":lastLoss?"defeat":"mixed");
+  document.getElementById("result-title").textContent = cleared?"Champion! 🏆":lastLoss?"Run ended":"Gauntlet complete";
+  document.getElementById("result-sub").textContent = g.summary ||
+    (cleared?`Your team swept all ${g.bosses.length} bosses.`
+            :lastLoss?`Fell at boss ${results.length} of ${g.bosses.length}.`
+                     :`Final record across ${results.length} battles.`);
+
+  document.getElementById("record").innerHTML = `
+    <div class="stat"><div class="v" style="color:var(--good)">${wins}</div><div class="k">Wins</div></div>
+    <div class="stat"><div class="v" style="color:var(--bad)">${losses}</div><div class="k">Losses</div></div>
+    ${ties?`<div class="stat"><div class="v">${ties}</div><div class="k">Ties</div></div>`:""}
+    <div class="stat"><div class="v">${avg.toFixed(1)}</div><div class="k">Avg turns</div></div>`;
+
+  document.getElementById("result-chips").innerHTML = g.bosses.map((b,i)=>{
+    const r=results[i]; if(!r) return `<span class="rchip"><span class="dot" style="background:var(--line)"></span>${esc(b.name)}</span>`;
+    const cls=r.winner==="player"?"win":r.winner==="boss"?"loss":"tie";
+    return `<span class="rchip ${cls}"><span class="dot"></span>${esc(b.name)} · ${r.turns}t</span>`;
+  }).join("");
+}
+
+/* =====================================================================
+   POOL / POKÉDEX MATRIX
+   ===================================================================== */
+function renderMatrix(){
+  const m=state.matrix; const grid=document.getElementById("matrix");
+  grid.innerHTML = `<div class="mhead">Type</div>` + m.generations.map(g=>`<div class="mhead">G${g}</div>`).join("");
+  for(const type of m.types){
+    grid.insertAdjacentHTML("beforeend",`<div class="mhead type t-${type.toLowerCase()}">${type}</div>`);
+    for(const gen of m.generations){
+      const cell=m.cells.find(c=>c.type===type&&c.generation===gen);
+      const btn=document.createElement("button");
+      btn.className=`mcell ${cell.state}`;
+      btn.innerHTML=`${cell.eligible_count}<small>${cell.state==="normal"?"":cell.state}</small>`;
+      btn.onclick=()=>renderCell(cell,btn);
+      grid.appendChild(btn);
+    }
+  }
+  document.getElementById("matrix-summary").textContent =
+    `${m.included_cell_count} included cells · ${m.atom_count} draftable Pokémon`;
+}
+function renderCell(cell,btn){
+  document.querySelectorAll(".mcell").forEach(c=>c.classList.remove("selected"));
+  btn.classList.add("selected");
+  const d=document.getElementById("detail");
+  const list = cell.pokemon.length
+    ? `<ul class="dlist">${cell.pokemon.map(p=>`<li><span class="mini">${sprite(p)}</span>
+         <span><strong>${titleCase(p.name)}</strong><div class="meta">Gen ${p.debut_generation} · BST ${p.base_stat_total}</div>
+         <div class="chips" style="justify-content:flex-start;margin-top:.2rem">${typeChips(p)}</div></span></li>`).join("")}</ul>`
+    : `<p style="color:var(--muted)">No active-source Pokémon occupy this cell.</p>`;
+  d.innerHTML = `<h3>${cell.type} · Gen ${cell.generation}</h3>
+    <p style="color:var(--muted);font-size:.88rem"><b style="color:var(--ink)">${cell.eligible_count}</b> eligible · ${
+      cell.state==="excluded"?"excluded from rolls":cell.state==="thin"?"thin — free reroll":"included"}</p>${list}`;
+  fixImages(d);
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+document.getElementById("boss-form").addEventListener("submit",saveBoss);
+
+async function boot(){
+  // probe the backend; fall back to demo data for offline previews
+  try{ state.matrix = await realApi("/api/matrix"); }
+  catch(e){ OFFLINE = true; }
+  document.getElementById("offline-tag").classList.toggle("hidden", !OFFLINE);
+  if(OFFLINE){
+    try{ state.matrix = await api("/api/matrix"); }catch(e){}
+    document.getElementById("title-foot").textContent = "Demo mode · sample data (backend offline)";
+  }
+  if(state.matrix) renderMatrix();
+  try{ renderBosses(await api("/api/bosses")); }catch(e){ document.getElementById("boss-status").textContent=e.message; }
+  go("title");
+}
+
+/* =====================================================================
+   DEMO DATA  (only used when /api is unreachable — e.g. this preview)
+   ===================================================================== */
+const DEMO_SPRITE = n => `https://play.pokemonshowdown.com/sprites/gen5/${n}.png`;
+const DEMO_MONS = [
+  {id:"garchomp",name:"Garchomp",types:["Dragon","Ground"],legendary:false,debut_generation:4,base_stat_total:600,sprite_url:DEMO_SPRITE("garchomp"),ability:"Rough Skin",item:"Life Orb",nature:"Jolly",moves:["Earthquake","Dragon Claw","Stealth Rock","Swords Dance"]},
+  {id:"gardevoir",name:"Gardevoir",types:["Psychic","Fairy"],legendary:false,debut_generation:3,base_stat_total:518,sprite_url:DEMO_SPRITE("gardevoir"),ability:"Trace",item:"Choice Scarf",nature:"Timid",moves:["Moonblast","Psyshock","Trick","Healing Wish"]},
+  {id:"dragapult",name:"Dragapult",types:["Dragon","Ghost"],legendary:false,debut_generation:8,base_stat_total:600,sprite_url:DEMO_SPRITE("dragapult"),ability:"Infiltrator",item:"Heavy-Duty Boots",nature:"Naive",moves:["Draco Meteor","Shadow Ball","U-turn","Flamethrower"]},
+  {id:"corviknight",name:"Corviknight",types:["Flying","Steel"],legendary:false,debut_generation:8,base_stat_total:495,sprite_url:DEMO_SPRITE("corviknight"),ability:"Pressure",item:"Leftovers",nature:"Impish",moves:["Brave Bird","Body Press","Roost","Defog"]},
+  {id:"gholdengo",name:"Gholdengo",types:["Steel","Ghost"],legendary:false,debut_generation:9,base_stat_total:550,sprite_url:DEMO_SPRITE("gholdengo"),ability:"Good as Gold",item:"Air Balloon",nature:"Timid",moves:["Make It Rain","Shadow Ball","Nasty Plot","Recover"]},
+  {id:"baxcalibur",name:"Baxcalibur",types:["Dragon","Ice"],legendary:false,debut_generation:9,base_stat_total:600,sprite_url:DEMO_SPRITE("baxcalibur"),ability:"Thermal Exchange",item:"Loaded Dice",nature:"Jolly",moves:["Icicle Spear","Glaive Rush","Dragon Dance","Earthquake"]},
+  {id:"ironvaliant",name:"Iron Valiant",types:["Fairy","Fighting"],legendary:true,debut_generation:9,base_stat_total:590,sprite_url:DEMO_SPRITE("ironvaliant"),ability:"Quark Drive",item:"Booster Energy",nature:"Naive",moves:["Moonblast","Close Combat","Knock Off","Spirit Break"]},
+  {id:"greattusk",name:"Great Tusk",types:["Ground","Fighting"],legendary:true,debut_generation:9,base_stat_total:570,sprite_url:DEMO_SPRITE("greattusk"),ability:"Protosynthesis",item:"Booster Energy",nature:"Jolly",moves:["Headlong Rush","Close Combat","Rapid Spin","Ice Spinner"]},
+  {id:"kingambit",name:"Kingambit",types:["Dark","Steel"],legendary:false,debut_generation:9,base_stat_total:550,sprite_url:DEMO_SPRITE("kingambit"),ability:"Supreme Overlord",item:"Black Glasses",nature:"Adamant",moves:["Kowtow Cleave","Iron Head","Sucker Punch","Swords Dance"]},
+  {id:"tinglu",name:"Ting-Lu",types:["Dark","Ground"],legendary:true,debut_generation:9,base_stat_total:570,sprite_url:DEMO_SPRITE("ting-lu"),ability:"Vessel of Ruin",item:"Leftovers",nature:"Careful",moves:["Earthquake","Ruination","Whirlwind","Stealth Rock"]},
+];
+function demoMon(src,prob){
+  return {...src, selection_probability:prob,
+    randbats_set:{source:"smogon",role_count:2,export:`${src.name} @ ${src.item}\nAbility: ${src.ability}\nLevel: 100\nEVs: 252 Atk / 4 Def / 252 Spe\n${src.nature} Nature\n${src.moves.map(m=>"- "+m).join("\n")}`,item:src.item,item_icon:null,ability:src.ability,moves:src.moves,format:"gen9"},
+    assembly_spread:{level:100,evs:{Atk:252,Def:4,Spe:252},ivs:{},nature:src.nature}};
+}
+const DEMO_TYPES=["Normal","Fire","Water","Grass","Electric","Ice","Fighting","Poison","Ground","Flying","Psychic","Bug","Rock","Ghost","Dragon","Dark","Steel","Fairy"];
+const DEMO_GENS=[1,2,3,4,5,6,7,8,9];
+let demo = null;
+function newDemoDraft(){
+  demo = { session_id:"demo", team:[], round:1, skips:2, pool:[...DEMO_MONS], gauntlet:null, battle_result:null };
+  return demoState();
+}
+function demoOffer(){
+  const picks = demo.pool.filter(p=>!demo.team.some(t=>t.id===p.id)).slice(0,3);
+  const probs=[0.62,0.26,0.12];
+  const cells=[["Dragon",4],["Steel",8],["Fairy",9],["Ground",9],["Ghost",8],["Dark",9]];
+  const c=cells[(demo.round-1)%cells.length];
+  return {round_number:demo.round, candidates:picks.map((p,i)=>demoMon(p,probs[i]||0.1)),
+    suggested_species:picks[0]&&picks[0].id, thin_reroll_available:demo.round===4, thin_cell_threshold:3,
+    cell:{type:c[0],generation:c[1]}};
+}
+function demoState(){
+  const complete = demo.team.length>=6;
+  return {session_id:"demo", complete, level:100,
+    team:demo.team.map(p=>({...p})), team_export: complete?demo.team.map(p=>`${p.name} @ ${p.item}`).join("\n\n"):"",
+    gauntlet:demo.gauntlet, battle_result:demo.battle_result,
+    offer: complete?null:demoOffer(), skips_remaining:demo.skips, draft_config:{manual_skip_count:2}};
+}
+const DEMO_BOSSES=[
+  {id:"b1",name:"Leader Brassius",source:"file"},{id:"b2",name:"Leader Iono",source:"file"},
+  {id:"b3",name:"Leader Larry",source:"file"},{id:"b4",name:"Elite Four Rika",source:"file"},
+  {id:"b5",name:"Champion Geeta",source:"file"},
+];
+const DEMO_OUTCOMES=["player","player","boss","player","player"];
+function demoBattle(boss,i){
+  const w=DEMO_OUTCOMES[i%DEMO_OUTCOMES.length];
+  return {winner:w,turns:14+((i*7)%20),battle_id:`demo-${boss.id}-${i}`,
+    player_name:"Your team",boss_name:boss.name,replay_log:[]};
+}
+async function demoApi(path, options={}){
+  const body = options.body?JSON.parse(options.body):{};
+  const seg = path.split("?")[0].split("/").filter(Boolean); // ["api",...]
+  await new Promise(r=>setTimeout(r,120));
+  if(path.startsWith("/api/matrix")){
+    const cells=[];
+    DEMO_TYPES.forEach((t,ti)=>DEMO_GENS.forEach((g,gi)=>{
+      const seedFull=(ti*3+gi)%7, n=Math.max(0,5-((ti+gi)%6));
+      const state=n===0?"excluded":n<3?"thin":"normal";
+      const mons = state==="excluded"?[]:DEMO_MONS.filter(m=>m.types.includes(t)).slice(0,n)
+        .map(m=>({name:m.name,sprite_url:m.sprite_url,debut_generation:m.debut_generation,base_stat_total:m.base_stat_total,types:m.types,legendary:m.legendary}));
+      cells.push({type:t,generation:g,state,eligible_count:state==="excluded"?0:n,pokemon:mons});
+    }));
+    return {generations:DEMO_GENS,types:DEMO_TYPES,cells,
+      included_cell_count:cells.filter(c=>c.state==="normal").length,atom_count:DEMO_MONS.length};
+  }
+  if(path==="/api/bosses") return DEMO_BOSSES.map(b=>({...b}));
+  if(seg[1]==="bosses" && options.method==="POST") return {id:"c"+Date.now(),name:body.name,source:"custom",export:body.export};
+  if(seg[1]==="bosses" && options.method==="PUT") return {id:seg[2],name:body.name,source:"edited",export:body.export};
+  if(seg[1]==="bosses") { const b=DEMO_BOSSES.find(x=>x.id===seg[2])||{id:seg[2],name:"Boss"}; return {...b,export:`${b.name}'s team export`}; }
+  if(path==="/api/drafts" && options.method==="POST") return newDemoDraft();
+  if(seg[1]==="drafts"){
+    if(!demo) newDemoDraft();
+    const action=seg[3];
+    if(!action) return demoState();
+    if(action==="pick"){ const p=DEMO_MONS.find(m=>m.id===body.species_id); if(p&&demo.team.length<6)demo.team.push(p); demo.round=demo.team.length+1; return demoState(); }
+    if(action==="skip"){ demo.skips=Math.max(0,demo.skips-1); return demoState(); }
+    if(action==="thin-reroll"){ demo.pool=[...demo.pool].reverse(); return demoState(); }
+    if(action==="battle"){ const boss=DEMO_BOSSES.find(b=>b.id===body.boss_id)||DEMO_BOSSES[0]; demo.battle_result=demoBattle(boss,0); return demoState(); }
+    if(action==="gauntlet"){
+      const sub=seg[4];
+      if(sub==="start"){ demo.gauntlet={bosses:body.boss_ids.map(id=>({name:(DEMO_BOSSES.find(b=>b.id===id)||{name:id}).name,current:false,complete:false})),
+        results:[],complete:false,next_index:0,stop_on_loss:body.stop_on_loss,summary:""};
+        demo.gauntlet.bosses[0].current=true; demo._ids=body.boss_ids; return demoState(); }
+      if(sub==="next"){
+        const g=demo.gauntlet; const i=g.next_index;
+        const boss=g.bosses[i]; const r=demoBattle({id:demo._ids[i],name:boss.name},i);
+        g.results.push(r); boss.current=false; boss.complete=true;
+        const stop = g.stop_on_loss && r.winner!=="player";
+        if(i+1>=g.bosses.length || stop){ g.complete=true;
+          const w=g.results.filter(x=>x.winner==="player").length, l=g.results.filter(x=>x.winner==="boss").length;
+          g.summary=`Record ${w}-${l} across ${g.results.length} battles.`;
+        } else { g.next_index=i+1; g.bosses[i+1].current=true; }
+        return demoState();
+      }
+    }
+  }
+  throw new Error("offline");
+}
+
+boot();
+</script>
+</body>
+</html>

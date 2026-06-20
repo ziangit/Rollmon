@@ -1,0 +1,10 @@
+Diancie @ Diancite
+Ability: Clear Body
+Level: 100
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Moonblast
+- Protect
+- Power Gem
+- Mystical Fire

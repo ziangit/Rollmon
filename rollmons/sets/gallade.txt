@@ -1,0 +1,9 @@
+Gallade (M) @ Galladite
+Ability: Justified
+Level: 100
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Swords Dance
+- Close Combat
+- Zen Headbutt
+- Knock Off

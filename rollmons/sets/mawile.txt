@@ -1,0 +1,18 @@
+Mawile @ Mawilite
+Ability: Intimidate
+Level: 100
+EVs: 248 HP / 252 Atk / 8 SpD
+Adamant Nature
+- Swords Dance
+- Play Rough
+- Sucker Punch
+- Fire Fang
+
+Mawile @ Life Orb  
+Ability: Sheer Force  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Adamant Nature  
+- Play Rough  
+- Iron Head  
+- Sucker Punch  
+- Swords Dance

@@ -1,0 +1,9 @@
+Glalie @ Glalitite
+Ability: Inner Focus
+Level: 100
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Body Slam
+- Earthquake
+- Spikes
+- Explosion

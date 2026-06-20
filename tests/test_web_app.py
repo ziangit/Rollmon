@@ -6,10 +6,12 @@ from rollmons import web_app
 from rollmons import boss_loader
 from rollmons.boss_loader import load_boss_team
 from rollmons.web_app import (
+    _accumulate_player_damage,
     _battle_config_from_environment,
     _damage_by_player_pokemon,
     _damage_payload_from_totals,
     _gauntlet_damage_summary,
+    _seed_damage_tracking,
     app,
     create_app,
 )
@@ -67,6 +69,46 @@ def test_damage_summary_attributes_player_damage_from_replay_logs():
     assert _damage_by_player_pokemon(result) == {"Azumarill": 118.0}
 
 
+def test_roster_and_replay_names_collapse_to_one_entry():
+    # Regression: the roster was seeded with lowercase metadata names while the
+    # replay attributed damage under proper-cased Showdown names, so each
+    # Pokemon appeared twice (once with damage, once at 0.0%). Normalizing both
+    # to one key collapses them, and a zero-damage roster member appears once.
+    totals, display = _seed_damage_tracking(
+        ["scizor", "iron moth", "necrozma-dusk-mane"]
+    )
+    result = BattleResult(
+        winner="player",
+        turns=3,
+        battle_id="battle-dedupe-1",
+        player_name="Player",
+        boss_name="Ash",
+        replay_log=[
+            "|player|p1|Player|",
+            "|player|p2|Ash|",
+            "|switch|p1a: Sci|Scizor, L100|100/100",
+            "|switch|p2a: Lapras|Lapras, L100|100/100",
+            "|move|p1a: Sci|U-turn|p2a: Lapras",
+            "|-damage|p2a: Lapras|40/100",
+            "|switch|p1a: Moth|Iron Moth, L100|100/100",
+            "|move|p1a: Moth|Fiery Dance|p2a: Lapras",
+            "|-damage|p2a: Lapras|0 fnt",
+            "|win|Player",
+        ],
+    )
+
+    _accumulate_player_damage(totals, display, result)
+    payload = _damage_payload_from_totals(totals, display)
+
+    names = [entry["name"] for entry in payload["by_pokemon"]]
+    # Exactly one entry per Pokemon (3, not 6), display matches the roster
+    # name used everywhere else in the UI, no lowercase 0.0% duplicate.
+    assert names == ["scizor", "iron moth", "necrozma-dusk-mane"]
+    assert payload["total"] == 100.0
+    assert payload["mvp"]["name"] == "scizor"
+    assert payload["mvp"]["damage"] == 60.0
+
+
 def test_damage_payload_reports_total_mvp_and_contribution():
     payload = _damage_payload_from_totals(
         {
@@ -101,64 +143,61 @@ async def test_frontend_and_static_assets_are_served(client):
     stylesheet = await client.get("/static/styles.css")
 
     assert index.status_code == 200
-    assert "18 × 9 legality matrix" in index.text
-    assert "Interactive six-round draft" in index.text
-    assert 'id="copy-team-export"' in index.text
-    assert 'id="team-export-panel"' not in index.text
-    assert index.text.index('id="battle-result-panel"') < index.text.index(
-        'class="draft-sidebar"'
-    )
+    # Screen-based SPA shell (Scarlet/Violet redesign).
+    for screen_id in (
+        'id="screen-title"',
+        'id="screen-draft"',
+        'id="screen-loadout"',
+        'id="screen-bosses"',
+        'id="screen-battle"',
+        'id="screen-results"',
+        'id="screen-pool"',
+    ):
+        assert screen_id in index.text
+    # Loadout step + container, single-battle test control, boss form.
+    assert 'data-step="loadout"' in index.text
+    assert 'id="loadout-list"' in index.text
+    assert 'id="boss-form"' in index.text
+    assert 'id="boss-select"' in index.text
+    assert "battleOne()" in index.text
+    assert "/static/app.js?v=" in index.text
+    assert "/static/styles.css?v=" in index.text
+
     assert javascript.status_code == 200
     assert "/api/matrix" in javascript.text
     assert "/api/bosses" in javascript.text
-    assert "battlePanel.scrollIntoView" in javascript.text
-    assert "copyTeamExport" in javascript.text
-    assert "navigator.clipboard.writeText" in javascript.text
-    assert "addCustomBoss" in javascript.text
-    assert "editBoss" in javascript.text
-    assert "discardBoss" in javascript.text
-    assert "dragBoss" in javascript.text
-    assert 'draggable="true"' in javascript.text
-    assert "dataTransfer" in javascript.text
-    assert "MIN_BOSSES" in javascript.text
-    assert "MAX_BOSSES" in javascript.text
-    assert "start-real-gauntlet" in index.text
-    assert "boss-order-list" in index.text
-    assert "custom-boss-form" in index.text
-    assert "custom-boss-id" in index.text
-    assert "cancel-boss-edit" in index.text
-    assert "thinRerollDraft" in javascript.text
-    assert "Free re-spin (thin cell)" in javascript.text
-    assert "Manual skip" in javascript.text
-    assert "cell-pokemon-sprite" in javascript.text
-    assert "team-pokemon-sprite" in javascript.text
-    assert "gauntletReport" in javascript.text
-    assert "Your record is" in javascript.text
-    assert "escapeHtml(set.export)" in javascript.text
-    assert "startGauntlet" in javascript.text
-    assert "battle-replay-card" in javascript.text
-    assert "battle-replay-summary" in javascript.text
-    assert "winner-${result.winner}" in javascript.text
-    assert "setTimeout(runNextGauntletBattle, 0)" in javascript.text
+    # Loadout flow.
+    assert "function renderLoadout" in javascript.text
+    assert "function chooseSet" in javascript.text
+    assert "/loadout" in javascript.text
+    # Draft / boss management / run flow.
+    assert "function renderDraft" in javascript.text
+    assert "function thinReroll" in javascript.text
+    assert "function saveBoss" in javascript.text
+    assert "function editBoss" in javascript.text
+    assert "function discardBoss" in javascript.text
+    assert "function startRun" in javascript.text
+    assert "gauntlet/next" in javascript.text
     assert "stop_on_loss" in javascript.text
+    assert "navigator.clipboard.writeText" in javascript.text
+    # The Showdown replay viewport is preserved unchanged.
+    assert "function replayDoc" in javascript.text
+    assert "battle-log-data" in javascript.text
+    assert "play.pokemonshowdown.com/js/replay-embed.js" in javascript.text
+    # Offline/demo scaffolding was dropped when porting into the harness.
+    assert "demoApi" not in javascript.text
+    assert "OFFLINE" not in javascript.text
+
     assert stylesheet.status_code == 200
-    assert "cell-pokemon-sprite-frame" in stylesheet.text
-    assert "team-pokemon-sprite-frame" in stylesheet.text
-    assert "draft-sidebar" in stylesheet.text
-    assert "position: sticky" in stylesheet.text
-    assert "copy-button" in stylesheet.text
-    assert "type-dark" in stylesheet.text
-    assert "gauntlet-summary" in stylesheet.text
-    assert "gauntlet-list" in stylesheet.text
-    assert "winner-boss" in stylesheet.text
-    assert "winner-player" in stylesheet.text
-    assert "battle-replay-list" in stylesheet.text
-    assert "boss-order-list" in stylesheet.text
-    assert "custom-boss-form" in stylesheet.text
-    assert "boss-form-actions" in stylesheet.text
-    assert "boss-discard" in stylesheet.text
-    assert "boss-drag-handle" in stylesheet.text
-    assert "drag-over" in stylesheet.text
+    for token in (
+        ".topbar",
+        ".btn-primary",
+        ".loadout-list",
+        ".set-select",
+        ".replay-frame",
+        ".mcell",
+    ):
+        assert token in stylesheet.text
 
 
 @pytest.mark.anyio
@@ -234,12 +273,15 @@ async def test_matrix_endpoint_exposes_all_cells_and_known_placements(client):
     assert response.status_code == 200
     matrix = response.json()
     assert matrix["set_source"] == "smogon"
-    assert matrix["atom_count"] == 424
+    # 424 source atoms + 13 Mega-Stone override-only atoms = 437; the megas fill
+    # existing cells (155 included, 7 excluded unchanged) and promote 5 thin
+    # cells to normal.
+    assert matrix["atom_count"] == 437
     assert matrix["included_cell_count"] == 155
     assert len(matrix["cells"]) == 18 * 9
     assert sum(cell["included"] for cell in matrix["cells"]) == 155
-    assert sum(cell["state"] == "normal" for cell in matrix["cells"]) == 113
-    assert sum(cell["state"] == "thin" for cell in matrix["cells"]) == 42
+    assert sum(cell["state"] == "normal" for cell in matrix["cells"]) == 118
+    assert sum(cell["state"] == "thin" for cell in matrix["cells"]) == 37
     assert sum(cell["state"] == "excluded" for cell in matrix["cells"]) == 7
 
     fairy_gen1 = find_cell(matrix, "fairy", 1)
@@ -330,6 +372,69 @@ async def test_api_driven_six_round_draft_completes_with_level_100_export(client
     fetched = await client.get(f"/api/drafts/{session_id}")
     assert fetched.status_code == 200
     assert fetched.json() == state
+
+
+@pytest.mark.anyio
+async def test_completed_draft_exposes_loadout_and_set_selection(client):
+    started = await client.post("/api/drafts", json={"level": 100, "seed": 2026})
+    state = started.json()
+    session_id = state["session_id"]
+    while not state["complete"]:
+        state = (
+            await client.post(
+                f"/api/drafts/{session_id}/pick",
+                json={"species_id": state["offer"]["suggested_species"]},
+            )
+        ).json()
+
+    loadout = state["loadout"]
+    assert loadout is not None
+    assert [entry["species_id"] for entry in loadout] == [
+        pokemon["id"] for pokemon in state["team"]
+    ]
+    for entry in loadout:
+        assert entry["sets"], f"{entry['species_id']} has no selectable sets"
+        # Default selects the first non-Mega set (Mega is opt-in), or the first
+        # set when every option is a Mega.
+        expected_default = next(
+            (s["set_id"] for s in entry["sets"] if not s["is_mega"]),
+            entry["sets"][0]["set_id"],
+        )
+        assert entry["chosen_set_id"] == expected_default
+        chosen = next(
+            s for s in entry["sets"] if s["set_id"] == entry["chosen_set_id"]
+        )
+        assert chosen["is_mega"] is False or all(s["is_mega"] for s in entry["sets"])
+        assert entry["locked"] is False
+
+    # Choose a different set for a species that offers more than one.
+    multi = next((entry for entry in loadout if len(entry["sets"]) > 1), None)
+    assert multi is not None
+    other_set = next(
+        s["set_id"] for s in multi["sets"] if s["set_id"] != multi["chosen_set_id"]
+    )
+    before_export = state["team_export"]
+    updated = await client.post(
+        f"/api/drafts/{session_id}/loadout",
+        json={"species_id": multi["species_id"], "set_id": other_set},
+    )
+    assert updated.status_code == 200
+    updated_state = updated.json()
+    chosen = next(
+        entry
+        for entry in updated_state["loadout"]
+        if entry["species_id"] == multi["species_id"]
+    )
+    assert chosen["chosen_set_id"] == other_set
+    assert updated_state["team_export"] != before_export
+    assert updated_state["team_export"].count("Level: 100") == 6
+
+    # Unknown set id is rejected.
+    bad = await client.post(
+        f"/api/drafts/{session_id}/loadout",
+        json={"species_id": multi["species_id"], "set_id": "smogon:999"},
+    )
+    assert bad.status_code == 422
 
 
 @pytest.mark.anyio

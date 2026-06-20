@@ -1,0 +1,9 @@
+Latios (M) @ Latiosite
+Ability: Levitate
+Level: 100
+EVs: 4 Atk / 252 SpA / 252 Spe
+Hasty Nature
+- Psychic
+- Earthquake
+- Roost
+- Draco Meteor

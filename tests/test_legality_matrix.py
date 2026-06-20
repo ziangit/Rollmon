@@ -21,8 +21,11 @@ from rollmons.smogon_sets import load_usable_smogon_sets
 
 
 @pytest.fixture(scope="module")
-def legality_data():
-    return build_legality_data()
+def legality_data(tmp_path_factory):
+    # Isolate from checked-in set overrides so these tests assert the pure
+    # configured-source pool regardless of which override files ship.
+    empty_sets = tmp_path_factory.mktemp("no_overrides")
+    return build_legality_data(sets_dir=empty_sets)
 
 
 def metadata(species_id, types, generation, *, legendary=False, bst=500):
@@ -43,12 +46,34 @@ def test_atom_count_matches_gen9_randbats_source(legality_data):
     assert set(legality_data.atoms) == set(source)
 
 
-def test_randbats_source_remains_available():
+def test_randbats_source_remains_available(tmp_path):
     source = json.loads(DEFAULT_RANDBATS_PATH.read_text(encoding="utf-8"))
-    legality_data = build_legality_data(source="randbats")
+    legality_data = build_legality_data(source="randbats", sets_dir=tmp_path)
     assert len(source) == 508
     assert len(legality_data.atoms) == len(source)
     assert set(legality_data.atoms) == set(source)
+
+
+def test_set_overrides_contribute_draftable_atoms(tmp_path):
+    # A Mega-Stone override for a species absent from the configured source
+    # should make that species draftable; a non-species file is ignored.
+    (tmp_path / "absol.txt").write_text(
+        "Absol @ Absolite\nAbility: Pressure\n- Knock Off\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "notes.txt").write_text("not a species", encoding="utf-8")
+
+    source = build_legality_data(source="smogon", sets_dir=tmp_path.parent / "empty")
+    augmented = build_legality_data(source="smogon", sets_dir=tmp_path)
+
+    assert "absol" not in source.atoms
+    assert "absol" in augmented.atoms
+    assert "notesnotaspecies" not in augmented.atoms
+    assert "notes" not in augmented.atoms
+    # Drafted with its base typing/generation (Mega is a battle-only forme).
+    absol = augmented.species["absol"]
+    assert absol.types == ("dark",)
+    assert absol.debut_generation == 3
 
 
 def test_matrix_includes_nonempty_cells_and_excludes_only_empty_cells():

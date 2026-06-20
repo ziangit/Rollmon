@@ -1,0 +1,9 @@
+Banette @ Banettite
+Ability: Cursed Body
+Level: 100
+EVs: 224 HP / 252 Atk / 32 Spe
+Adamant Nature
+- Poltergeist
+- Destiny Bond
+- Will-O-Wisp
+- Knock Off

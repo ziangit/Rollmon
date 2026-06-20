@@ -1,0 +1,19 @@
+Aggron @ Aggronite
+Ability: Sturdy
+Level: 100
+EVs: 248 HP / 8 Def / 252 SpD
+Calm Nature
+IVs: 0 Atk
+- Iron Defense
+- Body Press
+- Rest
+- Sleep Talk
+
+Aggron @ Custap Berry  
+Ability: Sturdy  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Adamant Nature  
+- Stealth Rock  
+- Heavy Slam  
+- Earthquake  
+- Endeavor

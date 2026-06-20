@@ -22,13 +22,18 @@ Our game-specific code should eventually live outside its internals.
   candidates are thin and grant an optional reroll separate from the manual skip.
 - Legendary Pokemon are down-weighted, not banned.
 - A species or forme is a draftable atom if it has at least one usable set in
-  the configured set source. `rollmons/data/smogon_sets.json` is the default
-  primary source; the checked-in `gen9randombattle` snapshot remains available
-  as a switchable alternate and set-level fallback. Its type is its current
-  type and its generation is its debut generation.
+  the configured set source, OR a checked-in set override under
+  `rollmons/sets/`. `rollmons/data/smogon_sets.json` is the default primary
+  source; the checked-in `gen9randombattle` snapshot remains available as a
+  switchable alternate and set-level fallback. Its type is its current type and
+  its generation is its debut generation. Override-only atoms (e.g. a base
+  species that exists in the pool solely because it has a Mega-Stone set) use
+  the base species' type and debut generation, like any other atom.
 - Battles use Generation 9 mechanics with no Terastallization, Dynamax, or
-  Z-Moves. Mega Evolution is allowed for authored boss teams through the custom
-  game format.
+  Z-Moves. Mega Evolution is allowed for both authored boss teams and player
+  teams through the custom game format: a drafted base species carrying a
+  Mega-Stone set mega-evolves in battle. Only one Pokemon per team can
+  mega-evolve per battle (standard rule).
 - Battles use a self-hosted, permissive custom format with Species Clause on,
   tier banlists off, Tera and Dynamax disabled, and a fixed level of 100.
 - The one-battle integration format is based on `gen9customgame` and adds
@@ -75,6 +80,12 @@ selection primitive. Its data sources are:
   random-battle set snapshot. This remains available with
   `ROLLMONS_SET_SOURCE=randbats` and as the fallback when a drafted species has
   no usable Smogon set.
+- `rollmons/sets/`: checked-in override files. `build_legality_data` unions the
+  configured source's atoms with every species that has an override file (those
+  in the Pokedex), so override-only species (e.g. Mega-Stone base species absent
+  from the source pool) become draftable atoms. The battle-only Mega/Gmax
+  *forme* guard still rejects forme atoms; overrides use base species, so they
+  pass.
 - `data/pokedex.json`: Showdown-derived current types, six base stats, National
   Dex numbers, formes, and base-species links. BST is the sum of the six
   `baseStats` values in this file.
@@ -119,19 +130,28 @@ and do not count as usable; they are not silently fixed. Run
 `python3 -m rollmons.report_smogon_ingestion` to reproduce exclusion counts,
 validation issues, setless species, and pool/matrix deltas.
 
-`rollmons/team_assembly.py` selects one usable Smogon set uniformly at random
-for each drafted species, using the same seedable/injectable RNG as draft team
-assembly. Do not use the contributor JSON's generation or format priority for
-runtime set selection. If `ROLLMONS_SET_SOURCE=randbats`, or if a drafted
-species has no usable Smogon set but does have a randbats set, assembly falls
-back to the randbats path, where observed counts remain the selection weights.
+`rollmons/team_assembly.py` enumerates the **selectable sets** for each drafted
+species via `selectable_sets()`: the species' checked-in override sets PLUS the
+active source's sets (Smogon when present, otherwise the randbats fallback,
+where observed counts remain the selection weights). After the six-round draft
+the player chooses one set per species on the loadout screen; `assemble_loadout()`
+builds the team from those chosen set IDs. The legacy `assemble_team()` random
+path (one set per species, seedable RNG, override-first) remains for the
+sandbox/CLI. Do not use the contributor JSON's generation or format priority for
+runtime set selection. `ROLLMONS_SET_SOURCE=randbats` switches the source.
 
-Contributor overrides live under `rollmons/sets/` as one standard Showdown
-export block per normalized species-ID filename. Assembly uses an override for
-that drafted species when present and otherwise retains configured-source
-selection.
-Overrides never create custom player teams; all player teams still originate
-from a six-round pool draft.
+Contributor overrides live under `rollmons/sets/` as one file per normalized
+species-ID filename, each holding **one or more** standard Showdown export
+blocks (blank-line separated); every block becomes a separately selectable set
+for that species (e.g. Mega X and Mega Y, or a Mega plus a non-Mega build). A
+species with an override file is draftable even when the configured source has
+no set for it, so override files are how Mega-capable base species enter the
+player pool. `load_set_overrides()` validates each block's species; override
+exports are normalized by `_normalize_override_export()` (strip the inert
+`Tera Type:` line and guarantee an explicit `Level: 100`), so authors may omit
+the level line. The post-draft loadout defaults to a non-Mega set so Mega is an
+opt-in choice. Overrides never create custom player teams; all player teams
+still originate from a six-round pool draft, set-by-set.
 
 The randbats fallback path intentionally uses `Serious` nature, 85 EVs in each
 of the six stats (the legal 510 total cap), and omitted IV lines so Showdown
@@ -143,7 +163,9 @@ Authored bosses live as Showdown export text under `rollmons/bosses/`.
 `rollmons/boss_loader.py` discovers stable boss IDs from those files and returns the
 export string expected by `battle_runner.run_battle()`. `ash.txt` is the first
 thematic, intentionally suboptimal boss team; all six members explicitly set
-level 100. The boss display name derives from the file stem.
+level 100. The boss display name derives from the file stem. The loader reads
+only `rollmons/bosses/`; `rollmons/bosses_2/` holds staged future boss teams
+(Eevee, LC, Cyrus, Maxie, Archie, Giovanni) that are not loaded until promoted.
 
 `rollmons/submissions.py` wraps the existing foul-play Showdown export parser
 for both six-member boss files and single-member set overrides. Its existence
@@ -154,14 +176,20 @@ does not require Showdown, Rust, poke-engine, or a running battle stack.
 
 `rollmons/web_app.py` is a thin FastAPI transport over the game-layer modules.
 It keeps local single-user draft sessions in memory and exposes the complete
-18x9 pool inspector plus start/state/pick/skip draft endpoints. The static SPA
-under `rollmons/web_static/` renders that engine state, including BST,
-engine-calculated suggestion probability, a representative set from the active
-source and role count, and the fixed player assembly level. Draft cards use a
-light PokePaste/Showdown-teambuilder layout with the real level 100 source
-data. It does not implement
-matrix filtering, dedupe, cell guards, weighted suggestions, probability
-calculation, or team assembly in JavaScript.
+18x9 pool inspector plus start/state/pick/skip draft endpoints. When a draft
+completes it builds a default loadout (one set per drafted species, preferring a
+non-Mega set) and exposes the per-species selectable sets; `POST
+/api/drafts/{id}/loadout` records the player's chosen set and re-assembles the
+team. The loadout locks once a battle or boss rush starts. The static SPA under
+`rollmons/web_static/` (`index.html`/`styles.css`/`app.js`) is a Scarlet/Violet
+screen-based flow — title → draft → loadout → gauntlet → battle → results, plus
+a Pokedex/pool screen — ported from the `rollmons/open_design/index.html`
+reference. It renders engine state only (BST, suggestion probability, selectable
+sets and the chosen set, assembly level); the post-draft loadout screen
+(`#screen-loadout` / `#loadout-list`) is where the player picks each Pokemon's
+set, and the Showdown replay embed (`replayDoc` + iframe) is left unchanged. It
+does not implement matrix filtering, dedupe, cell guards, weighted suggestions,
+probability calculation, set selection logic, or team assembly in JavaScript.
 
 The module does not import `battle_runner` or poke-engine while serving pure
 matrix/draft routes. The live runner/config imports occur only when the battle
@@ -484,18 +512,26 @@ The earlier 299-line random-battle replay fixture still animates through the
 standard Showdown replay player with no rejected lines or JavaScript errors.
 
 The pure legality matrix is implemented in `rollmons/legality_matrix.py`.
-With the current Smogon primary source, 424 usable atoms produce 155 nonempty
-type-generation cells (113 normal and 42 thin), with seven empty cells
-excluded. The randbats alternate remains 508 atoms and 158 nonempty cells. The
+With the current Smogon primary source plus the checked-in Mega-Stone override
+files, 437 atoms (424 source + 13 override-only) produce 155 nonempty
+type-generation cells (118 normal and 37 thin), with seven empty cells
+excluded. (Without override files the source pool is 424 atoms / 155 cells /
+113 normal / 42 thin; the randbats alternate is 508 atoms / 158 cells.) The
 six-round draft and level-100 team assembly are implemented in
-`rollmons/draft.py` and `rollmons/team_assembly.py`. The first authored boss and
-one real post-draft battle path are built, including structured results and a
-hosted replay embed. Contributor boss/set validation and the N-battle
-pool-draft sandbox are built. The browser can now run the discovered boss list
-as a sequential post-draft boss rush: it validates every selected boss up front,
-runs one battle at a time through `battle_runner.run_battle()`, renders each
-replay immediately, then starts the next battle. Fixed ten-battle campaign
-tuning and additional authored boss teams remain ongoing work.
+`rollmons/draft.py` and `rollmons/team_assembly.py`. Player-pool Mega Evolution
+is built: 36 Mega-Stone sets ship under `rollmons/sets/`, making those base
+species draftable and Mega-capable; the post-draft loadout lets the player pick
+one set per Pokemon (Mega opt-in), and foul-play mega-evolves the chosen set in
+battle (verified live). The first authored boss and one real post-draft battle
+path are built, including structured results, a per-Pokemon damage summary, and
+a hosted replay embed. Contributor boss/set validation and the N-battle
+pool-draft sandbox are built. The browser can run the discovered boss list as a
+sequential post-draft boss rush: it validates every selected boss up front, runs
+one battle at a time through `battle_runner.run_battle()`, renders each replay
+immediately, then starts the next battle. Fixed ten-battle campaign tuning and
+additional authored boss teams remain ongoing work. The battle runner is
+intermittently flaky in standalone runs (timeouts / Showdown inactivity losses);
+the web-UI boss rush is the reliable path.
 
 ## Roadmap
 

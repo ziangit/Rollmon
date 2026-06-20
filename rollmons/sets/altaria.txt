@@ -1,0 +1,9 @@
+Altaria @ Altarianite
+Ability: Natural Cure
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Adamant Nature
+- Dragon Dance
+- Body Slam
+- Roost
+- Earthquake

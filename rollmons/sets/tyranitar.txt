@@ -1,0 +1,9 @@
+Tyranitar @ Tyranitarite
+Ability: Sand Stream
+Level: 100
+EVs: 252 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Dragon Dance
+- Knock Off
+- Stone Edge
+- Earthquake

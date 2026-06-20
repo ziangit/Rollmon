@@ -1,0 +1,10 @@
+Ampharos @ Ampharosite
+Ability: Static
+Level: 100
+EVs: 248 HP / 252 SpA / 8 SpD
+Modest Nature
+IVs: 0 Atk
+- Thunderbolt
+- Volt Switch
+- Dragon Pulse
+- Focus Blast

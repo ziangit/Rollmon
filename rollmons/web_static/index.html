@@ -1,121 +1,206 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>rollmons draft harness</title>
-    <link rel="stylesheet" href="/static/styles.css?v=20260608-boss-editor">
-  </head>
-  <body>
-    <header>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rollmons — Draft & Battle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/styles.css?v=20260620-nav">
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<header class="topbar hidden" id="topbar">
+  <div class="brand" role="button" tabindex="0" onclick="go('title')">
+    <span class="pokeball"></span>Rollmons
+  </div>
+  <nav class="steps" id="steps">
+    <span class="step" data-step="draft" onclick="goToStep('draft')">Draft</span>
+    <span class="step" data-step="loadout" onclick="goToStep('loadout')">Loadout</span>
+    <span class="step" data-step="bosses" onclick="goToStep('bosses')">Gauntlet</span>
+    <span class="step" data-step="battle" onclick="goToStep('battle')">Battle</span>
+    <span class="step" data-step="results" onclick="goToStep('results')">Results</span>
+  </nav>
+  <span class="spacer"></span>
+  <button class="btn btn-ghost btn-sm" id="pokedex-btn" onclick="togglePool()">Pokédex</button>
+</header>
+
+<!-- ============ TITLE ============ -->
+<section class="screen" id="screen-title">
+  <span class="orb t-fire"   style="width:120px;height:120px;left:8%;top:18%"></span>
+  <span class="orb t-water"  style="width:90px;height:90px;left:80%;top:14%;animation-delay:-2s"></span>
+  <span class="orb t-grass"  style="width:70px;height:70px;left:16%;top:72%;animation-delay:-4s"></span>
+  <span class="orb t-electric" style="width:60px;height:60px;left:72%;top:70%;animation-delay:-1s"></span>
+  <span class="orb t-psychic" style="width:100px;height:100px;left:48%;top:80%;animation-delay:-3s"></span>
+  <div class="title-inner">
+    <h1 class="logo">Rollmons<span class="tail">Draft · Battle · Conquer</span></h1>
+    <p class="title-sub">Roll a team of six. Build each set. Climb the boss gauntlet. Every battle plays out in a live Pokémon Showdown engine — you just build the squad and watch them fight.</p>
+    <div class="title-actions">
+      <button class="btn btn-primary btn-lg" onclick="newRun()">▶ Start a new run</button>
+      <button class="btn btn-ghost btn-lg" onclick="go('pool')">Browse the pool</button>
+    </div>
+    <p class="title-foot" id="title-foot">Level 100 · Gen 9 · engine-enforced dedupe</p>
+  </div>
+</section>
+
+<!-- ============ DRAFT ============ -->
+<section class="screen" id="screen-draft">
+  <div class="wrap">
+    <div class="section-head">
       <div>
-        <p class="eyebrow">Local development harness</p>
-        <h1>rollmons pool inspector</h1>
-        <p>Engine-backed matrix inspection and six-round draft testing.</p>
+        <p class="eyebrow">Step 1 — Build your team</p>
+        <h1>Draft your six</h1>
       </div>
-      <nav>
-        <button class="tab active" data-view="matrix">Pool matrix</button>
-        <button class="tab" data-view="draft">Draft flow</button>
-      </nav>
-    </header>
+      <button class="btn btn-ghost btn-sm" id="copy-export" disabled onclick="copyExport()">Copy team export</button>
+    </div>
+    <div class="round-bar">
+      <div class="pips" id="pips"></div>
+      <span id="round-label" class="mono" style="font-size:.82rem;color:var(--muted)"></span>
+    </div>
 
-    <main>
-      <section id="matrix-view" class="view">
-        <div class="section-heading">
-          <div>
-            <h2>18 × 9 legality matrix</h2>
-            <p id="matrix-summary">Loading matrix…</p>
-          </div>
-          <div class="legend">
-            <span><i class="swatch included"></i> Normal (3+)</span>
-            <span><i class="swatch thin"></i> Thin (free reroll)</span>
-            <span><i class="swatch excluded"></i> Excluded (0)</span>
-          </div>
-        </div>
-        <div class="matrix-layout">
-          <div id="matrix-grid" class="matrix-grid" aria-label="Type by generation matrix"></div>
-          <aside id="cell-detail" class="panel">
-            <h3>Select a cell</h3>
-            <p>Click any normal, thin, or excluded cell to inspect its pool.</p>
-          </aside>
-        </div>
-      </section>
+    <div id="draft-live">
+      <div class="encounter" id="encounter"></div>
+      <div class="draft-grid">
+        <div class="candidate-grid" id="candidates"></div>
+        <aside class="party card" style="padding:1.1rem">
+          <h3>Your party</h3>
+          <p class="sub" id="party-count">0 / 6 drafted</p>
+          <ul class="party-list" id="party"></ul>
+        </aside>
+      </div>
+    </div>
 
-      <section id="draft-view" class="view hidden">
-        <div class="section-heading">
-          <div>
-            <h2>Interactive six-round draft</h2>
-            <p>Level 100 · configurable skips · engine-enforced dedupe</p>
-          </div>
-          <button id="start-draft" class="primary">Start new draft</button>
-        </div>
-        <div id="draft-status" class="draft-status panel">
-          Start a draft to roll the first cell.
-        </div>
-        <div class="draft-layout">
-          <section class="draft-main">
-            <div id="current-offer"></div>
-            <div id="candidate-list" class="candidate-grid"></div>
-            <section id="battle-result-panel" class="panel battle-result-panel hidden">
-              <div class="section-heading">
-                <div>
-                  <p class="eyebrow">Boss rush</p>
-                  <h2>Completed replays</h2>
-                </div>
-              </div>
-              <div id="battle-replay-list" class="battle-replay-list"></div>
-              <p id="battle-replay-summary" class="gauntlet-summary"></p>
-            </section>
-          </section>
-          <aside class="draft-sidebar">
-            <div class="panel">
-              <div class="panel-heading">
-                <h3>Team</h3>
-                <button id="copy-team-export" class="copy-button" disabled>Copy export</button>
-              </div>
-              <ol id="team-slots" class="team-slots"></ol>
-            </div>
-            <div id="battle-panel" class="panel hidden">
-              <p class="eyebrow">Live integration</p>
-              <h3>Run boss rush</h3>
-              <p>Requires the local Showdown server, battle logging, and the Gen 9 no-Tera engine.</p>
-              <label class="boss-field" for="boss-select">
-                Single-battle debug boss
-                <select id="boss-select"></select>
-              </label>
-              <button id="battle-boss" class="primary">Battle this boss</button>
-              <button id="start-gauntlet" class="primary">Start boss rush</button>
-              <button id="start-real-gauntlet" class="primary">Real boss rush</button>
-              <div class="boss-order-panel">
-                <p class="mini-heading">Boss order</p>
-                <ol id="boss-order-list" class="boss-order-list"></ol>
-              </div>
-              <form id="custom-boss-form" class="custom-boss-form">
-                <p id="boss-form-heading" class="mini-heading">Add or edit boss</p>
-                <input id="custom-boss-id" name="bossId" type="hidden">
-                <label class="boss-field" for="custom-boss-name">
-                  Boss name
-                  <input id="custom-boss-name" name="name" autocomplete="off">
-                </label>
-                <label class="boss-field" for="custom-boss-export">
-                  PokePaste export
-                  <textarea id="custom-boss-export" name="export" rows="8"></textarea>
-                </label>
-                <div class="boss-form-actions">
-                  <button id="save-boss" class="copy-button" type="submit">Add boss</button>
-                  <button id="cancel-boss-edit" class="copy-button subtle" type="button">Cancel edit</button>
-                </div>
-                <p id="custom-boss-status" class="battle-status"></p>
-              </form>
-              <p id="battle-status" class="battle-status"></p>
-              <p id="gauntlet-summary" class="gauntlet-summary"></p>
-              <ol id="gauntlet-list" class="gauntlet-list"></ol>
-            </div>
-          </aside>
-        </div>
-      </section>
-    </main>
+    <div id="draft-done" class="hidden card" style="padding:1.6rem;text-align:center">
+      <h2 style="font-size:1.6rem">Team assembled 🎉</h2>
+      <p class="lead">Six unique Pokémon, locked at level 100. Next, choose each one's set.</p>
+      <div style="display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;margin-top:1.2rem">
+        <button class="btn btn-primary btn-lg" onclick="go('loadout')">Choose sets →</button>
+        <button class="btn btn-ghost" onclick="copyExport()">Copy team export</button>
+      </div>
+      <ul class="party-list" id="party-done" style="max-width:420px;margin:1.6rem auto 0;text-align:left"></ul>
+    </div>
+  </div>
+</section>
 
-    <script src="/static/app.js?v=20260608-boss-editor"></script>
-  </body>
+<!-- ============ LOADOUT ============ -->
+<section class="screen" id="screen-loadout">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Step 2 — Build each set</p>
+        <h1>Choose your sets</h1>
+        <p class="lead">Pick one set per Pokémon. Mega is opt-in — only one Mega can evolve per battle.</p>
+      </div>
+      <button class="btn btn-primary" onclick="go('bosses')">To the gauntlet →</button>
+    </div>
+    <p class="status-line" id="loadout-status"></p>
+    <div class="loadout-list" id="loadout-list"></div>
+  </div>
+</section>
+
+<!-- ============ BOSSES ============ -->
+<section class="screen" id="screen-bosses">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Step 3 — Set the ladder</p>
+        <h1>Boss gauntlet</h1>
+        <p class="lead">Drag to set the order your team will climb. Add your own bosses from a PokéPaste.</p>
+      </div>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" id="exhibition-btn" onclick="startRun(false)">Exhibition (play all)</button>
+        <button class="btn btn-primary" id="run-btn" onclick="startRun(true)">⚔ Start run</button>
+      </div>
+    </div>
+    <p class="status-line" id="boss-status"></p>
+    <div class="boss-cols">
+      <ol class="ladder" id="ladder"></ol>
+      <aside class="card" style="padding:1.2rem">
+        <h3 id="boss-form-title" style="margin-bottom:.2rem">Add a boss</h3>
+        <p class="sub" style="color:var(--muted);font-size:.82rem;margin:0 0 .9rem">Paste a Showdown team export.</p>
+        <form id="boss-form">
+          <input type="hidden" id="boss-id">
+          <label class="field">Boss name<input id="boss-name" autocomplete="off" placeholder="e.g. Champion Geeta"></label>
+          <label class="field">PokéPaste export<textarea id="boss-export" rows="8" placeholder="Garchomp @ Life Orb&#10;Ability: Rough Skin&#10;..."></textarea></label>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" type="submit" id="boss-save">Add boss</button>
+            <button class="btn btn-ghost btn-sm hidden" type="button" id="boss-cancel" onclick="resetBossForm()">Cancel</button>
+          </div>
+          <p class="status-line" id="boss-form-status"></p>
+        </form>
+        <details class="raw" style="margin-top:1rem">
+          <summary>Advanced: single-boss test</summary>
+          <div style="margin-top:.7rem">
+            <label class="field">Boss<select id="boss-select"></select></label>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="battleOne()">Battle this boss</button>
+          </div>
+        </details>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BATTLE ============ -->
+<section class="screen" id="screen-battle">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Step 4 — The arena</p>
+        <h1>Battle</h1>
+        <p class="lead" id="battle-lead">Each matchup plays out in the live Showdown engine.</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="to-results" onclick="go('results')" disabled>View run summary →</button>
+    </div>
+    <div class="battle-cols">
+      <ol class="rail" id="rail"></ol>
+      <div class="theater" id="theater"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section class="screen" id="screen-results">
+  <div class="wrap" style="max-width:860px">
+    <div class="result-hero" id="result-hero">
+      <h2 id="result-title">Run complete</h2>
+      <p id="result-sub"></p>
+    </div>
+    <div class="record" id="record"></div>
+    <div class="result-chips" id="result-chips"></div>
+    <div class="result-actions">
+      <button class="btn btn-ghost" onclick="go('battle')">Rewatch battles</button>
+      <button class="btn btn-primary" onclick="newRun()">↻ New run</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ POOL / POKÉDEX ============ -->
+<section class="screen" id="screen-pool">
+  <div class="wrap">
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Reference</p>
+        <h1>Draft pool</h1>
+        <p class="lead" id="matrix-summary">Loading pool…</p>
+      </div>
+      <div class="legend">
+        <span><i class="mcell normal" style="width:.8rem;height:.8rem;min-height:0;padding:0"></i>Normal</span>
+        <span><i class="mcell thin" style="width:.8rem;height:.8rem;min-height:0;padding:0"></i>Thin</span>
+        <span><i style="background:var(--surface-2);border:1px solid var(--border)"></i>Excluded</span>
+      </div>
+    </div>
+    <div class="matrix-wrap">
+      <div class="matrix" id="matrix"></div>
+      <aside class="card detail" id="detail" style="padding:1.2rem">
+        <h3>Pick a cell</h3>
+        <p style="color:var(--muted);font-size:.88rem">Tap any type × generation cell to see who lives there.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<script src="/static/app.js?v=20260620-nav"></script>
+</body>
 </html>
