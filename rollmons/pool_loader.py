@@ -16,15 +16,21 @@ from typing import Protocol, Sequence
 POOL_DIR = Path(__file__).resolve().parent / "pool"
 
 # Ordered (tier directory, number of battles drawn from it). Sums to a fixed
-# ten-battle campaign that climbs in difficulty. ``level_6to9`` stands in for
-# four ascending ladder slots, so it contributes four distinct battles.
+# ten-battle campaign that climbs in difficulty:
+#   1   level_1   cakewalk pool          (1)
+#   2   level_2   meme pool              (1)
+#   3   level_3   Red, fixed homage      (1)
+#   4-6 middle    evil-leader pool       (3, sampled without replacement)
+#   7-9 advanced  ladder-team pool       (3, sampled without replacement)
+#   10  level_10  Air, fixed finale      (1)
+# "Middle" and "Advanced" are act bands: each contributes several battles drawn
+# from one pool, so runs vary while difficulty still climbs band to band.
 CAMPAIGN_STRUCTURE: tuple[tuple[str, int], ...] = (
     ("level_1", 1),
     ("level_2", 1),
     ("level_3", 1),
-    ("level_4", 1),
-    ("level_5", 1),
-    ("level_6to9", 4),
+    ("middle", 3),
+    ("advanced", 3),
     ("level_10", 1),
 )
 

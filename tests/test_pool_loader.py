@@ -40,9 +40,8 @@ def test_build_campaign_is_ten_ordered_battles_in_tier_order(tmp_path):
             "level_1": ["a"],
             "level_2": ["b"],
             "level_3": ["c"],
-            "level_4": ["d"],
-            "level_5": ["e"],
-            "level_6to9": ["f", "g", "h", "i"],
+            "middle": ["d", "e", "f"],
+            "advanced": ["g", "h", "i"],
             "level_10": ["j"],
         },
     )
@@ -53,17 +52,17 @@ def test_build_campaign_is_ten_ordered_battles_in_tier_order(tmp_path):
         "level_1",
         "level_2",
         "level_3",
-        "level_4",
-        "level_5",
-        "level_6to9",
-        "level_6to9",
-        "level_6to9",
-        "level_6to9",
+        "middle",
+        "middle",
+        "middle",
+        "advanced",
+        "advanced",
+        "advanced",
         "level_10",
     ]
-    # level_6to9 contributes four distinct teams (sampled without replacement).
-    sixto9 = [b.team_id for b in campaign if b.tier == "level_6to9"]
-    assert sorted(sixto9) == ["f", "g", "h", "i"]
+    # Each band contributes three distinct teams (sampled without replacement).
+    assert sorted(b.team_id for b in campaign if b.tier == "middle") == ["d", "e", "f"]
+    assert sorted(b.team_id for b in campaign if b.tier == "advanced") == ["g", "h", "i"]
     assert campaign[0].export.startswith("a")
 
 
@@ -74,17 +73,16 @@ def test_build_campaign_is_deterministic_under_a_seed(tmp_path):
             "level_1": ["a1", "a2", "a3"],
             "level_2": ["b"],
             "level_3": ["c"],
-            "level_4": ["d"],
-            "level_5": ["e"],
-            "level_6to9": ["f", "g", "h", "i", "j"],
-            "level_10": ["k"],
+            "middle": ["d", "e", "f"],
+            "advanced": ["g", "h", "i", "j", "k"],
+            "level_10": ["l"],
         },
     )
     first = build_campaign(rng=random.Random(7), pool_dir=tmp_path)
     second = build_campaign(rng=random.Random(7), pool_dir=tmp_path)
     assert [b.team_id for b in first] == [b.team_id for b in second]
-    # a five-team tier drawn four times still yields four distinct teams
-    assert len({b.team_id for b in first if b.tier == "level_6to9"}) == 4
+    # a five-team band drawn three times still yields three distinct teams
+    assert len({b.team_id for b in first if b.tier == "advanced"}) == 3
 
 
 def test_build_campaign_errors_when_a_tier_is_too_thin(tmp_path):
@@ -94,9 +92,8 @@ def test_build_campaign_errors_when_a_tier_is_too_thin(tmp_path):
             "level_1": ["a"],
             "level_2": ["b"],
             "level_3": ["c"],
-            "level_4": ["d"],
-            "level_5": ["e"],
-            "level_6to9": ["f", "g"],  # needs 4, only 2
+            "middle": ["d", "e", "f"],
+            "advanced": ["g", "h"],  # needs 3, only 2
             "level_10": ["j"],
         },
     )

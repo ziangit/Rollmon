@@ -1,0 +1,56 @@
+Hydreigon @ Life Orb  
+Ability: Levitate  
+EVs: 4 Def / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Nasty Plot  
+- Dark Pulse  
+- Draco Meteor  
+- Fire Blast  
+
+Bisharp @ Eviolite  
+Ability: Defiant  
+EVs: 252 HP / 252 Atk / 4 SpD  
+Adamant Nature  
+- Swords Dance  
+- Knock Off  
+- Iron Head  
+- Sucker Punch  
+
+Cofagrigus @ Leftovers  
+Ability: Mummy  
+EVs: 248 HP / 252 SpA / 8 SpD  
+Quiet Nature  
+IVs: 0 Atk / 0 Spe  
+- Will-O-Wisp  
+- Pain Split  
+- Shadow Ball  
+- Body Press  
+
+Drapion @ Scope Lens  
+Ability: Sniper  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Night Slash  
+- Poison Jab  
+- Leech Life  
+- Swords Dance  
+
+Eelektross @ Assault Vest  
+Ability: Levitate  
+EVs: 252 HP / 4 Atk / 252 SpA  
+Quiet Nature  
+- Thunderbolt  
+- Volt Switch  
+- Flamethrower  
+- Drain Punch  
+
+Kyurem-Black @ Power Herb  
+Ability: Teravolt  
+EVs: 252 Atk / 4 SpA / 252 Spe  
+Naughty Nature  
+- Freeze Shock  
+- Fusion Bolt  
+- Dragon Claw  
+- Ice Beam  
+
