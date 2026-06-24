@@ -167,6 +167,16 @@ level 100. The boss display name derives from the file stem. The loader reads
 only `rollmons/bosses/`; `rollmons/bosses_2/` holds staged future boss teams
 (Eevee, LC, Cyrus, Maxie, Archie, Giovanni) that are not loaded until promoted.
 
+`rollmons/pool_loader.py` powers the tiered campaign (pure; no `fp/`). Teams live
+under `rollmons/pool/<tier>/*.txt` (tiers `level_1`..`level_5`, `level_6to9`,
+`level_10`). `build_campaign()` selects a seedable **ten-battle** run — one
+random team per tier, with `level_6to9` contributing four distinct teams
+(sampled without replacement), ascending in difficulty (`CAMPAIGN_STRUCTURE`).
+`POST /api/drafts/{id}/campaign/start` stores the picked exports on the session
+and runs them through the existing gauntlet seam, so the campaign reuses
+`run_battle()`, replays, and the damage summary unchanged. The pool `.txt` files
+need a `.gitignore` whitelist line like the other data dirs.
+
 `rollmons/submissions.py` wraps the existing foul-play Showdown export parser
 for both six-member boss files and single-member set overrides. Its existence
 pre-flight reads checked-in species and move JSON directly and applies no
