@@ -1,0 +1,9 @@
+Lucario @ Lucarionite
+Ability: Justified
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Swords Dance
+- Close Combat
+- Meteor Mash
+- Extreme Speed

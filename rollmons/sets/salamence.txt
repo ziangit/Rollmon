@@ -1,0 +1,8 @@
+Salamence @ Salamencite  
+Ability: Intimidate  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Dragon Dance  
+- Double-Edge  
+- Earthquake  
+- Roost

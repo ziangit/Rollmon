@@ -48,6 +48,7 @@ from rollmons.team_assembly import (
     NEUTRAL_NATURE,
     STATS,
     load_random_battle_sets,
+    _normalize_override_export,
     load_set_override,
     representative_random_battle_set,
     representative_smogon_set,
@@ -491,7 +492,9 @@ def _species_payload(
             "source": "override",
             "label": "Custom set",
             "format": None,
-            "export": override_export,
+            # Show the normalized export (Level 100, Tera stripped) so the
+            # displayed set matches what assembly actually builds.
+            "export": _normalize_override_export(override_export),
             "item": member.get("item", ""),
             "ability": member.get("ability", ""),
             "moves": list(member.get("moves", [])),
@@ -723,6 +726,7 @@ def create_app(
                             "ability": option.ability,
                             "moves": list(option.moves),
                             "is_mega": option.is_mega,
+                            "export": option.export,
                         }
                         for option in options
                     ],

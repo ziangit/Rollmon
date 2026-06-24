@@ -302,19 +302,16 @@ async def test_matrix_endpoint_exposes_all_cells_and_known_placements(client):
     assert clefable["assembly_spread"]["level"] == 100
     assert set(clefable["assembly_spread"]["ivs"].values()) == {31}
 
+    # Blaziken ships a Mega-Stone override, so its representative set is the
+    # override (a checked-in set takes precedence over the source set).
     fire_gen3 = find_cell(matrix, "fire", 3)
     blaziken = next(
         pokemon for pokemon in fire_gen3["pokemon"] if pokemon["id"] == "blaziken"
     )
-    assert blaziken["randbats_set"]["export"] == """Blaziken @ Life Orb
-Ability: Speed Boost
-Level: 100
-EVs: 252 Atk / 4 Def / 252 Spe
-Adamant Nature
-- Swords Dance
-- Close Combat
-- Flare Blitz
-- Stone Edge"""
+    assert blaziken["randbats_set"]["source"] == "override"
+    assert blaziken["randbats_set"]["item"] == "blazikenite"
+    assert "Blazikenite" in blaziken["randbats_set"]["export"]
+    assert "Level: 100" in blaziken["randbats_set"]["export"]
     assert "Tera Type:" not in blaziken["randbats_set"]["export"]
 
     fire_gen1 = find_cell(matrix, "fire", 1)

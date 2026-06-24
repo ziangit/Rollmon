@@ -1,0 +1,9 @@
+Gengar @ Gengarite  
+Ability: Cursed Body  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Nasty Plot  
+- Shadow Ball  
+- Sludge Bomb  
+- Focus Blast

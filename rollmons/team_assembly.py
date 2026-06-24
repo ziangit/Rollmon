@@ -293,7 +293,7 @@ def _normalize_override_export(export: str) -> str:
     """
 
     lines = [
-        line
+        line.rstrip()
         for line in export.splitlines()
         if not line.strip().lower().startswith("tera type:")
     ]
