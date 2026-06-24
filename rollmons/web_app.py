@@ -392,6 +392,10 @@ class DraftSession:
     gauntlet_stop_on_loss: bool = False
     gauntlet_damage_by_species: dict[str, float] | None = None
     gauntlet_damage_display: dict[str, str] | None = None
+    # Campaign mode: maps a gauntlet boss_id (the pool team's stem) to its
+    # selected export, so the gauntlet runs tier-drawn pool teams instead of
+    # the authored rollmons/bosses/ list. None for a manual boss rush.
+    campaign_teams: dict[str, str] | None = None
 
 
 def _battle_config_from_environment():
@@ -601,6 +605,16 @@ def create_app(
             return custom_bosses[boss_id]["name"]
         return boss_display_name(boss_id)
 
+    def resolve_boss_name(session: "DraftSession", boss_id: str) -> str:
+        if session.campaign_teams and boss_id in session.campaign_teams:
+            return boss_id  # the pool team's stem is its display name
+        return boss_name_for_id(boss_id)
+
+    def resolve_boss_team(session: "DraftSession", boss_id: str) -> str:
+        if session.campaign_teams and boss_id in session.campaign_teams:
+            return session.campaign_teams[boss_id]
+        return boss_team_for_id(boss_id)
+
     def boss_team_for_id(boss_id: str) -> str:
         if boss_id in custom_bosses:
             return custom_bosses[boss_id]["export"]
@@ -755,7 +769,7 @@ def create_app(
             ),
             "gauntlet": _gauntlet_payload(
                 session,
-                boss_name_lookup=boss_name_for_id,
+                boss_name_lookup=lambda boss_id: resolve_boss_name(session, boss_id),
             ),
         }
 
@@ -979,7 +993,32 @@ def create_app(
                 status_code=422,
                 detail=f"boss rush supports at most {BOSS_ORDER_MAX} bosses",
             )
+        session.campaign_teams = None
         session.gauntlet_boss_ids = boss_ids
+        session.gauntlet_next_index = 0
+        session.gauntlet_results = []
+        session.gauntlet_stop_on_loss = request.stop_on_loss
+        (
+            session.gauntlet_damage_by_species,
+            session.gauntlet_damage_display,
+        ) = _seed_damage_tracking(
+            [legality_data.species[species_id].name for species_id in session.draft.picks]
+        )
+        return serialize_session(session_id, session)
+
+    @app.post("/api/drafts/{session_id}/campaign/start")
+    def start_campaign(session_id: str, request: GauntletStartRequest):
+        session = get_session(session_id)
+        if not session.draft.complete or session.team_export is None:
+            raise HTTPException(status_code=409, detail="draft is not complete")
+        from rollmons.pool_loader import PoolError, build_campaign
+
+        try:
+            campaign = build_campaign()
+        except PoolError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        session.campaign_teams = {battle.team_id: battle.export for battle in campaign}
+        session.gauntlet_boss_ids = tuple(battle.team_id for battle in campaign)
         session.gauntlet_next_index = 0
         session.gauntlet_results = []
         session.gauntlet_stop_on_loss = request.stop_on_loss
@@ -1002,8 +1041,8 @@ def create_app(
             return serialize_session(session_id, session)
         boss_id = session.gauntlet_boss_ids[session.gauntlet_next_index]
         try:
-            boss_team = boss_team_for_id(boss_id)
-            boss_name = boss_name_for_id(boss_id)
+            boss_team = resolve_boss_team(session, boss_id)
+            boss_name = resolve_boss_name(session, boss_id)
             verify_team_entities_exist(
                 player=session.team_export,
                 boss=boss_team,

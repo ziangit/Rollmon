@@ -860,3 +860,54 @@ async def test_battle_requires_a_completed_draft(tmp_path):
 
     assert response.status_code == 409
     assert response.json()["detail"] == "draft is not complete"
+
+
+@pytest.mark.anyio
+async def test_campaign_start_builds_ten_battle_pool_gauntlet(tmp_path, monkeypatch):
+    config = BattleRunnerConfig(
+        websocket_url="ws://localhost:8000/showdown/websocket",
+        showdown_log_dir=tmp_path,
+    )
+    calls = []
+
+    def fake_run_battle(player_team, boss_team, received_config, *, player_name, boss_name):
+        calls.append(boss_name)
+        return BattleResult(
+            winner="player",
+            turns=10,
+            battle_id=f"battle-{len(calls)}",
+            replay_log=[f"|player|p1|{player_name}|", f"|win|{player_name}"],
+            player_name=player_name,
+            boss_name=boss_name,
+        )
+
+    test_app = create_app(battle_fn=fake_run_battle, battle_config_factory=lambda: config)
+    transport = httpx.ASGITransport(app=test_app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        state = (await client.post("/api/drafts", json={"level": 100, "seed": 2026})).json()
+        sid = state["session_id"]
+        while not state["complete"]:
+            state = (
+                await client.post(
+                    f"/api/drafts/{sid}/pick",
+                    json={"species_id": state["offer"]["suggested_species"]},
+                )
+            ).json()
+
+        started = await client.post(f"/api/drafts/{sid}/campaign/start", json={})
+        assert started.status_code == 200
+        gauntlet = started.json()["gauntlet"]
+        # The tiered campaign is exactly ten battles drawn from rollmons/pool.
+        assert len(gauntlet["bosses"]) == 10
+        assert gauntlet["complete"] is False
+
+        # Run it to completion through the existing gauntlet seam.
+        result_state = started.json()
+        while not result_state["gauntlet"]["complete"]:
+            result_state = (
+                await client.post(f"/api/drafts/{sid}/gauntlet/next")
+            ).json()
+
+    assert len(calls) == 10  # ten pool teams were battled, not the authored bosses
+    names = [b["name"] for b in result_state["gauntlet"]["bosses"]]
+    assert len(set(names)) == 10  # ten distinct pool teams
