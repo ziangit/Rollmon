@@ -77,6 +77,8 @@ function sprite(p,cls=""){
 function renderDraft(draft){
   state.sessionId = draft.session_id;
   state.draft = draft;
+  const ds = document.getElementById("draft-status");
+  if(ds) ds.textContent = "";
   state.teamExport = draft.complete ? (draft.team_export||"") : "";
   const copyBtn = document.getElementById("copy-export");
   if(copyBtn) copyBtn.disabled = !state.teamExport;
@@ -185,9 +187,22 @@ async function newRun(){
   try{ renderDraft(await api("/api/drafts",{method:"POST",body:JSON.stringify({level:100})})); }
   catch(e){ document.getElementById("encounter").innerHTML = `<div><p class="lead">${esc(e.message)}</p></div>`; }
 }
-async function pick(id){ renderDraft(await api(`/api/drafts/${state.sessionId}/pick`,{method:"POST",body:JSON.stringify({species_id:id})})); }
-async function skip(){ renderDraft(await api(`/api/drafts/${state.sessionId}/skip`,{method:"POST"})); }
-async function thinReroll(){ renderDraft(await api(`/api/drafts/${state.sessionId}/thin-reroll`,{method:"POST"})); }
+function draftError(e){
+  const el = document.getElementById("draft-status");
+  if(el) el.textContent = e.message || "Request failed — is the backend running?";
+}
+async function pick(id){
+  try{ renderDraft(await api(`/api/drafts/${state.sessionId}/pick`,{method:"POST",body:JSON.stringify({species_id:id})})); }
+  catch(e){ draftError(e); }
+}
+async function skip(){
+  try{ renderDraft(await api(`/api/drafts/${state.sessionId}/skip`,{method:"POST"})); }
+  catch(e){ draftError(e); }
+}
+async function thinReroll(){
+  try{ renderDraft(await api(`/api/drafts/${state.sessionId}/thin-reroll`,{method:"POST"})); }
+  catch(e){ draftError(e); }
+}
 
 async function copyExport(){
   if(!state.teamExport) return;
@@ -404,6 +419,19 @@ async function startRun(stopOnLoss){
     setTimeout(runNext,0);
   }catch(e){ document.getElementById("battle-lead").textContent=e.message; state.gauntletRunning=false; }
 }
+async function startCampaign(stopOnLoss){
+  if(!state.sessionId){document.getElementById("boss-status").textContent="Draft a team first.";return;}
+  go("battle");
+  document.getElementById("battle-lead").textContent =
+    "Tiered campaign — 10 battles, one random team drawn per level (level_6to9 gives 4).";
+  document.getElementById("theater").innerHTML="";
+  state.gauntletRunning=true;
+  try{
+    renderRun(await api(`/api/drafts/${state.sessionId}/campaign/start`,
+      {method:"POST",body:JSON.stringify({stop_on_loss:stopOnLoss})}));
+    setTimeout(runNext,0);
+  }catch(e){ document.getElementById("battle-lead").textContent=e.message; state.gauntletRunning=false; }
+}
 async function runNext(){
   try{
     const cur=await api(`/api/drafts/${state.sessionId}`);
@@ -438,32 +466,77 @@ async function battleOne(){
    ===================================================================== */
 function renderResults(g){
   if(!g||!g.results) return;
-  const results=g.results;
+  const results=g.results, total=g.bosses.length;
   const wins=results.filter(r=>r.winner==="player").length;
   const losses=results.filter(r=>r.winner==="boss").length;
   const ties=results.filter(r=>r.winner==="tie").length;
   const avg=results.length?results.reduce((s,r)=>s+r.turns,0)/results.length:0;
-  const cleared = wins===g.bosses.length;
+  const cleared = wins===total;
   const lastLoss = g.stop_on_loss && results.length && results[results.length-1].winner!=="player";
 
   const hero=document.getElementById("result-hero");
   hero.className="result-hero "+(cleared?"victory":lastLoss?"defeat":"mixed");
+  document.getElementById("result-eyebrow").textContent = `${total}-battle campaign`;
   document.getElementById("result-title").textContent = cleared?"Champion! 🏆":lastLoss?"Run ended":"Gauntlet complete";
-  document.getElementById("result-sub").textContent = g.summary ||
-    (cleared?`Your team swept all ${g.bosses.length} bosses.`
-            :lastLoss?`Fell at boss ${results.length} of ${g.bosses.length}.`
-                     :`Final record across ${results.length} battles.`);
+  document.getElementById("result-record").textContent =
+    `${wins}–${losses}${ties?`–${ties}`:""}  ·  cleared ${wins}/${total}  ·  ${avg.toFixed(1)} avg turns`;
 
-  document.getElementById("record").innerHTML = `
-    <div class="stat"><div class="v" style="color:var(--good)">${wins}</div><div class="k">Wins</div></div>
-    <div class="stat"><div class="v" style="color:var(--bad)">${losses}</div><div class="k">Losses</div></div>
+  // the climb, as one pip per battle slot in run order
+  document.getElementById("result-pips").innerHTML = g.bosses.map((b,i)=>{
+    const r=results[i];
+    const cls=!r?"pending":r.winner==="player"?"win":r.winner==="boss"?"loss":"tie";
+    return `<span class="rpip ${cls}" title="${esc(b.name)}${r?` · ${r.winner} · ${r.turns}t`:""}"></span>`;
+  }).join("");
+
+  // sprite lookup from the drafted team (damage names are lowercase species names)
+  const team=(state.draft&&state.draft.team)||state.team||[];
+  const spriteByName={};
+  team.forEach(p=>{ spriteByName[String(p.name).toLowerCase()]=p.sprite_url; });
+  const dmg=g.damage||{by_pokemon:[],mvp:null};
+  const mvpName=dmg.mvp&&dmg.mvp.name;
+  const maxShare=Math.max(1,...dmg.by_pokemon.map(e=>e.contribution));
+
+  document.getElementById("damage-bars").innerHTML = dmg.by_pokemon.length
+    ? dmg.by_pokemon.map(e=>{
+        const sp=spriteByName[String(e.name).toLowerCase()];
+        const isMvp=e.name===mvpName && e.contribution>0;
+        const w=Math.max(3,(e.contribution/maxShare)*100);
+        return `<div class="dmg-row${isMvp?" mvp":""}">
+          <span class="dmg-mon">${sp?sprite({sprite_url:sp},"mini"):`<span class="asset-host mini"></span>`}<span class="dmg-name">${titleCase(e.name)}${isMvp?`<span class="mvp-tag">MVP</span>`:""}</span></span>
+          <span class="dmg-track"><i style="width:${w}%"></i></span>
+          <span class="dmg-num"><b>${e.contribution.toFixed(1)}%</b><small>${e.damage.toFixed(0)}% dealt</small></span>
+        </div>`;
+      }).join("")
+    : `<p class="panel-note" style="padding:.5rem">No damage was recorded this run.</p>`;
+  fixImages(document.getElementById("damage-bars"));
+
+  const mvpEl=document.getElementById("mvp-card");
+  if(dmg.mvp){
+    const sp=spriteByName[String(dmg.mvp.name).toLowerCase()];
+    mvpEl.classList.remove("hidden");
+    mvpEl.innerHTML=`<p class="eyebrow">Run MVP</p>
+      <div class="mvp-body">
+        ${sp?sprite({sprite_url:sp},"mvp-sprite"):""}
+        <div class="mvp-meta">
+          <strong>${titleCase(dmg.mvp.name)}</strong>
+          <p class="mvp-share">${dmg.mvp.contribution.toFixed(1)}%</p>
+          <p class="panel-note">of team damage · ${dmg.mvp.damage.toFixed(0)}% HP dealt</p>
+        </div>
+      </div>`;
+    fixImages(mvpEl);
+  } else { mvpEl.classList.add("hidden"); }
+
+  document.getElementById("stat-tiles").innerHTML = `
+    <div class="stat win"><div class="v">${wins}</div><div class="k">Wins</div></div>
+    <div class="stat loss"><div class="v">${losses}</div><div class="k">Losses</div></div>
     ${ties?`<div class="stat"><div class="v">${ties}</div><div class="k">Ties</div></div>`:""}
     <div class="stat"><div class="v">${avg.toFixed(1)}</div><div class="k">Avg turns</div></div>`;
 
-  document.getElementById("result-chips").innerHTML = g.bosses.map((b,i)=>{
-    const r=results[i]; if(!r) return `<span class="rchip"><span class="dot" style="background:var(--line)"></span>${esc(b.name)}</span>`;
-    const cls=r.winner==="player"?"win":r.winner==="boss"?"loss":"tie";
-    return `<span class="rchip ${cls}"><span class="dot"></span>${esc(b.name)} · ${r.turns}t</span>`;
+  document.getElementById("ladder-results").innerHTML = g.bosses.map((b,i)=>{
+    const r=results[i];
+    const cls=!r?"pending":r.winner==="player"?"win":r.winner==="boss"?"loss":"tie";
+    const label=!r?"Not reached":r.winner==="tie"?"Tie":r.winner==="player"?"Win":"Loss";
+    return `<li class="ladder-row ${cls}"><span class="ln">${i+1}</span><span class="lname">${esc(b.name)}</span><span class="lres">${label}${r?` · ${r.turns}t`:""}</span></li>`;
   }).join("");
 }
 

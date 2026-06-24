@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/styles.css?v=20260620-nav">
+<link rel="stylesheet" href="/static/styles.css?v=20260624-results">
 </head>
 <body>
 
@@ -59,6 +59,7 @@
       <div class="pips" id="pips"></div>
       <span id="round-label" class="mono" style="font-size:.82rem;color:var(--muted)"></span>
     </div>
+    <p class="status-line" id="draft-status"></p>
 
     <div id="draft-live">
       <div class="encounter" id="encounter"></div>
@@ -107,11 +108,12 @@
       <div>
         <p class="eyebrow">Step 3 — Set the ladder</p>
         <h1>Boss gauntlet</h1>
-        <p class="lead">Drag to set the order your team will climb. Add your own bosses from a PokéPaste.</p>
+        <p class="lead">Run the tiered 10-battle campaign (random team per level), or set a manual ladder below.</p>
       </div>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-        <button class="btn btn-ghost" id="exhibition-btn" onclick="startRun(false)">Exhibition (play all)</button>
-        <button class="btn btn-primary" id="run-btn" onclick="startRun(true)">⚔ Start run</button>
+        <button class="btn btn-primary" id="campaign-btn" onclick="startCampaign(true)">🏔 Start campaign (10, tiered)</button>
+        <button class="btn btn-ghost" id="exhibition-btn" onclick="startRun(false)">Manual: exhibition</button>
+        <button class="btn btn-ghost" id="run-btn" onclick="startRun(true)">Manual: run ladder</button>
       </div>
     </div>
     <p class="status-line" id="boss-status"></p>
@@ -162,13 +164,30 @@
 
 <!-- ============ RESULTS ============ -->
 <section class="screen" id="screen-results">
-  <div class="wrap" style="max-width:860px">
-    <div class="result-hero" id="result-hero">
-      <h2 id="result-title">Run complete</h2>
-      <p id="result-sub"></p>
+  <div class="wrap" style="max-width:1000px">
+    <header class="result-hero" id="result-hero">
+      <p class="eyebrow" id="result-eyebrow">Campaign complete</p>
+      <h1 id="result-title">Run complete</h1>
+      <p class="result-record" id="result-record"></p>
+      <div class="result-pips" id="result-pips" aria-label="Battle outcomes in order"></div>
+    </header>
+
+    <div class="result-grid">
+      <section class="card panel-damage">
+        <div class="panel-head"><h3>Damage by Pokémon</h3><span class="panel-note">share of team damage</span></div>
+        <div id="damage-bars" class="damage-bars"></div>
+      </section>
+      <aside class="result-side">
+        <div class="card mvp-card hidden" id="mvp-card"></div>
+        <div class="stat-tiles" id="stat-tiles"></div>
+      </aside>
     </div>
-    <div class="record" id="record"></div>
-    <div class="result-chips" id="result-chips"></div>
+
+    <section class="card panel-ladder">
+      <div class="panel-head"><h3>The climb</h3><span class="panel-note">tier by tier</span></div>
+      <ol class="ladder-results" id="ladder-results"></ol>
+    </section>
+
     <div class="result-actions">
       <button class="btn btn-ghost" onclick="go('battle')">Rewatch battles</button>
       <button class="btn btn-primary" onclick="newRun()">↻ New run</button>
@@ -201,6 +220,6 @@
   </div>
 </section>
 
-<script src="/static/app.js?v=20260620-nav"></script>
+<script src="/static/app.js?v=20260624-results"></script>
 </body>
 </html>
