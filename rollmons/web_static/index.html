@@ -6,8 +6,8 @@
 <title>Rollmons — Draft & Battle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/styles.css?v=20260624-results">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/styles.css?v=20260624-avatar2">
 </head>
 <body>
 
@@ -17,11 +17,11 @@
     <span class="pokeball"></span>Rollmons
   </div>
   <nav class="steps" id="steps">
-    <span class="step" data-step="draft" onclick="goToStep('draft')">Draft</span>
-    <span class="step" data-step="loadout" onclick="goToStep('loadout')">Loadout</span>
-    <span class="step" data-step="bosses" onclick="goToStep('bosses')">Gauntlet</span>
-    <span class="step" data-step="battle" onclick="goToStep('battle')">Battle</span>
-    <span class="step" data-step="results" onclick="goToStep('results')">Results</span>
+    <span class="step" data-step="draft">Draft</span>
+    <span class="step" data-step="loadout">Loadout</span>
+    <span class="step" data-step="bosses">Gauntlet</span>
+    <span class="step" data-step="battle">Battle</span>
+    <span class="step" data-step="results">Results</span>
   </nav>
   <span class="spacer"></span>
   <button class="btn btn-ghost btn-sm" id="pokedex-btn" onclick="togglePool()">Pokédex</button>
@@ -29,19 +29,45 @@
 
 <!-- ============ TITLE ============ -->
 <section class="screen" id="screen-title">
-  <span class="orb t-fire"   style="width:120px;height:120px;left:8%;top:18%"></span>
-  <span class="orb t-water"  style="width:90px;height:90px;left:80%;top:14%;animation-delay:-2s"></span>
-  <span class="orb t-grass"  style="width:70px;height:70px;left:16%;top:72%;animation-delay:-4s"></span>
-  <span class="orb t-electric" style="width:60px;height:60px;left:72%;top:70%;animation-delay:-1s"></span>
-  <span class="orb t-psychic" style="width:100px;height:100px;left:48%;top:80%;animation-delay:-3s"></span>
+  <div class="cloud" style="width:92px;top:9%;left:9%"></div>
+  <div class="cloud" style="width:62px;top:19%;left:71%;animation-delay:-26s"></div>
+  <div class="cloud" style="width:116px;top:5%;left:43%;animation-delay:-44s"></div>
   <div class="title-inner">
     <h1 class="logo">Rollmons<span class="tail">Draft · Battle · Conquer</span></h1>
-    <p class="title-sub">Roll a team of six. Build each set. Climb the boss gauntlet. Every battle plays out in a live Pokémon Showdown engine — you just build the squad and watch them fight.</p>
-    <div class="title-actions">
-      <button class="btn btn-primary btn-lg" onclick="newRun()">▶ Start a new run</button>
-      <button class="btn btn-ghost btn-lg" onclick="go('pool')">Browse the pool</button>
+    <p class="title-sub">Roll 6 mons via Gen × Type, battle 10 bosses.</p>
+    <div class="title-panel">
+      <div class="title-actions">
+        <button class="btn btn-primary btn-lg" onclick="newRun()">▶ Start a new run</button>
+        <button class="btn btn-ghost btn-lg" onclick="go('pool')">Browse the pool</button>
+      </div>
+      <p class="title-foot" id="title-foot">Lv 100 · Gen 9 · engine-enforced dedupe</p>
     </div>
-    <p class="title-foot" id="title-foot">Level 100 · Gen 9 · engine-enforced dedupe</p>
+  </div>
+  <div class="roller" id="roller">
+    <p class="roller-head">◓ Gen × Type Slot Roller</p>
+    <div class="roller-stage">
+      <div class="reel-bank">
+        <div class="reel-col">
+          <span class="reel-tag">GEN</span>
+          <div class="reel" id="reel-gen"><div class="reel-window gen"><div class="reel-strip" id="genstrip"></div></div></div>
+        </div>
+        <span class="reel-cross">×</span>
+        <div class="reel-col">
+          <span class="reel-tag">TYPE</span>
+          <div class="reel" id="reel-type"><div class="reel-window type"><div class="reel-strip" id="typestrip"></div></div></div>
+        </div>
+      </div>
+      <div class="summon" id="summon">
+        <span class="summon-gen" id="summon-gen" hidden></span>
+        <p class="summon-empty" id="summon-empty">A wild ’mon<br>appears here</p>
+        <img class="summon-mon" id="rollmon" alt="" hidden>
+        <div class="summon-name" id="rollname" hidden></div>
+        <div class="tpills" id="rolltypes"></div>
+      </div>
+    </div>
+    <div class="roller-foot">
+      <button class="btn btn-primary btn-lg" id="rollbtn" onclick="rollMon()">● Roll</button>
+    </div>
   </div>
 </section>
 
@@ -220,6 +246,6 @@
   </div>
 </section>
 
-<script src="/static/app.js?v=20260624-results"></script>
+<script src="/static/app.js?v=20260624-avatar2"></script>
 </body>
 </html>
