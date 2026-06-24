@@ -380,6 +380,23 @@ function replayDoc(log,bossName,playerName){
 <script type="text/plain" class="battle-log-data">${protocol}<\/script></div>
 <script src="https://play.pokemonshowdown.com/js/replay-embed.js"><\/script>`;
 }
+/* The replay is a srcdoc iframe (same-origin), so we can size it to its real
+   content instead of a fixed height that leaves white space below short battles.
+   replay-embed.js renders asynchronously, so re-measure for a short window. */
+function fitReplayFrame(f){
+  try{
+    const doc=f.contentDocument; if(!doc||!doc.body) return;
+    const h=Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight);
+    if(h>0) f.style.height=h+"px";
+  }catch(e){/* if ever cross-origin, keep the CSS fallback height */}
+}
+function fitReplayFrameOnLoad(f){
+  f.addEventListener("load",()=>{
+    fitReplayFrame(f);
+    let n=0; const id=setInterval(()=>{ fitReplayFrame(f); if(++n>=24) clearInterval(id); },250);
+    try{ new ResizeObserver(()=>fitReplayFrame(f)).observe(f.contentDocument.documentElement); }catch(e){}
+  });
+}
 function renderRail(gauntlet){
   const rail=document.getElementById("rail");
   if(!gauntlet||!gauntlet.bosses||!gauntlet.bosses.length){rail.innerHTML="";return;}
@@ -416,6 +433,7 @@ function renderTheater(results){
     if(hasLog){
       const f=document.createElement("iframe"); f.className="replay-frame";
       f.title=`${r.player_name} vs ${r.boss_name} replay`; f.srcdoc=replayDoc(r.replay_log,r.boss_name,r.player_name);
+      fitReplayFrameOnLoad(f);
       card.appendChild(f);
     }else{
       const ph=document.createElement("div"); ph.className="replay-ph";

@@ -302,7 +302,7 @@ details.raw pre{margin:.4rem 0 0;font-size:.78rem;line-height:1.45;white-space:p
 .res.win{color:#10240f;background:var(--good)}
 .res.loss{color:#fff;background:var(--bad)}
 .res.tie{color:var(--ink);background:var(--surface-2)}
-.replay-frame{width:100%;min-height:680px;border:0;background:#f5f7fb;display:block;image-rendering:auto}
+.replay-frame{width:100%;height:620px;border:0;background:#f5f7fb;display:block;image-rendering:auto}
 .replay-ph{min-height:340px;display:grid;place-items:center;text-align:center;padding:2rem;
   background:repeating-linear-gradient(45deg,var(--surface-2),var(--surface-2) 12px,var(--surface) 12px,var(--surface) 24px);
   animation:phstripes 0.8s linear infinite}
