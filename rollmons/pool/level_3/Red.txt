@@ -4,54 +4,53 @@ EVs: 252 Atk / 4 SpA / 252 Spe
 Naive Nature  
 - Volt Tackle  
 - Iron Tail  
-- Surf  
-- Extreme Speed  
+- Quick Attack  
+- Thunderbolt  
 
-Lapras @ Leftovers  
-Ability: Hydration  
+Lapras  
+Ability: Shell Armor  
 EVs: 252 HP / 252 SpA / 4 SpD  
 Quiet Nature  
-IVs: 0 Atk  
-- Thunderbolt  
-- Surf  
-- Freeze-Dry  
-- Ice Beam  
-
-Snorlax @ Sitrus Berry  
-Ability: Gluttony  
-EVs: 252 HP / 252 Atk / 4 Spe  
-Adamant Nature  
-- Belly Drum  
+- Blizzard  
+- Brine  
+- Psychic  
 - Body Slam  
-- Earthquake  
-- Fire Punch  
 
-Venusaur @ Life Orb  
+Snorlax  
+Ability: Thick Fat  
+EVs: 252 HP / 252 Atk / 4 SpA  
+Brave Nature  
+- Blizzard  
+- Shadow Ball  
+- Crunch  
+- Giga Impact  
+
+Venusaur  
 Ability: Chlorophyll  
 EVs: 4 HP / 252 SpA / 252 Spe  
 Timid Nature  
 IVs: 0 Atk  
-- Growth  
+- Sleep Powder  
 - Giga Drain  
 - Sludge Bomb  
-- Weather Ball  
+- Frenzy Plant  
 
-Charizard-Mega-Y @ Charizardite Y  
-Ability: Drought  
+Charizard  
+Ability: Blaze  
+EVs: 4 Atk / 252 SpA / 252 Spe  
+Hasty Nature  
+- Flare Blitz  
+- Blast Burn  
+- Air Slash  
+- Dragon Pulse  
+
+Blastoise  
+Ability: Torrent  
 EVs: 252 SpA / 4 SpD / 252 Spe  
 Timid Nature  
 IVs: 0 Atk  
-- Weather Ball  
-- Solar Beam  
-- Roost  
-- Air Slash  
-
-Blastoise @ Assault Vest  
-Ability: Torrent  
-EVs: 252 HP / 4 Atk / 252 SpD  
-Sassy Nature  
-- Rapid Spin  
-- Flip Turn  
-- Scald  
-- Earthquake  
+- Focus Blast  
+- Blizzard  
+- Hydro Cannon  
+- Flash Cannon  
 
