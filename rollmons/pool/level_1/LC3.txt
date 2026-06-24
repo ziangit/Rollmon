@@ -1,0 +1,61 @@
+Nymble @ Life Orb  
+Ability: Tinted Lens  
+Tera Type: Bug  
+EVs: 228 Atk / 36 Def / 236 Spe  
+Adamant Nature  
+- First Impression  
+- Leech Life  
+- Sucker Punch  
+- U-turn  
+
+Wattrel @ Eviolite  
+Ability: Wind Power  
+Tera Type: Electric  
+EVs: 76 Def / 236 SpA / 196 Spe  
+Timid Nature  
+IVs: 9 HP / 0 Atk  
+- Thunderbolt  
+- Volt Switch  
+- Hurricane  
+- Tailwind  
+
+Mareanie @ Eviolite  
+Ability: Regenerator  
+Tera Type: Water  
+EVs: 116 HP / 180 Def / 12 SpA / 180 SpD  
+Bold Nature  
+- Surf  
+- Recover  
+- Sludge Bomb  
+- Haze  
+
+Toedscool @ Eviolite  
+Ability: Mycelium Might  
+Tera Type: Steel  
+EVs: 36 HP / 36 Atk / 156 Def / 196 SpD / 36 Spe  
+Impish Nature  
+- Power Whip  
+- Knock Off  
+- Rapid Spin  
+- Spikes  
+
+Girafarig @ Eviolite  
+Ability: Sap Sipper  
+Tera Type: Dark  
+EVs: 196 Atk / 76 Def / 236 Spe  
+Jolly Nature  
+- Psychic Fangs  
+- Earthquake  
+- Crunch  
+- Body Slam  
+
+Pawniard @ Eviolite  
+Ability: Defiant  
+Tera Type: Flying  
+EVs: 156 Atk / 36 Def / 116 SpD / 196 Spe  
+Jolly Nature  
+- Iron Head  
+- Brick Break  
+- Sucker Punch  
+- Stealth Rock  
+

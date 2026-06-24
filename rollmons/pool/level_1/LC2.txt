@@ -1,0 +1,61 @@
+Mienfoo @ Eviolite  
+Ability: Regenerator  
+Tera Type: Water  
+EVs: 196 Def / 36 SpD / 236 Spe  
+Jolly Nature  
+- High Jump Kick  
+- Knock Off  
+- U-turn  
+- Fake Out  
+
+Foongus @ Eviolite  
+Ability: Regenerator  
+Tera Type: Ghost  
+EVs: 124 HP / 156 Def / 156 SpD  
+Bold Nature  
+IVs: 0 Atk  
+- Giga Drain  
+- Sludge Bomb  
+- Spore  
+- Synthesis  
+
+Vullaby @ Eviolite  
+Ability: Weak Armor  
+Tera Type: Ghost  
+EVs: 236 Atk / 76 SpD / 196 Spe  
+Naughty Nature  
+- Brave Bird  
+- Knock Off  
+- Roost  
+- Heat Wave  
+
+Sandshrew-Alola @ Eviolite  
+Ability: Slush Rush  
+Tera Type: Fairy  
+EVs: 36 HP / 236 Atk / 36 Def / 196 Spe  
+Jolly Nature  
+- Triple Axel  
+- Earthquake  
+- Rapid Spin  
+- Ice Shard  
+
+Growlithe-Hisui @ Choice Scarf  
+Ability: Rock Head  
+Tera Type: Fire  
+EVs: 36 HP / 236 Atk / 236 Spe  
+Adamant Nature  
+- Flare Blitz  
+- Head Smash  
+- Psychic Fangs  
+- Rock Blast  
+
+Mudbray @ Eviolite  
+Ability: Stamina  
+Tera Type: Steel  
+EVs: 36 HP / 196 Atk / 196 Def / 76 Spe  
+Impish Nature  
+- Earthquake  
+- Stone Edge  
+- Roar  
+- Stealth Rock  
+

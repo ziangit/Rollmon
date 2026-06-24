@@ -1,0 +1,55 @@
+Persian @ Silk Scarf  
+Ability: Technician  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Fake Out  
+- Double-Edge  
+- Feint  
+- Knock Off  
+
+Meowscarada @ Choice Scarf  
+Ability: Protean  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Knock Off  
+- Flower Trick  
+- U-turn  
+- Triple Axel  
+
+Purugly @ Leftovers  
+Ability: Defiant  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Fake Out  
+- Body Slam  
+- Stomping Tantrum  
+- U-turn  
+
+Incineroar @ Sitrus Berry  
+Ability: Intimidate  
+EVs: 252 HP / 252 Atk / 4 SpD  
+Adamant Nature  
+- Fake Out  
+- Darkest Lariat  
+- Flare Blitz  
+- Parting Shot  
+
+Meowstic-F (F) @ Life Orb  
+Ability: Keen Eye  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Nasty Plot  
+- Psychic  
+- Energy Ball  
+- Alluring Voice  
+
+Delcatty @ Expert Belt  
+Ability: Wonder Skin  
+EVs: 252 Atk / 252 Spe  
+Hasty Nature  
+- Double-Edge  
+- Blizzard  
+- Thunderbolt  
+- Shadow Ball  
+

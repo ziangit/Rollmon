@@ -1,0 +1,56 @@
+Masquerain @ Focus Sash  
+Ability: Intimidate  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Sticky Web  
+- Hydro Pump  
+- Bug Buzz  
+- Hurricane  
+
+Kleavor @ Choice Scarf  
+Ability: Sharpness  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Stone Axe  
+- Close Combat  
+- U-turn  
+- Knock Off  
+
+Volcarona @ Heavy-Duty Boots  
+Ability: Flame Body  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Modest Nature  
+IVs: 0 Atk  
+- Quiver Dance  
+- Fiery Dance  
+- Giga Drain  
+- Bug Buzz  
+
+Slither Wing @ Assault Vest  
+Ability: Protosynthesis  
+EVs: 248 HP / 252 Atk / 8 Spe  
+Adamant Nature  
+- First Impression  
+- Flare Blitz  
+- Close Combat  
+- U-turn  
+
+Araquanid @ Mystic Water  
+Ability: Water Bubble  
+EVs: 248 HP / 252 Atk / 8 SpD  
+Adamant Nature  
+- Liquidation  
+- Leech Life  
+- Lunge  
+- Sticky Web  
+
+Scizor @ Choice Band  
+Ability: Technician  
+EVs: 248 HP / 252 Atk / 8 SpD  
+Adamant Nature  
+- U-turn  
+- Bullet Punch  
+- Knock Off  
+- Superpower  
+

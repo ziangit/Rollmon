@@ -1,0 +1,58 @@
+Sylveon @ Fairy Feather  
+Ability: Pixilate  
+EVs: 252 HP / 252 SpA / 4 Spe  
+Modest Nature  
+IVs: 0 Atk  
+- Hyper Voice  
+- Wish  
+- Calm Mind  
+- Yawn  
+
+Jolteon @ Choice Specs  
+Ability: Volt Absorb  
+EVs: 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Thunderbolt  
+- Volt Switch  
+- Alluring Voice  
+- Shadow Ball  
+
+Flareon @ Toxic Orb  
+Ability: Guts  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Facade  
+- Flare Blitz  
+- Flame Charge  
+- Quick Attack  
+
+Espeon @ Life Orb  
+Ability: Synchronize  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Calm Mind  
+- Shadow Ball  
+- Psychic  
+- Dazzling Gleam  
+
+Leafeon @ Heat Rock  
+Ability: Chlorophyll  
+EVs: 252 Atk / 4 SpA / 252 Spe  
+Naughty Nature  
+- Sunny Day  
+- Leaf Blade  
+- Knock Off  
+- Weather Ball  
+
+Glaceon @ Never-Melt Ice  
+Ability: Ice Body  
+EVs: 4 Def / 252 SpA / 252 Spe  
+Modest Nature  
+IVs: 0 Atk  
+- Blizzard  
+- Ice Beam  
+- Freeze-Dry  
+- Snowscape  
+

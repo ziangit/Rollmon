@@ -1,0 +1,57 @@
+Aegislash @ Leftovers  
+Ability: Stance Change  
+EVs: 252 HP / 56 SpA / 156 SpD / 44 Spe  
+Modest Nature  
+- Substitute  
+- Toxic  
+- King's Shield  
+- Shadow Ball  
+
+Rillaboom @ Life Orb  
+Ability: Grassy Surge  
+Tera Type: Grass  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Adamant Nature  
+- Swords Dance  
+- Grassy Glide  
+- Knock Off  
+- Wood Hammer  
+
+Cinderace @ Heavy-Duty Boots  
+Ability: Libero  
+Tera Type: Fire  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Pyro Ball  
+- U-turn  
+- Court Change  
+- Sucker Punch  
+
+Charizard @ Charizardite Y
+Ability: Blaze  
+EVs: 4 Def / 252 SpA / 252 Spe  
+Timid Nature  
+- Flamethrower  
+- Focus Blast  
+- Solar Beam  
+- Roost  
+
+Dragapult @ Choice Specs  
+Ability: Infiltrator  
+Tera Type: Ghost  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+- Draco Meteor  
+- Shadow Ball  
+- Flamethrower  
+- U-turn  
+
+Inteleon @ Choice Specs  
+Ability: Torrent  
+Tera Type: Water  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+- Hydro Pump  
+- Ice Beam  
+- Dark Pulse  
+- U-turn  

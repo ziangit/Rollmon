@@ -1,0 +1,55 @@
+Tyranitar-Mega @ Tyranitarite  
+Ability: Sand Stream  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Adamant Nature  
+- Knock Off  
+- Stone Edge  
+- Ice Punch  
+- Fire Punch  
+
+Dracozolt @ Life Orb  
+Ability: Sand Rush  
+EVs: 252 Atk / 4 SpA / 252 Spe  
+Lonely Nature  
+- Bolt Beak  
+- Draco Meteor  
+- Fire Blast  
+- Low Kick  
+
+Excadrill @ Leftovers  
+Ability: Sand Rush  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Earthquake  
+- Iron Head  
+- Rapid Spin  
+- Swords Dance  
+
+Houndstone @ Choice Band  
+Ability: Sand Rush  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Adamant Nature  
+- Last Respects  
+- Poltergeist  
+- Shadow Sneak  
+- Play Rough  
+
+Ferrothorn @ Chople Berry  
+Ability: Iron Barbs  
+EVs: 248 HP / 8 Def / 252 SpD  
+Sassy Nature  
+IVs: 0 Spe  
+- Stealth Rock  
+- Spikes  
+- Gyro Ball  
+- Leech Seed  
+
+Landorus-Therian (M) @ Choice Scarf  
+Ability: Intimidate  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Earthquake  
+- U-turn  
+- Stone Edge  
+- Knock Off  
+

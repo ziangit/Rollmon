@@ -1,0 +1,59 @@
+Tapu Lele @ Choice Specs  
+Ability: Psychic Surge  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Psychic  
+- Psyshock  
+- Focus Blast  
+- Moonblast  
+
+Sneasler @ Psychic Seed  
+Ability: Unburden  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Swords Dance  
+- Close Combat  
+- Throat Chop  
+- Dire Claw  
+
+Iron Crown @ Leftovers  
+Ability: Quark Drive  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 20 Atk  
+- Calm Mind  
+- Expanding Force  
+- Tachyon Cutter  
+- Focus Blast  
+
+Alakazam-Mega @ Alakazite
+Ability: Magic Guard  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Expanding Force  
+- Nasty Plot  
+- Focus Blast  
+- Shadow Ball  
+
+Hawlucha @ Psychic Seed  
+Ability: Unburden  
+Tera Type: Steel  
+EVs: 72 HP / 252 Atk / 60 SpD / 124 Spe  
+Adamant Nature  
+- Swords Dance  
+- Acrobatics  
+- Close Combat  
+- Encore  
+
+Indeedee-F @ Terrain Extender  
+Ability: Psychic Surge  
+Tera Type: Fairy  
+EVs: 252 HP / 252 Def / 4 SpD  
+Bold Nature  
+IVs: 0 Atk  
+- Expanding Force  
+- Calm Mind  
+- Baton Pass  
+- Healing Wish  

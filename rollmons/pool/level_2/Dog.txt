@@ -1,0 +1,54 @@
+Arcanine-Hisui @ Choice Scarf  
+Ability: Rock Head  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Adamant Nature  
+- Head Smash  
+- Flare Blitz  
+- Close Combat  
+- Extreme Speed  
+
+Lucario @ Life Orb  
+Ability: Steadfast  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Swords Dance  
+- Close Combat  
+- Bullet Punch  
+- Meteor Mash  
+
+Lycanroc @ Focus Sash  
+Ability: Steadfast  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Stealth Rock  
+- Close Combat  
+- Stone Edge  
+- Accelerock  
+
+Houndoom @ Black Glasses  
+Ability: Flash Fire  
+EVs: 4 Atk / 252 SpA / 252 Spe  
+Hasty Nature  
+- Nasty Plot  
+- Dark Pulse  
+- Fire Blast  
+- Sucker Punch  
+
+Boltund @ Expert Belt  
+Ability: Strong Jaw  
+EVs: 252 Atk / 252 Spe  
+Jolly Nature  
+- Crunch  
+- Thunder Fang  
+- Psychic Fangs  
+- Howl  
+
+Granbull @ Leftovers  
+Ability: Intimidate  
+EVs: 252 HP / 252 Atk / 4 Spe  
+Adamant Nature  
+- Play Rough  
+- Fire Blast  
+- Close Combat  
+- Earthquake  
+

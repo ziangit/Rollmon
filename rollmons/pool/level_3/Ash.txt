@@ -1,0 +1,57 @@
+Pikachu @ Light Ball  
+Ability: Static  
+EVs: 252 Atk / 4 SpA / 252 Spe  
+Naive Nature  
+- Volt Tackle  
+- Iron Tail  
+- Surf  
+- Extreme Speed  
+
+Lapras @ Leftovers  
+Ability: Hydration  
+EVs: 252 HP / 252 SpA / 4 SpD  
+Quiet Nature  
+IVs: 0 Atk  
+- Thunderbolt  
+- Surf  
+- Freeze-Dry  
+- Ice Beam  
+
+Snorlax @ Sitrus Berry  
+Ability: Gluttony  
+EVs: 252 HP / 252 Atk / 4 Spe  
+Adamant Nature  
+- Belly Drum  
+- Body Slam  
+- Earthquake  
+- Fire Punch  
+
+Venusaur @ Life Orb  
+Ability: Chlorophyll  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Growth  
+- Giga Drain  
+- Sludge Bomb  
+- Weather Ball  
+
+Charizard-Mega-Y @ Charizardite Y  
+Ability: Drought  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Weather Ball  
+- Solar Beam  
+- Roost  
+- Air Slash  
+
+Blastoise @ Assault Vest  
+Ability: Torrent  
+EVs: 252 HP / 4 Atk / 252 SpD  
+Sassy Nature  
+- Rapid Spin  
+- Flip Turn  
+- Scald  
+- Earthquake  
+

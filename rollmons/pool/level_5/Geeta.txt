@@ -1,0 +1,59 @@
+Glimmora @ Focus Sash  
+Ability: Toxic Debris  
+Tera Type: Ghost  
+EVs: 4 Def / 252 SpA / 252 Spe  
+Timid Nature  
+- Stealth Rock  
+- Mortal Spin  
+- Power Gem  
+- Earth Power  
+
+Espathra @ Leftovers  
+Ability: Speed Boost  
+Tera Type: Fairy  
+EVs: 152 HP / 244 Def / 112 Spe  
+Bold Nature  
+- Calm Mind  
+- Stored Power  
+- Dazzling Gleam  
+- Roost  
+
+Avalugg @ Heavy-Duty Boots  
+Ability: Sturdy  
+Tera Type: Poison  
+EVs: 252 HP / 4 Atk / 252 Def  
+Impish Nature  
+- Recover  
+- Rapid Spin  
+- Body Press  
+- Avalanche  
+
+Chesnaught @ Rocky Helmet  
+Ability: Bulletproof  
+Tera Type: Ghost  
+EVs: 252 HP / 204 Def / 52 Spe  
+Impish Nature  
+- Spikes  
+- Body Press  
+- Knock Off  
+- Synthesis  
+
+Dragapult @ Heavy-Duty Boots  
+Ability: Infiltrator  
+Tera Type: Ghost  
+EVs: 4 Atk / 252 SpA / 252 Spe  
+Naive Nature  
+- Dragon Darts  
+- Hex  
+- Will-O-Wisp  
+- U-turn  
+
+Kingambit @ Black Glasses  
+Ability: Supreme Overlord  
+Tera Type: Ghost  
+EVs: 212 HP / 252 Atk / 44 Spe  
+Adamant Nature  
+- Swords Dance  
+- Sucker Punch  
+- Kowtow Cleave  
+- Iron Head  
