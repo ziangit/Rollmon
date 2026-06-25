@@ -868,7 +868,11 @@ def create_app(
     @app.get("/sets-editor", include_in_schema=False)
     def sets_editor_page():
         _require_set_editor()
-        return FileResponse(STATIC_DIR / "set_editor.html")
+        # Never cache the authoring page so edits to it always land on reload.
+        return FileResponse(
+            STATIC_DIR / "set_editor.html",
+            headers={"Cache-Control": "no-store, must-revalidate"},
+        )
 
     @app.get("/api/species")
     def species_list():
