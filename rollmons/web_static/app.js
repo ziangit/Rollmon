@@ -397,6 +397,19 @@ function fitReplayFrameOnLoad(f){
     try{ new ResizeObserver(()=>fitReplayFrame(f)).observe(f.contentDocument.documentElement); }catch(e){}
   });
 }
+/* Build the replay iframe only once its card is on-screen (and thus laid out),
+   so the Showdown player initializes with real dimensions instead of blank. */
+function lazyLoadReplay(iframe, doc){
+  let loaded=false;
+  const load=()=>{ if(!loaded){ loaded=true; iframe.srcdoc=doc; } };
+  if(!("IntersectionObserver" in window)){ load(); return; }
+  const io=new IntersectionObserver((entries)=>{
+    for(const e of entries){
+      if(e.isIntersecting){ load(); io.disconnect(); break; }
+    }
+  }, {root:null, threshold:0.01});
+  io.observe(iframe);
+}
 function renderRail(gauntlet){
   const rail=document.getElementById("rail");
   if(!gauntlet||!gauntlet.bosses||!gauntlet.bosses.length){rail.innerHTML="";return;}
@@ -432,8 +445,12 @@ function renderTheater(results){
       </div>`;
     if(hasLog){
       const f=document.createElement("iframe"); f.className="replay-frame";
-      f.title=`${r.player_name} vs ${r.boss_name} replay`; f.srcdoc=replayDoc(r.replay_log,r.boss_name,r.player_name);
+      f.title=`${r.player_name} vs ${r.boss_name} replay`;
       fitReplayFrameOnLoad(f);
+      // Defer the srcdoc until the card is actually visible: the Showdown replay
+      // player measures its container on init, so building it while the Battle
+      // screen is hidden/unlaid-out makes it render a blank scene.
+      lazyLoadReplay(f, replayDoc(r.replay_log,r.boss_name,r.player_name));
       card.appendChild(f);
     }else{
       const ph=document.createElement("div"); ph.className="replay-ph";
