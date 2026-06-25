@@ -908,3 +908,59 @@ async def test_campaign_start_builds_ten_battle_pool_gauntlet(tmp_path, monkeypa
     assert len(calls) == 10  # ten pool teams were battled, not the authored bosses
     names = [b["name"] for b in result_state["gauntlet"]["bosses"]]
     assert len(set(names)) == 10  # ten distinct pool teams
+
+
+@pytest.mark.anyio
+async def test_set_editor_gated_and_crud(tmp_path, monkeypatch):
+    # The set editor is an authoring tool: 403 unless explicitly enabled, and it
+    # reads/writes rollmons/sets/<species>.txt as plain Showdown export text.
+
+    monkeypatch.setattr(web_app, "SETS_DIR", tmp_path)
+
+    # Disabled by default -> 403 everywhere.
+    monkeypatch.delenv("ROLLMONS_ENABLE_SET_EDITOR", raising=False)
+    app_off = create_app()
+    transport = httpx.ASGITransport(app=app_off)
+    async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
+        assert (await client.get("/api/species")).status_code == 403
+        assert (await client.get("/sets-editor")).status_code == 403
+
+    # Enabled -> CRUD works.
+    monkeypatch.setenv("ROLLMONS_ENABLE_SET_EDITOR", "1")
+    app_on = create_app()
+    transport = httpx.ASGITransport(app=app_on)
+    async with httpx.AsyncClient(transport=transport, base_url="http://t") as client:
+        species = (await client.get("/api/species")).json()
+        assert any(s["id"] == "garchomp" for s in species)
+
+        got = (await client.get("/api/sets/garchomp")).json()
+        assert got["override_sets"] == []  # fresh tmp dir
+        assert (await client.get("/api/sets/pikachu")).status_code == 404  # not pooled
+
+        good = (
+            "Garchomp @ Life Orb\nAbility: Rough Skin\nEVs: 252 Atk / 252 Spe\n"
+            "Jolly Nature\n- Earthquake\n- Dragon Claw"
+        )
+        bad = "Garchomp @ Life Orb\nAbility: Rough Skin\n- Notarealmove"
+
+        v = (
+            await client.post("/api/sets/garchomp/validate", json={"sets": [good, bad]})
+        ).json()
+        assert v["ok"] is False
+        assert [r["ok"] for r in v["results"]] == [True, False]
+
+        # Saving an invalid set is refused and writes nothing.
+        assert (
+            await client.put("/api/sets/garchomp", json={"sets": [bad]})
+        ).status_code == 422
+        assert not (tmp_path / "garchomp.txt").exists()
+
+        # Saving valid sets writes the override file.
+        saved = await client.put("/api/sets/garchomp", json={"sets": [good]})
+        assert saved.status_code == 200
+        assert (tmp_path / "garchomp.txt").exists()
+        assert len((await client.get("/api/sets/garchomp")).json()["override_sets"]) == 1
+
+        # Deleting all sets removes the override file (reverts to source).
+        await client.put("/api/sets/garchomp", json={"sets": []})
+        assert not (tmp_path / "garchomp.txt").exists()

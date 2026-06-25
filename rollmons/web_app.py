@@ -47,10 +47,12 @@ from rollmons.team_assembly import (
     FIXED_LEVEL,
     NEUTRAL_EVS,
     NEUTRAL_NATURE,
+    SETS_DIR,
     STATS,
     load_random_battle_sets,
     _normalize_override_export,
     load_set_override,
+    load_set_overrides,
     representative_random_battle_set,
     representative_smogon_set,
     selectable_sets,
@@ -220,6 +222,52 @@ class GauntletStartRequest(BaseModel):
 class CustomBossRequest(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     export: str = Field(min_length=1)
+
+
+class SetsRequest(BaseModel):
+    # Each entry is one Showdown export block for the species.
+    sets: list[str] = Field(default_factory=list)
+
+
+def _set_editor_enabled() -> bool:
+    return os.environ.get("ROLLMONS_ENABLE_SET_EDITOR", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _require_set_editor() -> None:
+    # The set editor writes files under rollmons/sets/, so it is an authoring
+    # tool: off by default and never exposed in a deployed game.
+    if not _set_editor_enabled():
+        raise HTTPException(
+            status_code=403,
+            detail="set editor is disabled; run with ROLLMONS_ENABLE_SET_EDITOR=1",
+        )
+
+
+def _validate_set_blocks(species_id: str, blocks: list[str]) -> list[dict]:
+    """Validate each Showdown export block for a species (structure + engine)."""
+    results: list[dict] = []
+    for index, raw in enumerate(blocks):
+        block = raw.strip()
+        if not block:
+            results.append({"index": index, "ok": False, "error": "empty set"})
+            continue
+        try:
+            members = parse_showdown_export(block, expected_members=1, source=species_id)
+            got = members[0]["species"]
+            if got != species_id:
+                raise SubmissionError(
+                    f"this set is for '{got}', but you're editing '{species_id}'"
+                )
+            verify_team_entities_exist(boss=block)
+            results.append({"index": index, "ok": True, "error": None})
+        except (SubmissionError, BattleEntityNotFoundError) as exc:
+            results.append({"index": index, "ok": False, "error": str(exc)})
+    return results
 
 
 BOSS_ORDER_MIN = 1
@@ -814,6 +862,78 @@ def create_app(
     @app.get("/", include_in_schema=False)
     def index():
         return FileResponse(STATIC_DIR / "index.html")
+
+    # ---- Set editor (authoring tool; gated by ROLLMONS_ENABLE_SET_EDITOR) ----
+
+    @app.get("/sets-editor", include_in_schema=False)
+    def sets_editor_page():
+        _require_set_editor()
+        return FileResponse(STATIC_DIR / "set_editor.html")
+
+    @app.get("/api/species")
+    def species_list():
+        _require_set_editor()
+        return [
+            {"id": meta.species_id, "name": meta.name}
+            for meta in sorted(
+                legality_data.species.values(), key=lambda m: m.name
+            )
+        ]
+
+    @app.get("/api/sets/{species_id}")
+    def get_species_sets(species_id: str):
+        _require_set_editor()
+        meta = legality_data.species.get(species_id)
+        if meta is None:
+            raise HTTPException(
+                status_code=404, detail=f"'{species_id}' is not a draftable species"
+            )
+        source_export = None
+        if species_id in smogon_sets:
+            source_export = representative_smogon_set(species_id, smogon_sets).export
+        return {
+            "id": species_id,
+            "name": meta.name,
+            "types": list(meta.types),
+            "sprite_url": (
+                f"{SHOWDOWN_ASSET_ROOT}/home-centered/"
+                f"{_showdown_sprite_id(meta, pokedex[species_id])}.png"
+            ),
+            "set_source": set_source,
+            "source_set_export": source_export,
+            "override_sets": list(load_set_overrides(species_id, sets_dir=SETS_DIR)),
+        }
+
+    @app.post("/api/sets/{species_id}/validate")
+    def validate_species_sets(species_id: str, request: SetsRequest):
+        _require_set_editor()
+        if species_id not in legality_data.species:
+            raise HTTPException(status_code=404, detail=f"unknown species {species_id}")
+        results = _validate_set_blocks(species_id, request.sets)
+        return {"ok": all(r["ok"] for r in results), "results": results}
+
+    @app.put("/api/sets/{species_id}")
+    def save_species_sets(species_id: str, request: SetsRequest):
+        _require_set_editor()
+        if species_id not in legality_data.species:
+            raise HTTPException(status_code=404, detail=f"unknown species {species_id}")
+        blocks = [block.strip() for block in request.sets if block.strip()]
+        results = _validate_set_blocks(species_id, blocks)
+        if not all(r["ok"] for r in results):
+            # Refuse to write an invalid override file.
+            raise HTTPException(
+                status_code=422, detail={"ok": False, "results": results}
+            )
+        path = SETS_DIR / f"{species_id}.txt"
+        if blocks:
+            path.write_text("\n\n".join(blocks) + "\n", encoding="utf-8")
+        elif path.exists():
+            path.unlink()  # no override sets left -> revert to the source set
+        return {
+            "ok": True,
+            "results": results,
+            "override_sets": list(load_set_overrides(species_id, sets_dir=SETS_DIR)),
+        }
 
     @app.get("/api/matrix")
     def matrix():
