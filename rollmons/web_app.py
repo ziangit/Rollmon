@@ -889,8 +889,11 @@ def create_app(
                 status_code=404, detail=f"'{species_id}' is not a draftable species"
             )
         source_export = None
+        source_label = None
         if species_id in smogon_sets:
-            source_export = representative_smogon_set(species_id, smogon_sets).export
+            source = representative_smogon_set(species_id, smogon_sets)
+            source_export = source.export
+            source_label = source.label
         return {
             "id": species_id,
             "name": meta.name,
@@ -901,6 +904,7 @@ def create_app(
             ),
             "set_source": set_source,
             "source_set_export": source_export,
+            "source_set_label": source_label,
             "override_sets": list(load_set_overrides(species_id, sets_dir=SETS_DIR)),
         }
 

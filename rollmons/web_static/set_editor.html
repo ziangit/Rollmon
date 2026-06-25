@@ -199,7 +199,8 @@ async function load(){
     $("sprite").src = d.sprite_url; $("sprite").alt = d.name;
     $("specName").textContent = d.name + "  ·  " + d.id;
     $("specTypes").textContent = d.types.join(" / ");
-    $("sourceLabel").textContent = "(source: "+d.set_source+")";
+    $("sourceLabel").textContent =
+      (d.source_set_label ? "— " + d.source_set_label + " " : "") + "(source: "+d.set_source+")";
     $("sourceExport").textContent = d.source_set_export || "— no source export for this species —";
     $("copySource").disabled = !d.source_set_export;
     $("copyDefault").disabled = !d.source_set_export;
