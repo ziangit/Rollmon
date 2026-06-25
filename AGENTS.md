@@ -313,6 +313,16 @@ Tera must be compiled out. A server ban is not sufficient because foul-play
 does not pass Showdown's `canTerastallize` state to poke-engine; a Tera-enabled
 engine can therefore return an illegal `-tera` choice.
 
+**Operational landmine (cost a long debugging session):** `requirements.txt`
+pins poke-engine with `--features poke-engine/terastallization` (**Tera ON**),
+so `make install` / a plain `pip install -r` produces a Tera-ENABLED engine.
+You must apply `make poke_engine GEN=gen9` afterward to get the no-Tera build,
+and **re-running `make install` silently reverts it**. Symptom of a Tera engine:
+battles "hang" / "player never moves" — the AI keeps choosing `... terastallize`
+and Showdown rejects every move (`|error|... can't Terastallize`). The desktop
+build (`packaging/build_macos.sh`) force-rebuilds the no-Tera engine on every
+build for this reason (skip with `ROLLMONS_SKIP_ENGINE_REBUILD=1`).
+
 The Docker equivalent is:
 
 ```bash
@@ -332,7 +342,17 @@ is created and torn down per decision, not persisted for the battle.
 `battle_runner.py` preserves that inner process-pool concurrency and installs a
 worker initializer that reapplies the `poke-engine==0.0.46` compatibility patch
 only in those MCTS workers. Do not replace foul-play's process pool with
-threads.
+threads **in the normal (unfrozen) path**.
+
+**Exception — the PyInstaller desktop app:** there, each foul-play client is
+itself a spawned (`multiprocessing` "spawn") frozen-binary worker, and spawning
+the inner `ProcessPoolExecutor` from it nests multiprocessing and deadlocks
+(0% CPU, no moves). So `battle_runner._install_worker_executor` swaps the search
+pool to a `ThreadPoolExecutor` **only when `sys.frozen`** — poke-engine is Rust
+and releases the GIL, so threads parallelize the search without more processes.
+The entry point also calls `multiprocessing.freeze_support()` (else spawned
+workers re-launch the whole app). Both are desktop-only; `make live` is
+unchanged.
 
 ### Local authentication
 
