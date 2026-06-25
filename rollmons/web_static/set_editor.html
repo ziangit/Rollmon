@@ -55,6 +55,8 @@
     <input id="pick" type="text" list="species" placeholder="Type a species (e.g. Pikachu, Garchomp)…" autocomplete="off">
     <datalist id="species"></datalist>
     <button id="load" class="primary">Load</button>
+    <button id="prev" title="Previous species (A→Z)">← Prev</button>
+    <button id="next" title="Next species (A→Z)">Next →</button>
     <span class="muted">no JSON — edit sets as Showdown export text</span>
   </div>
 
@@ -235,7 +237,19 @@ async function save(){
   }
 }
 
+function nav(delta){
+  const list = window._species || [];
+  if(!list.length) return;
+  let i = list.findIndex(s => s.id === CURRENT);
+  if(i < 0) i = delta > 0 ? -1 : 0;     // nothing loaded yet -> start at the first
+  const j = Math.min(Math.max(i + delta, 0), list.length - 1);
+  $("pick").value = list[j].name;
+  load();
+}
+
 $("load").onclick = load;
+$("prev").onclick = () => nav(-1);
+$("next").onclick = () => nav(1);
 $("pick").addEventListener("keydown", e => { if(e.key==="Enter") load(); });
 $("add").onclick = () => { $("sets").appendChild(setCard("")); refreshDefault(); };
 $("copySource").onclick = () => { $("sets").appendChild(setCard($("sourceExport").textContent)); refreshDefault(); };
