@@ -415,7 +415,28 @@ def selectable_sets(
                     mega_forme=mega_forme,
                 )
             )
-    return options
+
+    # Drop a source set that an override already duplicates (e.g. the editor's
+    # "make the source the default" copies the source in as an override), so the
+    # loadout doesn't show the same set twice. Overrides are always kept.
+    override_signatures = {
+        _set_signature(option) for option in options if option.source == "override"
+    }
+    return [
+        option
+        for option in options
+        if option.source == "override"
+        or _set_signature(option) not in override_signatures
+    ]
+
+
+def _set_signature(option: SelectableSet) -> tuple:
+    """Item + ability + moveset identity, robust to formatting/nickname/EVs."""
+    return (
+        _normalize_item(option.item),
+        _normalize_item(option.ability),
+        frozenset(_normalize_item(move) for move in option.moves),
+    )
 
 
 def assemble_loadout(

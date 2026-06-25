@@ -73,7 +73,10 @@
       <h3>Source set <span class="muted" id="sourceLabel"></span></h3>
       <p class="muted" style="margin:.2rem 0 .6rem">Read-only reference from the set source. Use it as a starting point.</p>
       <pre id="sourceExport"></pre>
-      <div class="actions"><button class="sm" id="copySource">＋ Add as override set</button></div>
+      <div class="actions">
+        <button class="sm" id="copySource">＋ Add as override set</button>
+        <button class="sm" id="copyDefault">★ Make this the default</button>
+      </div>
     </div>
 
     <h3 style="margin:18px 0 8px">Override sets <span class="muted">(these are what the loadout offers; one block = one selectable set)</span></h3>
@@ -199,6 +202,7 @@ async function load(){
     $("sourceLabel").textContent = "(source: "+d.set_source+")";
     $("sourceExport").textContent = d.source_set_export || "— no source export for this species —";
     $("copySource").disabled = !d.source_set_export;
+    $("copyDefault").disabled = !d.source_set_export;
     const sets = $("sets"); sets.innerHTML = "";
     (d.override_sets.length ? d.override_sets : []).forEach(t => sets.appendChild(setCard(t)));
     if(!d.override_sets.length) sets.appendChild(setCard(""));
@@ -234,6 +238,7 @@ $("load").onclick = load;
 $("pick").addEventListener("keydown", e => { if(e.key==="Enter") load(); });
 $("add").onclick = () => { $("sets").appendChild(setCard("")); refreshDefault(); };
 $("copySource").onclick = () => { $("sets").appendChild(setCard($("sourceExport").textContent)); refreshDefault(); };
+$("copyDefault").onclick = () => { $("sets").prepend(setCard($("sourceExport").textContent)); refreshDefault(); };
 $("validate").onclick = validate;
 $("save").onclick = save;
 loadSpeciesList();
