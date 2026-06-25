@@ -30,6 +30,7 @@
   textarea{min-height:148px;resize:vertical;white-space:pre-wrap}
   .setcard{position:relative}
   .setcard .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .setcard .label{width:100%;min-width:0;margin-bottom:8px}
   .status{font-size:.85rem;margin-top:6px}
   .status.ok{color:var(--ok)}
   .status.bad{color:var(--bad)}
@@ -73,6 +74,7 @@
     </div>
 
     <h3 style="margin:18px 0 8px">Override sets <span class="muted">(these are what the loadout offers; one block = one selectable set)</span></h3>
+    <p class="muted" style="margin:-2px 0 10px">The <b>Label</b> is stored as the set's Showdown nickname — it names the option in the loadout (and shows as the Pokémon's nickname in battle). Leave it blank for an auto label (Custom 1, Mega X…).</p>
     <div id="sets"></div>
 
     <div class="actions">
@@ -113,19 +115,47 @@ function resolveId(input){
   return hit ? hit.id : v.replace(/[^a-z0-9]/g,"");
 }
 
+// The label lives in the export's nickname: "Label (Species) @ Item". Split it
+// out for a clean field on load, and re-inject it on save.
+function splitLabel(exp){
+  const lines = (exp||"").replace(/\r/g,"").split("\n");
+  if(!lines.length) return {label:"", body:exp||""};
+  const m = lines[0].match(/^(.+?)\s+\((.+?)\)(.*)$/);
+  if(m){ lines[0] = (m[2]+m[3]).trim(); return {label:m[1].trim(), body:lines.join("\n")}; }
+  return {label:"", body:exp||""};
+}
+function joinLabel(body, label){
+  const clean = splitLabel(body).body;          // strip any existing nickname first
+  if(!label.trim()) return clean;
+  const lines = clean.replace(/\r/g,"").split("\n");
+  const first = (lines[0]||"").trim();
+  const at = first.indexOf(" @ ");
+  const species = at>=0 ? first.slice(0,at) : first;
+  const rest = at>=0 ? first.slice(at) : "";
+  lines[0] = `${label.trim()} (${species})${rest}`;
+  return lines.join("\n");
+}
+
 function setCard(text){
+  const {label, body} = splitLabel(text);
   const wrap = document.createElement("div");
   wrap.className = "card setcard";
   wrap.innerHTML = `
     <div class="row"><strong class="muted">Set</strong><button class="sm danger del">Delete</button></div>
+    <input class="label" type="text" placeholder="Label (optional) — e.g. Choice Band offense">
     <textarea spellcheck="false"></textarea>
     <div class="status"></div>`;
-  wrap.querySelector("textarea").value = text || "";
+  wrap.querySelector(".label").value = label;
+  wrap.querySelector("textarea").value = body;
   wrap.querySelector(".del").onclick = () => { wrap.remove(); };
   return wrap;
 }
 
-function collect(){ return [...document.querySelectorAll("#sets textarea")].map(t=>t.value); }
+function collect(){
+  return [...document.querySelectorAll("#sets .setcard")].map(c =>
+    joinLabel(c.querySelector("textarea").value, c.querySelector(".label").value)
+  );
+}
 
 function showResults(results){
   const cards = [...document.querySelectorAll("#sets .setcard")];

@@ -345,6 +345,13 @@ def selectable_sets(
     matching how :func:`assemble_team` draws sets.
     """
 
+    pokedex_entry = pokedex.get(species_id)
+    species_name = (
+        str(pokedex_entry.get("name", species_id))
+        if isinstance(pokedex_entry, dict)
+        else species_id
+    )
+
     options: list[SelectableSet] = []
     for index, block in enumerate(load_set_overrides(species_id, sets_dir=sets_dir)):
         member = parse_showdown_export(
@@ -352,11 +359,18 @@ def selectable_sets(
         )[0]
         item = member.get("item", "")
         mega_forme = _mega_forme_for_item(species_id, item, pokedex)
+        # A set's nickname is its author-given label; fall back to Custom/Mega.
+        nickname = member.get("name") or ""
+        label = (
+            nickname
+            if nickname and nickname != species_name
+            else _override_label(mega_forme, index)
+        )
         options.append(
             SelectableSet(
                 set_id=f"override:{index}",
                 source="override",
-                label=_override_label(mega_forme, index),
+                label=label,
                 item=item,
                 ability=member.get("ability", ""),
                 moves=tuple(member.get("moves", ())),
