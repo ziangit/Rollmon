@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import random
 import re
@@ -54,6 +55,38 @@ from rollmons.team_assembly import (
     representative_smogon_set,
     selectable_sets,
 )
+
+logger = logging.getLogger(__name__)
+
+# The intermittent "player never moves" engine stall surfaces as one of these;
+# they're transient, so a fresh attempt almost always succeeds. Matched by name
+# to avoid importing battle_runner (and poke-engine) into the pure layer.
+_RETRYABLE_BATTLE_ERRORS = {
+    "BattleTimeoutError",
+    "BattleReplayTimeoutError",
+    "BattleEngineError",
+}
+
+
+def _run_battle_with_retry(run: Callable[[], Any], attempts: int = 3) -> Any:
+    """Run a battle, retrying transient engine stalls; re-raise everything else."""
+    last_error: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return run()
+        except Exception as exc:  # noqa: BLE001 — re-raised below unless retryable
+            if type(exc).__name__ not in _RETRYABLE_BATTLE_ERRORS:
+                raise
+            last_error = exc
+            logger.warning(
+                "battle attempt %s/%s failed (%s): %s",
+                attempt,
+                attempts,
+                type(exc).__name__,
+                exc,
+            )
+    raise last_error  # type: ignore[misc]
+
 
 STATIC_DIR = Path(__file__).resolve().parent / "web_static"
 SHOWDOWN_ASSET_ROOT = "https://play.pokemonshowdown.com/sprites"
@@ -419,6 +452,7 @@ def _battle_config_from_environment():
         ),
         search_parallelism=int(os.environ.get("ROLLMONS_SEARCH_PARALLELISM", "1")),
         search_threads=int(os.environ.get("ROLLMONS_SEARCH_THREADS", "1")),
+        battle_timeout=float(os.environ.get("ROLLMONS_BATTLE_TIMEOUT", "60")),
     )
 
 
@@ -967,12 +1001,14 @@ def create_app(
                 player=session.team_export,
                 boss=boss_team,
             )
-            session.battle_result = battle_fn(
-                session.team_export,
-                boss_team,
-                battle_config_factory(),
-                player_name=os.environ.get("ROLLMONS_PLAYER_NAME", "Player"),
-                boss_name=boss_name,
+            session.battle_result = _run_battle_with_retry(
+                lambda: battle_fn(
+                    session.team_export,
+                    boss_team,
+                    battle_config_factory(),
+                    player_name=os.environ.get("ROLLMONS_PLAYER_NAME", "Player"),
+                    boss_name=boss_name,
+                )
             )
         except BossTeamError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -1051,12 +1087,14 @@ def create_app(
                 player=session.team_export,
                 boss=boss_team,
             )
-            result = battle_fn(
-                session.team_export,
-                boss_team,
-                battle_config_factory(),
-                player_name=os.environ.get("ROLLMONS_PLAYER_NAME", "Player"),
-                boss_name=boss_name,
+            result = _run_battle_with_retry(
+                lambda: battle_fn(
+                    session.team_export,
+                    boss_team,
+                    battle_config_factory(),
+                    player_name=os.environ.get("ROLLMONS_PLAYER_NAME", "Player"),
+                    boss_name=boss_name,
+                )
             )
         except BossTeamError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
