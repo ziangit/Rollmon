@@ -124,23 +124,30 @@ function resolveId(input){
 }
 
 // The label lives in the export's nickname: "Label (Species) @ Item". Split it
-// out for a clean field on load, and re-inject it on save.
+// out for a clean field on load, and re-inject it on save. Note: "(M)"/"(F)" is
+// a GENDER marker, not a nickname, so it must never be treated as a label.
+const GENDER = /^[mf]$/i;
 function splitLabel(exp){
   const lines = (exp||"").replace(/\r/g,"").split("\n");
   if(!lines.length) return {label:"", body:exp||""};
-  const m = lines[0].match(/^(.+?)\s+\((.+?)\)(.*)$/);
-  if(m){ lines[0] = (m[2]+m[3]).trim(); return {label:m[1].trim(), body:lines.join("\n")}; }
-  return {label:"", body:exp||""};
+  const m = lines[0].match(/^(.*?)\s*\(([^)]+)\)(.*)$/);
+  if(m && m[1].trim() && !GENDER.test(m[2].trim())){
+    lines[0] = `${m[2].trim()}${m[3]}`;          // "Species (M) @ Item" / "Species @ Item"
+    return {label:m[1].trim(), body:lines.join("\n")};
+  }
+  return {label:"", body:exp||""};               // no nickname (or it's a gender marker)
 }
 function joinLabel(body, label){
-  const clean = splitLabel(body).body;          // strip any existing nickname first
+  const clean = splitLabel(body).body;           // strip any existing nickname first
   if(!label.trim()) return clean;
   const lines = clean.replace(/\r/g,"").split("\n");
   const first = (lines[0]||"").trim();
-  const at = first.indexOf(" @ ");
-  const species = at>=0 ? first.slice(0,at) : first;
-  const rest = at>=0 ? first.slice(at) : "";
-  lines[0] = `${label.trim()} (${species})${rest}`;
+  // first: "Species" | "Species @ Item" | "Species (M)" | "Species (M) @ Item"
+  const fm = first.match(/^(.+?)(\s*\([mf]\))?(\s*@\s*.+)?$/i);
+  const species = (fm ? fm[1] : first).trim();
+  const gender = fm && fm[2] ? " " + fm[2].trim() : "";
+  const item = fm && fm[3] ? " " + fm[3].trim() : "";
+  lines[0] = `${label.trim()} (${species})${gender}${item}`;
   return lines.join("\n");
 }
 
