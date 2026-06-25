@@ -31,6 +31,9 @@
   .setcard{position:relative}
   .setcard .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
   .setcard .label{width:100%;min-width:0;margin-bottom:8px}
+  .setcard.is-default{border-color:var(--accent)}
+  .badge{font-size:.62rem;background:var(--accent);color:#1a1020;border-radius:5px;padding:2px 7px;margin-left:8px;font-weight:700;letter-spacing:.03em}
+  .inline{display:flex;gap:8px;align-items:center}
   .status{font-size:.85rem;margin-top:6px}
   .status.ok{color:var(--ok)}
   .status.bad{color:var(--bad)}
@@ -74,7 +77,7 @@
     </div>
 
     <h3 style="margin:18px 0 8px">Override sets <span class="muted">(these are what the loadout offers; one block = one selectable set)</span></h3>
-    <p class="muted" style="margin:-2px 0 10px">The <b>Label</b> is stored as the set's Showdown nickname — it names the option in the loadout (and shows as the Pokémon's nickname in battle). Leave it blank for an auto label (Custom 1, Mega X…).</p>
+    <p class="muted" style="margin:-2px 0 10px">The <b>Label</b> is stored as the set's Showdown nickname — it names the option in the loadout (and shows as the Pokémon's nickname in battle). Leave it blank for an auto label (Custom 1, Mega X…). The <b>top</b> set is the loadout <b>default</b> (Mega sets stay opt-in — if the top set is a Mega, the game still pre-selects the first non-Mega).</p>
     <div id="sets"></div>
 
     <div class="actions">
@@ -136,18 +139,32 @@ function joinLabel(body, label){
   return lines.join("\n");
 }
 
+function refreshDefault(){
+  [...document.querySelectorAll("#sets .setcard")].forEach((c,i)=>{
+    c.classList.toggle("is-default", i===0);
+    c.querySelector(".badge").hidden = i!==0;
+  });
+}
+
 function setCard(text){
   const {label, body} = splitLabel(text);
   const wrap = document.createElement("div");
   wrap.className = "card setcard";
   wrap.innerHTML = `
-    <div class="row"><strong class="muted">Set</strong><button class="sm danger del">Delete</button></div>
+    <div class="row">
+      <strong class="muted">Set <span class="badge" hidden>★ DEFAULT</span></strong>
+      <span class="inline">
+        <button class="sm mkdef">★ Make default</button>
+        <button class="sm danger del">Delete</button>
+      </span>
+    </div>
     <input class="label" type="text" placeholder="Label (optional) — e.g. Choice Band offense">
     <textarea spellcheck="false"></textarea>
     <div class="status"></div>`;
   wrap.querySelector(".label").value = label;
   wrap.querySelector("textarea").value = body;
-  wrap.querySelector(".del").onclick = () => { wrap.remove(); };
+  wrap.querySelector(".del").onclick = () => { wrap.remove(); refreshDefault(); };
+  wrap.querySelector(".mkdef").onclick = () => { $("sets").prepend(wrap); refreshDefault(); };
   return wrap;
 }
 
@@ -185,6 +202,7 @@ async function load(){
     const sets = $("sets"); sets.innerHTML = "";
     (d.override_sets.length ? d.override_sets : []).forEach(t => sets.appendChild(setCard(t)));
     if(!d.override_sets.length) sets.appendChild(setCard(""));
+    refreshDefault();
   }catch(e){ toast("Load failed: "+e.message, false); }
 }
 
@@ -203,6 +221,7 @@ async function save(){
     // re-render with the saved (and possibly reformatted) blocks
     const sets = $("sets"); sets.innerHTML="";
     (d.override_sets.length ? d.override_sets : [""]).forEach(t=>sets.appendChild(setCard(t)));
+    refreshDefault();
     toast("Saved ✓  ("+d.override_sets.length+" override set"+(d.override_sets.length===1?"":"s")+" written)", true);
   }catch(e){
     // 422 carries per-set results
@@ -213,8 +232,8 @@ async function save(){
 
 $("load").onclick = load;
 $("pick").addEventListener("keydown", e => { if(e.key==="Enter") load(); });
-$("add").onclick = () => $("sets").appendChild(setCard(""));
-$("copySource").onclick = () => $("sets").appendChild(setCard($("sourceExport").textContent));
+$("add").onclick = () => { $("sets").appendChild(setCard("")); refreshDefault(); };
+$("copySource").onclick = () => { $("sets").appendChild(setCard($("sourceExport").textContent)); refreshDefault(); };
 $("validate").onclick = validate;
 $("save").onclick = save;
 loadSpeciesList();
