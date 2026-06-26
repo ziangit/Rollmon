@@ -252,7 +252,9 @@ def assemble_team(
     for species_id in drafted_species:
         override = load_set_override(species_id, sets_dir=sets_dir)
         if override is not None:
-            members.append(override)
+            # Normalize so authors may omit Level/leave Tera lines, matching the
+            # loadout path (selectable_sets already normalizes override exports).
+            members.append(_normalize_override_export(override))
             continue
         if selected_source == "smogon" and species_id in smogon_sets:
             members.append(select_smogon_set(species_id, smogon_sets, rng=rng).export)
@@ -284,12 +286,32 @@ def _normalize_item(value: str) -> str:
     return re.sub(r"[^a-z0-9]", "", value.lower())
 
 
-def _normalize_override_export(export: str) -> str:
-    """Strip the inert Tera line and guarantee an explicit ``Level: 100`` line.
+def _strip_export_nickname(first_line: str) -> str:
+    """Drop a set's nickname, keeping the species and any gender marker.
 
-    Override authors may omit the level line; the no-Tera custom format adjusts
-    every Pokemon to level 100 anyway, but we normalize here so checked-in sets
-    match the project's explicit level-100 convention regardless.
+    Set labels are stored as the Showdown nickname (``Label (Species) @ Item``)
+    so they survive as a loadout-picker tag, but the nickname should never leak
+    into a displayed or battle-bound export. ``(M)``/``(F)`` is a gender marker,
+    not a nickname, so it is preserved.
+    """
+
+    match = re.match(r"^(.*?)\s*\(([^)]+)\)(.*)$", first_line)
+    if (
+        match
+        and match.group(1).strip()
+        and match.group(2).strip().lower() not in {"m", "f"}
+    ):
+        return f"{match.group(2).strip()}{match.group(3)}"
+    return first_line
+
+
+def _normalize_override_export(export: str) -> str:
+    """Strip the nickname + inert Tera line and guarantee a ``Level: 100`` line.
+
+    Override authors may omit the level line and may carry a label as a nickname;
+    the no-Tera custom format adjusts every Pokemon to level 100 anyway, but we
+    normalize here so the export shown in the draft/loadout and sent to battle is
+    clean (no nickname) and matches the project's explicit level-100 convention.
     """
 
     lines = [
@@ -297,6 +319,8 @@ def _normalize_override_export(export: str) -> str:
         for line in export.splitlines()
         if not line.strip().lower().startswith("tera type:")
     ]
+    if lines:
+        lines[0] = _strip_export_nickname(lines[0])
     if not any(line.strip().lower().startswith("level:") for line in lines):
         # Insert after the species/item line so the export stays conventional.
         lines.insert(1, f"Level: {FIXED_LEVEL}")
