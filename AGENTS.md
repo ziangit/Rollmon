@@ -146,11 +146,18 @@ blocks (blank-line separated); every block becomes a separately selectable set
 for that species (e.g. Mega X and Mega Y, or a Mega plus a non-Mega build). A
 species with an override file is draftable even when the configured source has
 no set for it, so override files are how Mega-capable base species enter the
-player pool. `load_set_overrides()` validates each block's species; override
-exports are normalized by `_normalize_override_export()` (strip the inert
-`Tera Type:` line and guarantee an explicit `Level: 100`), so authors may omit
-the level line. The post-draft loadout defaults to a non-Mega set so Mega is an
-opt-in choice. Overrides never create custom player teams; all player teams
+player pool. `load_set_overrides()` validates each block's species. A block may
+carry an optional **label** as its Showdown nickname (`Label (Species) @ Item`);
+`selectable_sets()` reads that nickname to name the loadout option (falling back
+to `Custom N`/`Mega …`). Override exports are normalized by
+`_normalize_override_export()` — it strips the label nickname (keeping any
+`(M)`/`(F)` gender marker) and the inert `Tera Type:` line, and guarantees an
+explicit `Level: 100` — so authors may omit the level line, and the label never
+leaks into the draft card, loadout pokepaste, or the Pokemon's battle nickname.
+Both the loadout path and the legacy `assemble_team()` normalize override blocks
+before use. The post-draft loadout defaults to a non-Mega set so Mega is an
+opt-in choice. There is a gated set editor (`ROLLMONS_ENABLE_SET_EDITOR`, route
+`/sets-editor`) for editing these files without touching the export format. Overrides never create custom player teams; all player teams
 still originate from a six-round pool draft, set-by-set.
 
 The randbats fallback path intentionally uses `Serious` nature, 85 EVs in each
