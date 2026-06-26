@@ -8,7 +8,7 @@ Jolly Nature
 - Dual Wingbeat
 - Ice Fang
 
-Aerodactyl @ Focus Sash  
+Sash Lead (Aerodactyl) @ Focus Sash
 Ability: Unnerve  
 EVs: 4 HP / 252 Atk / 252 Spe  
 Jolly Nature  

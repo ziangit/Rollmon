@@ -1,0 +1,18 @@
+OU Defensive Corviknight (Corviknight) @ Rocky Helmet
+Ability: Pressure
+Level: 100
+EVs: 248 HP / 252 Def / 8 SpD
+Impish Nature
+- Brave Bird
+- Defog
+- U-turn
+- Roost
+
+Set Up Power Trip Corv (Corviknight) @ Leftovers
+Ability: Pressure  
+EVs: 248 HP / 8 Def / 252 SpD  
+Careful Nature  
+- Bulk Up  
+- Roost  
+- Power Trip  
+- Brave Bird

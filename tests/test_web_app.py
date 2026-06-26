@@ -291,7 +291,9 @@ async def test_matrix_endpoint_exposes_all_cells_and_known_placements(client):
         pokemon for pokemon in fairy_gen1["pokemon"] if pokemon["id"] == "clefable"
     )
     assert clefable["base_stat_total"] == 483
-    assert clefable["randbats_set"]["source"] == "smogon"
+    # A real set is exposed; the source may be "smogon" or "override" depending
+    # on whether a checked-in set override exists for this species.
+    assert clefable["randbats_set"]["source"] in {"smogon", "override"}
     assert clefable["randbats_set"]["moves"]
     assert clefable["sprite_url"].startswith(
         "https://play.pokemonshowdown.com/sprites/home-centered/"

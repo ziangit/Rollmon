@@ -8,3 +8,13 @@ IVs: 0 Atk
 - Volt Switch
 - Dragon Pulse
 - Focus Blast
+
+PU Cleric (Ampharos) @ Leftovers
+Ability: Static  
+EVs: 184 HP / 252 SpA / 72 Spe  
+Modest Nature  
+IVs: 0 Atk  
+- Thunderbolt  
+- Focus Blast  
+- Volt Switch  
+- Heal Bell

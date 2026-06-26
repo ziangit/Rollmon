@@ -1,0 +1,8 @@
+BOOM (Carbink) @ Custap Berry
+Ability: Sturdy  
+EVs: 252 HP / 252 Atk / 4 Spe  
+Adamant Nature  
+- Stealth Rock  
+- Reflect  
+- Light Screen  
+- Explosion

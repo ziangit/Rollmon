@@ -1,0 +1,9 @@
+AG Choice Spec Attacker (Calyrex-Shadow) @ Choice Specs
+Ability: As One (Spectrier)  
+Tera Type: Ghost  
+EVs: 4 Def / 252 SpA / 252 Spe  
+Timid Nature  
+- Astral Barrage  
+- Grass Knot  
+- Psychic  
+- Trick

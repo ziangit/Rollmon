@@ -1,0 +1,9 @@
+Scarf Sweeper (Chandelure) @ Choice Scarf
+Ability: Flash Fire
+EVs: 252 SpA / 4 SpD / 252 Spe
+Tera Type: Grass
+Timid Nature
+- Fire Blast
+- Shadow Ball
+- Energy Ball
+- Trick

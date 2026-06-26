@@ -1,0 +1,17 @@
+Water Absorb Spe Def Wall (Clodsire) @ Black Sludge
+Ability: Water Absorb  
+EVs: 248 HP / 8 Atk / 252 SpD  
+Careful Nature  
+- Stealth Rock  
+- Recover  
+- Earthquake  
+- Poison Jab
+
+Standard Unaware Spe Def Wall (Clodsire) @ Black Sludge
+Ability: Unaware  
+EVs: 248 HP / 8 Atk / 252 SpD  
+Careful Nature  
+- Stealth Rock  
+- Recover  
+- Earthquake  
+- Toxic

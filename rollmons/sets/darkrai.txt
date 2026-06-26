@@ -1,0 +1,19 @@
+Scarf Darkrai (Darkrai) @ Choice Scarf
+Ability: Bad Dreams  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Dark Pulse  
+- Ice Beam  
+- Focus Blast  
+- Trick
+
+Specs Darkrai (Darkrai) @ Choice Specs
+Ability: Bad Dreams  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Dark Pulse  
+- Ice Beam  
+- Focus Blast  
+- Trick

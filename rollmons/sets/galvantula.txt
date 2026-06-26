@@ -1,0 +1,9 @@
+Sash Sticky Web Galvantula (Galvantula) @ Focus Sash
+Ability: Compound Eyes  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Sticky Web  
+- Thunderbolt  
+- Bug Buzz  
+- Energy Ball

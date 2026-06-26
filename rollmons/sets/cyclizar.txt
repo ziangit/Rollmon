@@ -1,0 +1,9 @@
+Uber UU Utility Shed Tail (Cyclizar) @ Heavy-Duty Boots
+Ability: Regenerator
+EVs: 248 HP / 8 Atk / 252 Spe
+Tera Type: Fairy
+Jolly Nature
+- Shed Tail
+- Rapid Spin
+- Knock Off
+- Taunt

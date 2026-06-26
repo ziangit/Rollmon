@@ -1,0 +1,26 @@
+Dragon Dance Dragapult (Dragapult) @ Life Orb
+Ability: Clear Body  
+EVs: 252 Atk / 4 SpA / 252 Spe  
+Lonely Nature  
+- Dragon Dance  
+- Dragon Darts  
+- Phantom Force  
+- Fire Blast
+
+Choice Specs Dragapult (Dragapult) @ Choice Specs
+Ability: Clear Body  
+EVs: 4 Def / 252 SpA / 252 Spe  
+Timid Nature  
+- Shadow Ball  
+- Draco Meteor  
+- U-turn  
+- Fire Blast
+
+Choice Band Dragapult (Dragapult) @ Choice Band
+Ability: Clear Body  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Dragon Darts  
+- Phantom Force  
+- U-turn  
+- Double-Edge

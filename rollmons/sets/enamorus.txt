@@ -1,0 +1,9 @@
+Calm Mind Enamorus (Enamorus) (F) @ Leftovers
+Ability: Cute Charm  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Calm Mind  
+- Moonblast  
+- Earth Power  
+- Mystical Fire

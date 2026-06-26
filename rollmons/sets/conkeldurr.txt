@@ -1,0 +1,8 @@
+Assault Vest Pivot (Conkeldurr) @ Assault Vest
+Ability: Guts  
+EVs: 252 HP / 252 Atk / 4 SpD  
+Adamant Nature  
+- Drain Punch  
+- Knock Off  
+- Ice Punch  
+- Mach Punch

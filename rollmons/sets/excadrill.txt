@@ -1,0 +1,26 @@
+Scarf Excadrill (Excadrill) @ Choice Scarf
+Ability: Mold Breaker  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Earthquake  
+- Iron Head  
+- Rock Slide  
+- Rapid Spin
+
+Sand Swords Dance Life Orb Excadrill (Excadrill) @ Life Orb
+Ability: Sand Rush  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Earthquake  
+- Iron Head  
+- Swords Dance  
+- Rapid Spin
+
+Sash Lead Excadrill (Excadrill) @ Focus Sash
+Ability: Mold Breaker  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Stealth Rock  
+- Earthquake  
+- Iron Head  
+- Rapid Spin

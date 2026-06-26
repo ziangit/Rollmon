@@ -1,0 +1,8 @@
+Curse Set up Garganacl (Garganacl) @ Leftovers
+Ability: Purifying Salt  
+EVs: 248 HP / 8 Def / 252 SpD  
+Careful Nature  
+- Curse  
+- Salt Cure  
+- Body Press  
+- Recover

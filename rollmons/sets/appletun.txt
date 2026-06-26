@@ -1,0 +1,8 @@
+ZU Physically Defensive (Appletun) @ Eject Pack
+Ability: Thick Fat
+EVs: 248 HP / 176 Def / 84 Spe
+Bold Nature
+- Recover
+- Draco Meteor
+- Apple Acid
+- Body Press

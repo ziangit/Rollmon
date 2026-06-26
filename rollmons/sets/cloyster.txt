@@ -1,0 +1,8 @@
+Sash Shell Smasher (Cloyster) @ Focus Sash
+Ability: Skill Link  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Shell Smash  
+- Icicle Spear  
+- Rock Blast  
+- Pin Missile

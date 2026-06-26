@@ -1,0 +1,9 @@
+Quiver Dance Frosmoth (Frosmoth) @ Leftovers
+Ability: Ice Scales  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Modest Nature  
+IVs: 0 Atk  
+- Quiver Dance  
+- Ice Beam  
+- Bug Buzz  
+- Giga Drain

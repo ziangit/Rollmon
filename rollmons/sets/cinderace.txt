@@ -1,0 +1,8 @@
+Life Orb Attacker (Cinderace) @ Life Orb
+Ability: Blaze  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Swords Dance  
+- Pyro Ball  
+- High Jump Kick  
+- Sucker Punch

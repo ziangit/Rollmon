@@ -1,0 +1,17 @@
+Choice Band Attacker (Azumarill) @ Choice Band
+Ability: Huge Power  
+EVs: 252 HP / 252 Atk / 4 SpD  
+Adamant Nature  
+- Liquidation  
+- Play Rough  
+- Knock Off  
+- Aqua Jet
+
+Assault Vest Pivot (Azumarill) @ Assault Vest
+Ability: Huge Power  
+EVs: 252 HP / 252 Atk / 4 SpD  
+Adamant Nature  
+- Liquidation  
+- Play Rough  
+- Knock Off  
+- Aqua Jet

@@ -1,0 +1,8 @@
+Custap Sash Lead (Donphan) @ Custap Berry
+Ability: Sturdy  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Adamant Nature  
+- Stealth Rock  
+- Endeavor  
+- Rapid Spin  
+- Earthquake

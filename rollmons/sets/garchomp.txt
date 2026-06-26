@@ -7,3 +7,12 @@ Jolly Nature
 - Scale Shot
 - Earthquake
 - Fire Fang
+
+Swords Dance Garchomp (Garchomp) @ Loaded Dice
+Ability: Rough Skin  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Swords Dance  
+- Scale Shot  
+- Earthquake  
+- Fire Fang

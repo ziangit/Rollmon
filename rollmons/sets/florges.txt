@@ -1,0 +1,10 @@
+Calm Mind Florges (Florges) @ Covert Cloak
+Ability: Flower Veil
+EVs: 252 HP / 160 Def / 96 Spe
+IVs: 0 Atk
+Tera Type: Poison
+Bold Nature
+- Calm Mind
+- Moonblast
+- Psychic Noise
+- Synthesis

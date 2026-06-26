@@ -1,0 +1,8 @@
+Life Orb Technician Attacker (Breloom) @ Life Orb
+Ability: Technician  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Swords Dance  
+- Mach Punch  
+- Bullet Seed  
+- Rock Tomb

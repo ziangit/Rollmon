@@ -1,0 +1,8 @@
+Assault Vest Pivot (Alomomola) @ Assault Vest
+Ability: Regenerator  
+EVs: 248 HP / 8 Atk / 252 SpD  
+Careful Nature  
+- Flip Turn  
+- Mirror Coat  
+- Knock Off  
+- Scald

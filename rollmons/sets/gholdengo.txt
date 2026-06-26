@@ -1,0 +1,20 @@
+OU Offensive Nasty Plot Gholdengo (Gholdengo) @ Air Balloon
+Ability: Good as Gold
+Level: 100
+EVs: 252 SpA / 4 SpD / 252 Spe
+IVs: 0 Atk
+Timid Nature
+- Nasty Plot
+- Shadow Ball
+- Make It Rain
+- Focus Blast
+
+Choice Scarf Gholdengo (Gholdengo) @ Choice Scarf
+Ability: Good as Gold  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Make It Rain  
+- Shadow Ball  
+- Trick  
+- Focus Blast

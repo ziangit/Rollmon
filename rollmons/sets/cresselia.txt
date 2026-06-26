@@ -1,0 +1,29 @@
+Trick Room Cresselia (Cresselia) @ Colbur Berry
+Ability: Levitate
+EVs: 248 HP / 84 Def / 176 SpD
+IVs: 0 Atk / 0 Spe
+Relaxed Nature
+- Trick Room
+- Moonblast
+- Lunar Dance
+- Shadow Ball
+
+Cresselia @ Eject Button
+Ability: Levitate
+Level: 100
+EVs: 252 HP / 252 Def / 4 SpD
+IVs: 0 Atk
+Bold Nature
+- Lunar Dance
+- Ice Beam
+- Thunder Wave
+- Moonlight
+
+CM Set Up (Cresselia) @ Leftovers
+Ability: Levitate
+EVs: 252 HP / 92 Def / 152 SpA / 12 Spe
+Bold Nature
+- Psyshock
+- Ice Beam
+- Calm Mind
+- Moonlight

@@ -1,0 +1,9 @@
+Calm Mind Set Up (Clefable) @ Leftovers
+Ability: Magic Guard  
+EVs: 252 HP / 252 Def / 4 SpA  
+Bold Nature  
+IVs: 0 Atk  
+- Calm Mind  
+- Moonblast  
+- Flamethrower  
+- Soft-Boiled

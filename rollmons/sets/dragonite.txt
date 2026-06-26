@@ -1,0 +1,8 @@
+Band Dragonite (Dragonite) @ Choice Band
+Ability: Multiscale  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Adamant Nature  
+- Outrage  
+- Earthquake  
+- Fire Punch  
+- Extreme Speed

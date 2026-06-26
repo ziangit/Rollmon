@@ -1,0 +1,8 @@
+Will-O Dog (Arcanine-Hisui) @ Heavy-Duty Boots
+Ability: Rock Head  
+EVs: 252 Atk / 4 SpD / 252 Spe  
+Jolly Nature  
+- Will-O-Wisp  
+- Flare Blitz  
+- Morning Sun  
+- Head Smash

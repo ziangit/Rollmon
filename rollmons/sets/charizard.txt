@@ -17,3 +17,12 @@ Adamant Nature
 - Flare Blitz  
 - Earthquake  
 - Roost
+
+Belly Drum! (Charizard) @ Sitrus Berry
+Ability: Blaze  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Belly Drum  
+- Flame Charge  
+- Acrobatics  
+- Earthquake

@@ -1,0 +1,28 @@
+Dual Status Wall (Amoonguss) @ Black Sludge
+Ability: Regenerator  
+EVs: 248 HP / 252 Def / 8 SpD  
+Bold Nature  
+IVs: 0 Atk  
+- Giga Drain  
+- Sludge Bomb  
+- Spore  
+- Stun Spore
+
+Assault Vest Pivot (Amoonguss) @ Assault Vest
+Ability: Regenerator  
+EVs: 248 HP / 8 Atk / 252 SpA  
+Quiet Nature  
+- Giga Drain  
+- Sludge Bomb  
+- Stomping Tantrum  
+- Foul Play
+
+Special Defensive Wall (Amoonguss) @ Leftovers
+Ability: Regenerator  
+EVs: 248 HP / 8 Def / 252 SpD  
+Calm Nature  
+IVs: 0 Atk  
+- Giga Drain  
+- Sludge Bomb  
+- Foul Play  
+- Spore

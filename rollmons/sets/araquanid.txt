@@ -1,0 +1,8 @@
+Rain Choice Band Attacker (Araquanid) @ Choice Band
+Ability: Water Bubble  
+EVs: 248 HP / 252 Atk / 8 SpD  
+Adamant Nature  
+- Liquidation  
+- Leech Life  
+- Sticky Web  
+- Lunge

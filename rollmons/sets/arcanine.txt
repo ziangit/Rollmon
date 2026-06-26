@@ -1,0 +1,8 @@
+Choice Band Attacker (Arcanine) @ Choice Band
+Ability: Intimidate  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Flare Blitz  
+- Close Combat  
+- Wild Charge  
+- Extreme Speed

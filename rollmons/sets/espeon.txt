@@ -1,0 +1,9 @@
+Calm Mind Set Up Espeon (Espeon) @ Leftovers
+Ability: Magic Bounce  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Calm Mind  
+- Morning Sun  
+- Dazzling Gleam  
+- Psyshock

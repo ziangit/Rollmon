@@ -1,0 +1,9 @@
+Life Orb Attacker (Azelf) @ Life Orb
+Ability: Levitate  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Nasty Plot  
+- Dazzling Gleam  
+- Psychic  
+- Fire Blast
