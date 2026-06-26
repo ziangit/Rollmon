@@ -72,7 +72,7 @@
     </div>
 
     <div class="card" id="sourceCard">
-      <h3>Source set <span class="muted" id="sourceLabel"></span></h3>
+      <h3>Source set <span class="badge" id="sourceDefaultBadge" hidden>★ DEFAULT</span> <span class="muted" id="sourceLabel"></span></h3>
       <p class="muted" style="margin:.2rem 0 .6rem">Read-only reference from the set source. Use it as a starting point.</p>
       <pre id="sourceExport"></pre>
       <div class="actions">
@@ -152,10 +152,18 @@ function joinLabel(body, label){
 }
 
 function refreshDefault(){
-  [...document.querySelectorAll("#sets .setcard")].forEach((c,i)=>{
-    c.classList.toggle("is-default", i===0);
-    c.querySelector(".badge").hidden = i!==0;
+  const cards = [...document.querySelectorAll("#sets .setcard")];
+  // The default is the first override that actually has content; an empty card
+  // isn't a real set. With no override content, the loadout default is the
+  // SOURCE set, so the badge lives on the source card instead.
+  const defIdx = cards.findIndex(c => c.querySelector("textarea").value.trim());
+  cards.forEach((c,i)=>{
+    c.classList.toggle("is-default", i===defIdx);
+    c.querySelector(".badge").hidden = i!==defIdx;
   });
+  const srcBadge = document.getElementById("sourceDefaultBadge");
+  if(srcBadge) srcBadge.hidden = (defIdx !== -1) || !$("sourceExport").textContent.trim()
+    || $("sourceExport").textContent.includes("no source export");
 }
 
 function setCard(text){
@@ -177,6 +185,7 @@ function setCard(text){
   wrap.querySelector("textarea").value = body;
   wrap.querySelector(".del").onclick = () => { wrap.remove(); refreshDefault(); };
   wrap.querySelector(".mkdef").onclick = () => { $("sets").prepend(wrap); refreshDefault(); };
+  wrap.querySelector("textarea").addEventListener("input", refreshDefault);
   return wrap;
 }
 
