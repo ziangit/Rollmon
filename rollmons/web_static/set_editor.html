@@ -154,12 +154,27 @@ function joinLabel(body, label){
 
 // If the source set is currently the default (no override has content yet), pin
 // it as the top override so adding a new set doesn't steal the default slot.
+// The source set's Smogon label, minus the trailing species name (which a
+// Showdown nickname drops anyway), so a pinned source set keeps its name.
+function shortSourceLabel(){
+  let lbl = (window._sourceLabel || "").trim();
+  const sp = (window._speciesName || "").trim();
+  if(sp){
+    const esc = sp.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    lbl = lbl.replace(new RegExp("\\s*" + esc + "\\s*$", "i"), "").trim();
+  }
+  return lbl;
+}
+// A card seeded from the source set, carrying its label.
+function sourceCard(){
+  return setCard(joinLabel($("sourceExport").textContent, shortSourceLabel()));
+}
 function pinSourceIfDefault(){
   const anyContent = [...document.querySelectorAll("#sets textarea")].some(t => t.value.trim());
   const src = $("sourceExport").textContent;
   const hasSource = src.trim() && !src.includes("no source export");
   if(!anyContent && hasSource){
-    $("sets").prepend(setCard(src));
+    $("sets").prepend(sourceCard());
     toast("Kept the source set as the default — your new set is added below it.", true);
   }
 }
@@ -234,6 +249,8 @@ async function load(){
     $("sourceLabel").textContent =
       (d.source_set_label ? "— " + d.source_set_label + " " : "") + "(source: "+d.set_source+")";
     $("sourceExport").textContent = d.source_set_export || "— no source export for this species —";
+    window._sourceLabel = d.source_set_label || "";
+    window._speciesName = d.name || d.id || "";
     $("copySource").disabled = !d.source_set_export;
     $("copyDefault").disabled = !d.source_set_export;
     const sets = $("sets"); sets.innerHTML = "";
@@ -281,8 +298,8 @@ $("prev").onclick = () => nav(-1);
 $("next").onclick = () => nav(1);
 $("pick").addEventListener("keydown", e => { if(e.key==="Enter") load(); });
 $("add").onclick = () => { pinSourceIfDefault(); $("sets").appendChild(setCard("")); refreshDefault(); };
-$("copySource").onclick = () => { $("sets").appendChild(setCard($("sourceExport").textContent)); refreshDefault(); };
-$("copyDefault").onclick = () => { $("sets").prepend(setCard($("sourceExport").textContent)); refreshDefault(); };
+$("copySource").onclick = () => { $("sets").appendChild(sourceCard()); refreshDefault(); };
+$("copyDefault").onclick = () => { $("sets").prepend(sourceCard()); refreshDefault(); };
 $("validate").onclick = validate;
 $("save").onclick = save;
 loadSpeciesList();
