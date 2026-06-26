@@ -83,6 +83,7 @@
 
     <h3 style="margin:18px 0 8px">Override sets <span class="muted">(these are what the loadout offers; one block = one selectable set)</span></h3>
     <p class="muted" style="margin:-2px 0 10px">The <b>Label</b> is stored as the set's Showdown nickname — it names the option in the loadout (and shows as the Pokémon's nickname in battle). Leave it blank for an auto label (Custom 1, Mega X…). The <b>top</b> set is the loadout <b>default</b> (Mega sets stay opt-in — if the top set is a Mega, the game still pre-selects the first non-Mega).</p>
+    <p id="noSets" class="muted" hidden style="margin:0 0 10px">No override sets yet — the <b>source set above is the default</b>. Add one below to offer alternatives (the source stays default unless you change it).</p>
     <div id="sets"></div>
 
     <div class="actions">
@@ -151,8 +152,21 @@ function joinLabel(body, label){
   return lines.join("\n");
 }
 
+// If the source set is currently the default (no override has content yet), pin
+// it as the top override so adding a new set doesn't steal the default slot.
+function pinSourceIfDefault(){
+  const anyContent = [...document.querySelectorAll("#sets textarea")].some(t => t.value.trim());
+  const src = $("sourceExport").textContent;
+  const hasSource = src.trim() && !src.includes("no source export");
+  if(!anyContent && hasSource){
+    $("sets").prepend(setCard(src));
+    toast("Kept the source set as the default — your new set is added below it.", true);
+  }
+}
 function refreshDefault(){
   const cards = [...document.querySelectorAll("#sets .setcard")];
+  const noSets = document.getElementById("noSets");
+  if(noSets) noSets.hidden = cards.length > 0;
   // The default is the first override that actually has content; an empty card
   // isn't a real set. With no override content, the loadout default is the
   // SOURCE set, so the badge lives on the source card instead.
@@ -223,8 +237,7 @@ async function load(){
     $("copySource").disabled = !d.source_set_export;
     $("copyDefault").disabled = !d.source_set_export;
     const sets = $("sets"); sets.innerHTML = "";
-    (d.override_sets.length ? d.override_sets : []).forEach(t => sets.appendChild(setCard(t)));
-    if(!d.override_sets.length) sets.appendChild(setCard(""));
+    d.override_sets.forEach(t => sets.appendChild(setCard(t)));
     refreshDefault();
   }catch(e){ toast("Load failed: "+e.message, false); }
 }
@@ -243,7 +256,7 @@ async function save(){
     showResults(d.results);
     // re-render with the saved (and possibly reformatted) blocks
     const sets = $("sets"); sets.innerHTML="";
-    (d.override_sets.length ? d.override_sets : [""]).forEach(t=>sets.appendChild(setCard(t)));
+    d.override_sets.forEach(t=>sets.appendChild(setCard(t)));
     refreshDefault();
     toast("Saved ✓  ("+d.override_sets.length+" override set"+(d.override_sets.length===1?"":"s")+" written)", true);
   }catch(e){
@@ -267,7 +280,7 @@ $("load").onclick = load;
 $("prev").onclick = () => nav(-1);
 $("next").onclick = () => nav(1);
 $("pick").addEventListener("keydown", e => { if(e.key==="Enter") load(); });
-$("add").onclick = () => { $("sets").appendChild(setCard("")); refreshDefault(); };
+$("add").onclick = () => { pinSourceIfDefault(); $("sets").appendChild(setCard("")); refreshDefault(); };
 $("copySource").onclick = () => { $("sets").appendChild(setCard($("sourceExport").textContent)); refreshDefault(); };
 $("copyDefault").onclick = () => { $("sets").prepend(setCard($("sourceExport").textContent)); refreshDefault(); };
 $("validate").onclick = validate;
