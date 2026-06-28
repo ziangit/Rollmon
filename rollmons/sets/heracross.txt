@@ -7,3 +7,13 @@ Adamant Nature
 - Swords Dance
 - Close Combat
 - Rock Blast
+
+PU Flame Orb (Heracross) @ Flame Orb
+Ability: Guts
+EVs: 252 Atk / 4 SpD / 252 Spe
+Tera Type: Normal
+Jolly Nature
+- Close Combat
+- Facade
+- Knock Off
+- Trailblaze

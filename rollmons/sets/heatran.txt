@@ -1,0 +1,28 @@
+OU Offensive (Heatran) @ Leftovers
+Ability: Flash Fire
+Level: 100
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Magma Storm
+- Earth Power
+- Taunt
+- Stealth Rock
+
+OU Special Defensive (Heatran) @ Leftovers
+Ability: Flash Fire
+EVs: 252 HP / 4 Def / 212 SpD / 40 Spe
+Tera Type: Grass
+Calm Nature
+- Magma Storm
+- Earth Power
+- Taunt
+- Stealth Rock
+
+OU Balloon Offensive (Heatran) @ Air Balloon
+Ability: Flash Fire
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+- Magma Storm
+- Earth Power
+- Taunt
+- Eruption

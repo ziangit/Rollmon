@@ -1,0 +1,27 @@
+OU Swords Dance (Iron Hands) @ Booster Energy
+Ability: Quark Drive
+Level: 100
+EVs: 252 Atk / 172 SpD / 84 Spe
+Adamant Nature
+- Swords Dance
+- Drain Punch
+- Thunder Punch
+- Ice Punch
+
+Leftovers Swords Dance (Iron Hands) @ Leftovers
+Ability: Quark Drive
+EVs: 252 Atk / 116 SpD / 140 Spe
+Adamant Nature
+- Swords Dance
+- Supercell Slam
+- Drain Punch
+- Ice Punch
+
+Assault Vest (Iron Hands) @ Assault Vest
+Ability: Quark Drive  
+EVs: 248 HP / 252 Atk / 8 SpD  
+Adamant Nature  
+- Drain Punch  
+- Supercell Slam  
+- Ice Punch  
+- Earthquake

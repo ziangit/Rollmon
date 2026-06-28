@@ -1,0 +1,31 @@
+OU Choice Specs (Hydreigon) @ Choice Specs
+Ability: Levitate
+Level: 100
+EVs: 252 SpA / 4 SpD / 252 Spe
+IVs: 0 Atk
+Timid Nature
+- Dark Pulse
+- Draco Meteor
+- Flash Cannon
+- Earth Power
+
+OU Nasty Plot (Hydreigon) @ Leftovers
+Ability: Levitate  
+Tera Type: Poison  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Nasty Plot  
+- Draco Meteor  
+- Flamethrower  
+- Dark Pulse
+
+OU Choice Scarf (Hydreigon) @ Choice Scarf
+Ability: Levitate
+EVs: 252 SpA / 4 SpD / 252 Spe
+Tera Type: Dragon
+Timid Nature
+- Draco Meteor
+- Dark Pulse
+- Fire Blast
+- U-turn

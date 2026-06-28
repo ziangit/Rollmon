@@ -1,0 +1,29 @@
+OU Choice Specs (Iron Crown) @ Choice Specs
+Ability: Quark Drive
+Level: 100
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Tachyon Cutter
+- Psyshock
+- Volt Switch
+- Focus Blast
+
+Set Up Sweeper (Iron Crown) @ Booster Energy
+Ability: Quark Drive
+EVs: 84 HP / 172 SpA / 252 Spe
+IVs: 20 Atk
+Timid Nature
+- Calm Mind
+- Psychic Noise
+- Focus Blast
+- Tachyon Cutter
+
+Assault Vest (Iron Crown) @ Assault Vest
+Ability: Quark Drive
+EVs: 252 SpA / 4 SpD / 252 Spe
+IVs: 20 Atk
+Timid Nature
+- Tachyon Cutter
+- Psychic Noise
+- Volt Switch
+- Focus Blast

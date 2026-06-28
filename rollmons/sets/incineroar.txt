@@ -1,0 +1,19 @@
+NU Swords Dance (Incineroar) @ Heavy-Duty Boots
+Ability: Intimidate
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Adamant Nature
+- Swords Dance
+- Flare Blitz
+- Knock Off
+- U-turn
+
+Defensive Pivot (Incineroar) @ Heavy-Duty Boots
+Ability: Intimidate
+EVs: 248 HP / 212 SpD / 48 Spe
+Tera Type: Fairy
+Careful Nature
+- Knock Off
+- Flare Blitz
+- Will-O-Wisp
+- Parting Shot

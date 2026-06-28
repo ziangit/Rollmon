@@ -1,0 +1,31 @@
+OU Booster Energy (Iron Moth) @ Booster Energy
+Ability: Quark Drive
+Level: 100
+EVs: 124 Def / 132 SpA / 252 Spe
+IVs: 0 Atk
+Timid Nature
+- Fiery Dance
+- Sludge Wave
+- Dazzling Gleam
+- Substitute
+
+OU Choice Specs (Iron Moth) @ Choice Specs
+Ability: Quark Drive  
+Tera Type: Fairy  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Overheat  
+- Sludge Wave  
+- Dazzling Gleam  
+- Energy Ball
+
+OU Offensive Pivot (Iron Moth) @ Heavy-Duty Boots
+Ability: Quark Drive
+EVs: 252 SpA / 4 SpD / 252 Spe
+IVs: 0 Atk
+Timid Nature
+- Fiery Dance
+- Sludge Wave
+- U-turn
+- Morning Sun

@@ -7,3 +7,12 @@ Adamant Nature
 - Crunch
 - Waterfall
 - Earthquake
+
+Dragon Dance Bounce Gyarados (Gyarados) @ Leftovers
+Ability: Intimidate  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Adamant Nature  
+- Dragon Dance  
+- Bounce  
+- Waterfall  
+- Substitute

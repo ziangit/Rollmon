@@ -1,0 +1,21 @@
+NU Choice Specs (Hoopa) @ Choice Specs
+Ability: Magician
+Level: 100
+EVs: 252 SpA / 4 SpD / 252 Spe
+IVs: 0 Atk
+Timid Nature
+- Psyshock
+- Shadow Ball
+- Focus Blast
+- Trick
+
+NU Choice Scarf (Hoopa) @ Choice Scarf
+Ability: Magician
+EVs: 252 SpA / 4 SpD / 252 Spe
+IVs: 0 Atk
+Tera Type: Fighting
+Timid Nature
+- Psyshock
+- Shadow Ball
+- Focus Blast
+- Trick

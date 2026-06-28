@@ -1,0 +1,39 @@
+Uber Physically Defensive (Ho-Oh) @ Heavy-Duty Boots
+Ability: Regenerator
+Level: 100
+EVs: 252 HP / 252 Def / 4 SpD
+Impish Nature
+- Sacred Fire
+- Brave Bird
+- Whirlwind
+- Recover
+
+Offensive (Ho-Oh) @ Heavy-Duty Boots
+Ability: Regenerator  
+Tera Type: Flying  
+EVs: 252 Atk / 4 Def / 252 Spe  
+Jolly Nature  
+- Sacred Fire  
+- Brave Bird  
+- Earthquake  
+- Recover
+
+Choice Scarf (Ho-Oh) @ Choice Scarf
+Ability: Regenerator
+EVs: 252 Atk / 4 Def / 252 Spe
+Tera Type: Fire
+Jolly Nature
+- Sacred Fire
+- Brave Bird
+- Earthquake
+- Flare Blitz
+
+Special Defensive (Ho-Oh) @ Heavy-Duty Boots
+Ability: Regenerator
+EVs: 252 HP / 4 Def / 252 SpD
+Tera Type: Fairy
+Careful Nature
+- Sacred Fire
+- Brave Bird
+- Whirlwind
+- Recover

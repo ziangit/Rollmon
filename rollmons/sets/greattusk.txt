@@ -1,0 +1,39 @@
+OU Offensive Utility (Great Tusk) @ Heavy-Duty Boots
+Ability: Protosynthesis
+Level: 100
+EVs: 252 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Headlong Rush
+- Ice Spinner
+- Rapid Spin
+- Stealth Rock
+
+Bulk Up Fast Great Tusk (Great Tusk) @ Booster Energy
+Ability: Protosynthesis  
+Tera Type: Ice  
+EVs: 252 HP / 4 Atk / 252 Spe  
+Jolly Nature  
+- Bulk Up  
+- Headlong Rush  
+- Ice Spinner  
+- Rapid Spin
+
+Scarf Great Tusk (Great Tusk) @ Choice Scarf
+Ability: Protosynthesis
+EVs: 252 Atk / 4 Def / 252 Spe
+Tera Type: Ground
+Adamant Nature
+- Headlong Rush
+- Close Combat
+- Earthquake
+- Rapid Spin
+
+Assault Vest Tusk (Great Tusk) @ Assault Vest
+Ability: Protosynthesis  
+Tera Type: Ice  
+EVs: 252 HP / 4 Atk / 252 Spe  
+Jolly Nature  
+- Close Combat  
+- Headlong Rush  
+- Ice Spinner  
+- Rapid Spin

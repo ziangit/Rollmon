@@ -1,0 +1,27 @@
+UU Choice Band (Haxorus) @ Choice Band
+Ability: Mold Breaker
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- First Impression
+- Outrage
+- Earthquake
+- Poison Jab
+
+Swords Dance Haxorus (Haxorus) @ Life Orb
+Ability: Mold Breaker
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Swords Dance
+- Scale Shot
+- Close Combat
+- Poison Jab
+
+Dragon Dance Haxorus (Haxorus) @ Life Orb
+Ability: Mold Breaker
+EVs: 252 Atk / 4 SpD / 252 Spe
+Adamant Nature
+- Dragon Dance
+- Outrage
+- Earthquake
+- Poison Jab

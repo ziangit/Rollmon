@@ -1,0 +1,28 @@
+OU Assault Vest (Hoopa-Unbound) @ Assault Vest
+Ability: Magician
+Level: 100
+EVs: 252 HP / 180 Def / 76 SpA
+Quiet Nature
+- Knock Off
+- Psychic Noise
+- Drain Punch
+- Thunderbolt
+
+OU Choice Band (Hoopa-Unbound) @ Choice Band
+Ability: Magician
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Hyperspace Fury
+- Drain Punch
+- Zen Headbutt
+- Gunk Shot
+
+OU Choice Specs (Hoopa-Unbound) @ Choice Specs
+Ability: Magician
+EVs: 248 SpA / 8 SpD / 252 Spe
+IVs: 0 Atk
+Modest Nature
+- Dark Pulse
+- Psychic
+- Thunderbolt
+- Focus Blast

@@ -1,0 +1,19 @@
+Uber Defensive (Groudon) @ Leftovers
+Ability: Drought
+Level: 100
+EVs: 240 HP / 252 Def / 16 Spe
+Impish Nature
+- Spikes
+- Precipice Blades
+- Stone Edge
+- Will-O-Wisp
+
+Uber Swords Dance Groundon (Groudon) @ Lum Berry
+Ability: Drought
+EVs: 252 Atk / 4 Def / 252 Spe
+Tera Type: Fairy
+Adamant Nature
+- Swords Dance
+- Precipice Blades
+- Stone Edge
+- Heat Crash

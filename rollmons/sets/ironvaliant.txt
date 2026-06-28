@@ -1,0 +1,56 @@
+OU Mixed (Iron Valiant) @ Booster Energy
+Ability: Quark Drive
+Level: 100
+EVs: 4 Atk / 252 SpA / 252 Spe
+Naive Nature
+- Moonblast
+- Close Combat
+- Knock Off
+- Encore
+
+OU Choice Specs (Iron Valiant) @ Choice Specs
+Ability: Quark Drive
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+- Moonblast
+- Focus Blast
+- Thunderbolt
+- Shadow Ball
+
+OU Mixed (Iron Valiant) @ Booster Energy
+Ability: Quark Drive
+EVs: 108 Atk / 148 SpA / 252 Spe
+Naive Nature
+- Moonblast
+- Close Combat
+- Knock Off
+- Encore
+
+OU Swords Dance (Iron Valiant) @ Booster Energy
+Ability: Quark Drive
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Swords Dance
+- Close Combat
+- Knock Off
+- Ice Punch
+
+OU Calm Mind (Iron Valiant) @ Booster Energy
+Ability: Quark Drive
+EVs: 252 SpA / 4 SpD / 252 Spe
+Tera Type: Ghost
+Timid Nature
+- Calm Mind
+- Moonblast
+- Shadow Ball
+- Encore
+
+OU Choice Scarf (Iron Valiant) @ Choice Scarf
+Ability: Quark Drive  
+Tera Type: Fairy  
+EVs: 252 SpA / 4 SpD / 252 Spe  
+Timid Nature  
+- Moonblast  
+- Shadow Ball  
+- Thunderbolt  
+- Trick

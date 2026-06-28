@@ -1,0 +1,18 @@
+UU Sand Sweeper (Houndstone) @ Choice Band
+Ability: Sand Rush
+Level: 100
+EVs: 252 Atk / 4 SpD / 252 Spe
+Adamant Nature
+- Poltergeist
+- Play Rough
+- Shadow Sneak
+- Body Press
+
+Super Strong Set (Houndstone) @ Choice Band
+Ability: Sand Rush  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Adamant Nature  
+- Last Respects  
+- Shadow Sneak  
+- Play Rough  
+- Body Press

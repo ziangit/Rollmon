@@ -1,0 +1,38 @@
+RU Nasty Plot (Infernape) @ Air Balloon
+Ability: Blaze
+Level: 100
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Nasty Plot
+- Fire Blast
+- Grass Knot
+- Vacuum Wave
+
+Choice Specs (Infernape) @ Choice Specs
+Ability: Blaze
+EVs: 4 Def / 252 SpA / 252 Spe
+Tera Type: Fire
+Timid Nature
+- Flamethrower
+- Overheat
+- Focus Blast
+- Vacuum Wave
+
+Choice Scarf (Infernape) @ Choice Scarf
+Ability: Blaze
+EVs: 252 Atk / 4 SpD / 252 Spe
+Tera Type: Fighting
+Jolly Nature
+- Flare Blitz
+- Close Combat
+- U-turn
+- Knock Off
+
+Swords Dance (Infernape) @ Life Orb
+Ability: Iron Fist  
+EVs: 4 HP / 252 Atk / 252 Spe  
+Jolly Nature  
+- Swords Dance  
+- Close Combat  
+- Flare Blitz  
+- Mach Punch

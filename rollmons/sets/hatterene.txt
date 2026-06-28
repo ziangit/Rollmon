@@ -1,0 +1,41 @@
+OU Calm Mind (Hatterene) @ Leftovers
+Ability: Magic Bounce
+EVs: 252 HP / 204 Def / 52 Spe
+Tera Type: Water
+Bold Nature
+- Calm Mind
+- Draining Kiss
+- Psychic Noise
+- Mystical Fire
+
+OU Pain Split (Hatterene) @ Rocky Helmet
+Ability: Magic Bounce
+Level: 100
+EVs: 252 HP / 204 Def / 52 Spe
+Bold Nature
+- Psychic Noise
+- Draining Kiss
+- Pain Split
+- Nuzzle
+
+OU Assault Vest (Hatterene) @ Assault Vest
+Ability: Magic Bounce
+EVs: 252 HP / 100 SpA / 104 SpD / 52 Spe
+IVs: 0 Atk
+Tera Type: Water
+Modest Nature
+- Psyshock
+- Draining Kiss
+- Mystical Fire
+- Nuzzle
+
+OU Trick Room (Hatterene) @ Focus Sash
+Ability: Magic Bounce
+EVs: 252 HP / 4 Def / 252 SpA
+IVs: 0 Atk / 0 Spe
+Tera Type: Water
+Quiet Nature
+- Trick Room
+- Psychic Noise
+- Dazzling Gleam
+- Healing Wish

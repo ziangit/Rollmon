@@ -1,0 +1,9 @@
+Uber Trick (Gothitelle) @ Choice Specs
+Ability: Shadow Tag
+EVs: 32 HP / 4 Def / 252 SpA / 220 Spe
+Tera Type: Fairy
+Modest Nature
+- Trick
+- Rest
+- Psychic
+- Thunderbolt

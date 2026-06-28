@@ -1,0 +1,19 @@
+OU Lead (Glimmora) @ Focus Sash
+Ability: Toxic Debris
+Level: 100
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+- Stealth Rock
+- Mortal Spin
+- Power Gem
+- Earth Power
+
+Meteor Beam Attacker (Glimmora) @ Power Herb
+Ability: Toxic Debris  
+EVs: 4 HP / 252 SpA / 252 Spe  
+Timid Nature  
+IVs: 0 Atk  
+- Meteor Beam  
+- Sludge Bomb  
+- Dazzling Gleam  
+- Earth Power
