@@ -1,0 +1,7 @@
+{
+  "name": "rollmons-spike-sim-battle",
+  "private": true,
+  "description": "Proves @pkmn/sim runs the rollmons custom format in-process (referee for the browser battle worker).",
+  "scripts": { "start": "node spike.js" },
+  "dependencies": { "@pkmn/sim": "0.10.11" }
+}
