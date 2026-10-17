@@ -1,12 +1,12 @@
 # Session handoff
 
 **Current phase:** v2 repo bootstrapped (2026-10-17). History filtered from v1 to rollmons-owned paths only (63 commits, no foul-play code). Reference Python layer green (`make test`). Browser-referee spike proven.
-**Next concrete step:** compile poke-engine (gen9, no Tera) to wasm and benchmark MCTS iterations per 100 ms in Chrome vs native. Needs a Rust toolchain with the `wasm32-unknown-unknown` target (Homebrew's `rust` lacks it: use `rustup`, or build in the `rust` Docker image). Then build the omniscient state mapper (`@pkmn/sim` battle object → poke-engine state string) and run one full AI-vs-AI battle in a page.
+**Next concrete step:** compile poke-engine (gen9, no Tera) to wasm and benchmark MCTS iterations per 100 ms in Chrome vs native. **Decided: use rustup** (Homebrew's `rust` has no wasm target; `showdown-rs` was already written for rustup). Not yet installed as of 2026-10-17. Install: `brew install rustup && rustup-init -y && rustup target add wasm32-unknown-unknown && rustup component add llvm-tools-preview`, verify `showdown-rs` still builds, then optionally `brew uninstall rust`. Then build the omniscient state mapper (`@pkmn/sim` battle object → poke-engine state string) and run one full AI-vs-AI battle in a page.
 
 ## Why v2 exists
 v1 could not be hosted for many players: every battle ran foul-play + poke-engine on the server (measured ~19–23 s of bot CPU per battle, two thirds of it foul-play spawning a process per decision; ~5–7 s real search). Moving the battle into the player's browser makes server cost zero. Enablers verified on 2026-10-17:
 - poke-engine upstream added wasm support (issue #19 closed 2026-10-10; `web-time` on the wasm32 target; only deps are dashmap/clap/rand). Single-thread MCTS is the wasm path.
-- `@pkmn/sim` (browser build of Showdown's simulator) runs the rollmons custom format in-process: Cynthia vs Leon finished in 28 ms, 25 turns, with Mega Evolution firing. Spike script: a RandomPlayerAI pair on `BattleStreams.BattleStream` with `gen9customgame@@@Species Clause,+Past,Dynamax Clause,Terastal Clause,!! Max Move Count = 4,Adjust Level = 100`.
+- `@pkmn/sim` (browser build of Showdown's simulator) runs the rollmons custom format in-process: Cynthia vs Leon finished in 28 ms, 25 turns, with Mega Evolution firing. Spike checked in at `spikes/sim-battle/` (`npm install && npm start`): a RandomPlayerAI pair on `BattleStreams.BattleStream` with `gen9customgame@@@Species Clause,+Past,Dynamax Clause,Terastal Clause,!! Max Move Count = 4,Adjust Level = 100`.
 - **`@pkmn/sim` 0.10.11 lacks the `Z-Move Clause` and `CFZ Clause` rules** that v1's format string included. Both are irrelevant in gen9 (no Z-moves in the gen9 sim), so v2's format drops them. `PERMISSIVE_GEN9_FORMAT` in `battle_runner.py` still lists them for parity with v1 tests; align when the TS format constant is written.
 
 ## Decisions (v2)
@@ -24,6 +24,7 @@ v1 could not be hosted for many players: every battle ran foul-play + poke-engin
 5. **Static hosting** (GitHub Pages or similar). Then playtest; deepen Middle band; per-band AI think time.
 
 ## Done so far (most recent first)
+- **Handoff from the v1 session (2026-10-17):** v1 repo README/handoff carry a "superseded" banner pointing here; v1 is to be archived on GitHub (`gh repo archive ziangit/rollmons -R ziangit/rollmons`). The referee spike is checked in under `spikes/sim-battle/`.
 - **Repo bootstrap (2026-10-17):** filtered history; `AGENTS.md` → `docs/v1-foul-play-integration.md`; removed `rollmons/sandbox.py` (needed the v1 runner); `battle_runner.py` reduced to the types the web app and tests use (`run_battle` raises); clean-room `rollmons/showdown_export.py` replaces foul-play's `teams.team_converter`; `data/pokedex.json` + `moves.json` carried over (Showdown-derived, MIT); Makefile with `install`/`test`/`harness`.
 
 ## Open questions / known issues
