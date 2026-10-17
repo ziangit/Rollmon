@@ -24,6 +24,7 @@ engine/pkg/
 !rollmons/bosses_2/*.txt
 !rollmons/sets/*.txt
 !rollmons/pool/**/*.txt
+!engine/bench/*.txt
 
 # Vendored client assets are intentionally excluded (hotlinked for dev).
 sprites/

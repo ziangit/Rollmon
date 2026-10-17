@@ -1,0 +1,33 @@
+[package]
+name = "rollmons-engine"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "wasm-bindgen wrapper around poke-engine (gen9, Tera compiled out) for rollmons"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "bench"
+path = "src/bin/bench.rs"
+
+[dependencies]
+# Pinned to the first upstream commit range with wasm support (`web-time` in
+# mcts.rs, commit 5ba0359). The crates.io 0.0.48 release predates it and
+# panics on `Instant::now()` under wasm32.
+# HARD CONSTRAINT: never enable the `terastallization` feature.
+poke-engine = { git = "https://github.com/pmariglia/poke-engine", rev = "f7b147f", default-features = false, features = ["gen9"] }
+wasm-bindgen = "0.2"
+console_error_panic_hook = "0.1"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# Pulled in transitively by rand 0.9; the `wasm_js` feature plus the cfg in
+# .cargo/config.toml selects the crypto.getRandomValues backend.
+getrandom = { version = "0.3", features = ["wasm_js"] }
