@@ -12,7 +12,8 @@ v1 could not be hosted for many players: every battle ran foul-play + poke-engin
 ## Decisions (v2)
 - **Phase 2 straight away:** port the Python draft/loadout logic to TypeScript so the whole game is a static site. Python stays as the reference and test oracle until each module is ported.
 - **Perfect-information AI.** v1's foul-play inferred the opponent's hidden set from Smogon usage (4k lines). In v2 both teams are fully known (boss files + chosen loadout), so the engine state is built straight from the sim's omniscient battle object. Symmetric for both sides.
-- **Keep the v1 history**, drop the fork. Licensing: no GPL (foul-play) code remains; poke-engine and Showdown/@pkmn are MIT. A LICENSE file for this repo is still to be chosen.
+- **Keep the v1 history**, drop the fork. Licensing: no GPL (foul-play) code remains; poke-engine and Showdown/@pkmn are MIT. This repo is MIT.
+- License: MIT (chosen 2026-10-17).
 - Draft weights, caps, and AI think time remain playtest knobs (`docs/DIFFICULTY.md`).
 
 ## Milestones
