@@ -1,39 +1,52 @@
-# rollmons — architecture (living doc)
+# rollmons v2 — architecture (living doc)
 
 > Update this whenever a non-obvious decision or constraint is discovered.
-> `AGENTS.md` is the authoritative, more detailed reference — this is the fast map.
+> `docs/v1-foul-play-integration.md` holds the v1 notes; the landmines listed
+> under "Carried over" below are the ones that still apply.
 
-## Stack
-- **Python game layer** under `rollmons/` (pure; no `fp/` imports). FastAPI transport in `rollmons/web_app.py`; static SPA in `rollmons/web_static/`.
-- **Vendored foul-play** (`fp/`) — the AI client; Python over a websocket, backed by the Rust **poke-engine** (`poke-engine==0.0.46`, built gen9 no-Tera).
-- **Pokémon Showdown** — self-hosted Node server, the referee and source of battle truth (run with `--no-security`, `logchallenges = true`).
-- `battle_runner.py` is the single boundary between our code and foul-play/poke-engine.
-- Data: `data/pokedex.json` (types, base stats, dex numbers, formes, requiredItem), `rollmons/data/smogon_sets.json` (default source), `rollmons/data/gen9randombattle.json` (508-atom alternate/fallback).
+## Target stack (static site, no battle server)
+- **`web/`** (TypeScript, bundled): the SPA (title → draft → loadout → gauntlet → battle → results, + Pokédex/pool) and a **battle Web Worker**.
+- **Battle worker** = referee + engine + driver, all in-process:
+  - *Referee:* `@pkmn/sim` `BattleStream` running the rollmons custom format
+    `gen9customgame@@@Species Clause,+Past,Dynamax Clause,Terastal Clause,!! Max Move Count = 4,Adjust Level = 100`
+    (`+Past` enables Mega Stones; Z-Move/CFZ clauses are not in `@pkmn/sim` and are moot in gen9).
+  - *Engine:* poke-engine compiled to wasm (`engine/`, wasm-bindgen), features `gen9` only, Tera compiled out. Exposed calls: state from string, time-boxed MCTS, damage calc. Single-thread search.
+  - *Driver:* builds the poke-engine state **directly from the sim's omniscient battle object** for the side to move (perfect information, both sides), runs MCTS for the side's budget (boss 25 ms / player 100 ms by default; per-band later), picks a choice (sample among choices within 75% of the best, as v1 did), issues `move X [mega]` / `switch N`.
+  - *Output:* the standard Showdown protocol log → the existing replay embed (hosted player, hotlinked sprites) and the damage summary.
+- **Data:** `rollmons/bosses`, `rollmons/sets`, `rollmons/pool` (Showdown export text, read at build or fetch time); `@pkmn/dex` for species/move data; `rollmons/data/smogon_sets.json` and `gen9randombattle.json` for set sources.
+- **Hosting:** static (GitHub Pages or equivalent). Sprites and the replay player stay hotlinked from play.pokemonshowdown.com for dev; distribution decision deferred.
 
-## Module map
-- `rollmons/legality_matrix.py` — builds the type×gen draft matrix and weighted selection. Atoms = configured-source species **∪ species with a checked-in set override**. `_validate_no_battle_only_mechanics` rejects mega/gmax *forme* atoms (overrides use base species, so they're fine).
-- `rollmons/draft.py` — six-round draft state machine; uniform cell choice, weighted candidate sampling only when a cell has > `candidate_cap` (5).
-- `rollmons/team_assembly.py` — `selectable_sets()` enumerates a species' choices (override blocks + Smogon or randbats fallback); `assemble_loadout()` builds the team from chosen set IDs. Override exports normalized via `_normalize_override_export` (strip Tera, force `Level: 100`). `assemble_team()` is the legacy random path (sandbox/CLI).
-- `rollmons/smogon_sets.py` — ingests Smogon JSON, excludes OM/doubles/VGC/etc. formats, strips `Tera Type:` lines.
-- `rollmons/boss_loader.py` / `rollmons/submissions.py` — boss/set discovery + existence-only validation (`python -m rollmons.validate_submission`). Reads **only `rollmons/bosses/`**. `rollmons/bosses_2/` is a staged batch of future bosses (Eevee, LC, Cyrus, Maxie, Archie, Giovanni) that is **not loaded** until moved/wired in.
-- `rollmons/pool_loader.py` — pure. Discovers tiered teams from `rollmons/pool/<tier>/*.txt` and `build_campaign()` selects a seedable **10-battle** run (one random team per tier; `level_6to9` contributes 4, sampled without replacement; ascending). Structure in `CAMPAIGN_STRUCTURE`.
-- `rollmons/web_app.py` — pure matrix/draft/loadout routes; live `battle_runner` import only on the battle endpoints. Loadout: `POST /api/drafts/{id}/loadout`. Campaign: `POST /api/drafts/{id}/campaign/start` builds a campaign, stores the picked exports on the session (`campaign_teams`), and runs them through the **same** gauntlet seam via campaign-aware `resolve_boss_team`/`resolve_boss_name` (no new battle plumbing).
-- **Frontend** (`rollmons/web_static/`) — a Scarlet/Violet screen-based SPA: title → draft → loadout → gauntlet → battle → results, + Pokédex/pool. Ported from the `rollmons/open_design/index.html` reference into `index.html`/`styles.css`/`app.js`. The Gauntlet screen offers "Start campaign" (tiered) and a manual ladder; Results is a dashboard built from `gauntlet.damage` (climb pips, per-Pokémon contribution bars, MVP spotlight). The Showdown replay embed (`replayDoc` + iframe) is intentionally untouched. Bump the `?v=` cache string on edits.
-- **Dev server port: 8973** (`make live`; `index.html` is *not* cache-busted, so hard-refresh after asset edits). Showdown runs on `:8000`.
+## Reference implementation (Python, `rollmons/`)
+Kept as the behavioral spec until each module is ported. `make test` runs ruff + 71 tests, no Rust/Node needed.
+- `legality_matrix.py` — 18×9 type-by-debut-generation matrix; atoms = configured source ∪ species with a set override; rejects mega/gmax *forme* atoms.
+- `draft.py` / `draft_config.py` — six-round draft state machine; weighted sampling only when a cell exceeds `candidate_cap` (5); thin-cell rerolls; two skips.
+- `team_assembly.py` — `selectable_sets()` (override blocks + Smogon or randbats fallback), `assemble_loadout()`, `_normalize_override_export` (strip nickname label and Tera, force `Level: 100`).
+- `smogon_sets.py` — Smogon JSON ingestion, format exclusions, Tera stripping.
+- `pool_loader.py` — `CAMPAIGN_STRUCTURE` = `1 + 1 + 1 + 3 + 3 + 1`; seedable 10-battle campaign.
+- `boss_loader.py` / `submissions.py` / `showdown_export.py` — boss/set discovery, clean-room export parsing, existence-only validation (`python -m rollmons.validate_submission`).
+- `web_app.py` — FastAPI routes for the above plus the results/damage summary built from a replay log. Battle endpoints call `battle_runner.run_battle`, which raises in v2.
+- `web_static/` — the v1 SPA (`index.html`/`styles.css`/`app.js`); its screens, replay embed (`replayDoc`, boss avatar rewrite), and results dashboard are the port's starting point.
 
-## Known constraints & gotchas
-- **poke-engine pin is load-bearing.** Keep `==0.0.46`; build `--features poke-engine/gen9 --no-default-features`. Tera must be compiled out (foul-play doesn't pass Showdown's `canTerastallize`, so a Tera engine can return illegal `-tera`). `run_poke_engine_compat.py` / `battle_runner.py` patch out the missing `threads` MCTS kwarg, including in spawned MCTS workers.
-- **Two nested process layers:** `run_battle()` spawns one foul-play client per role; each move search spawns a transient MCTS `ProcessPoolExecutor`. Keep that process pool (don't swap to threads). On macOS, scripts that call `run_battle` must guard under `if __name__ == "__main__":` (spawn re-imports `__main__`).
-- **Local auth & protocol normalization** live in `battle_runner.py`: empty-token `/trn` login for `--no-security`; both `|updatechallenges|` JSON and PM challenge forms; buffering request-only frames that arrive before the public battle update. Keep these in the wrapper, not in `fp/`.
-- **Battle-runner is flaky standalone:** intermittent timeouts / Showdown inactivity losses. The web-UI boss rush is the reliable path. Some teams (e.g. Smeargle / odd movesets) can crash the gen9-no-Tera search → player never moves.
-- **Mega in player teams:** the custom format runs with `+Past`, enabling Mega Stones. foul-play reads `canMegaEvo` and issues `move X mega`; it skips gen-9 Legends-ZA megas. Drafted base species + a Mega-Stone set ⇒ it mega-evolves in battle. Only **one** Mega evolves per team per battle.
-- **Replay rendering:** the hosted Showdown player (play.pokemonshowdown.com, dev-only) must initialize against a visible, laid-out container or it renders blank.
-- **Battle theater placeholder:** `renderTheater` tags the "Waiting for the first battle…" card `.replay-placeholder` and removes it once results exist — the dedup only skips `[data-bid]` cards, so the placeholder must be removed explicitly when the first real battle arrives.
-- **A hung battle can wedge the web app.** Boss-rush battles run through the single uvicorn worker; a stuck/flaky battle can kill that worker (leaving a zombie) and make `:8080` unresponsive. Recover by restarting `make live`. Harden by running battles in a supervised subprocess with a hard timeout.
-- **Sprites/item icons hotlinked**; text/types/sets stay functional when images fail. Bump `?v=` in `index.html` after editing SPA assets.
+## Port status
+| Module | Python | TypeScript |
+|---|---|---|
+| Engine wasm build | — | not started |
+| Referee + driver worker | — | spike only (sim battle proven) |
+| Legality matrix / draft | reference | not started |
+| Loadout / set selection | reference | not started |
+| Pool / campaign | reference | not started |
+| Results / damage summary | reference | not started |
+| Replay embed | — | reuse from `web_static/app.js` |
+
+## Carried over from v1 (still true)
+- **Tera must be compiled out of the engine.** A Tera-enabled engine returns `-tera` choices the referee rejects.
+- **Mega:** `+Past` makes Mega Stones legal; the driver must issue `move X mega` when `canMegaEvo` is set; only one Mega per team per battle. The engine (0.0.48+) models Mega evolution; 0.0.46 relied on the client to swap formes. Skip Legends-ZA megas.
+- **Replay rendering:** the hosted player must initialize against a visible, laid-out container or renders blank; build replays lazily (IntersectionObserver) and size the iframe to content.
+- **Weak teams can crash the search** (v1 saw it with a no-attack Smeargle). Guard the worker: catch engine errors, fall back to a random legal choice, and log.
+- Sprites/item icons hotlinked; text stays functional when images fail.
 
 ## Key decisions
-- "Legendary" is `BST > 600` (competitive-power, not lore), excluding Slaking/Regigigas (ability-suppressed). Legendary draft weight stays strictly positive to avoid soft-locking thin legendary-heavy cells.
-- Set overrides **add** options (not replace the source); a `rollmons/sets/<species>.txt` file can hold multiple export blocks. Override presence also makes the base species draftable.
-- Draft uses current/modern typing + generation of debut (gen number is cosmetic; one battle generation for all battles). Custom format: Species Clause on, tiers off, Tera/Dynamax/Z-Moves off, level 100.
-- Player set selection is **engine-driven and user-chosen** (loadout), defaulting to non-Mega; it is not random and not computed in JS.
+- "Legendary" = `BST > 600` (excluding Slaking/Regigigas); legendary weight stays strictly positive.
+- Set overrides **add** options; override presence makes the base species draftable; labels live in the nickname slot of the file and show only in the loadout picker.
+- Draft uses modern typing + generation of debut; one battle generation (gen9) for all battles.
+- Perfect-information AI for both sides (v2); battles run on the player's CPU in a worker.

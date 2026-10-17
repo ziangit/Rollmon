@@ -1,23 +1,24 @@
-# rollmons
+# rollmons (v2)
 
-A single-player Pokémon draft/autobattler built on a vendored [foul-play](https://github.com/pmariglia/foul-play) AI + [poke-engine](https://github.com/pmariglia/poke-engine), with a self-hosted Pokémon Showdown server as the battle referee. The player drafts six Pokémon through a slot machine, chooses a set per Pokémon, then runs an AI-piloted boss gauntlet.
+A single-player Pokémon draft/autobattler being rebuilt to run **entirely in the browser**: poke-engine (Rust → WebAssembly) searches moves, `@pkmn/sim` referees, and the draft/loadout logic becomes TypeScript, so the game hosts as a static site with no battle server. v1 (vendored foul-play + a local Showdown server + a macOS desktop app) is archived at github.com/ziangit/rollmons.
 
 @docs/PRODUCT.md
 @session-handoff.md
 
 ## Conventions
-- Pure game logic lives under `rollmons/` and **must not import `fp/`**. The pure draft/matrix/loadout routes run without Rust, poke-engine, Node, or Showdown.
-- All foul-play / poke-engine usage goes through the single `battle_runner.py` boundary. Prefer wrappers and monkeypatches over editing vendored `fp/` internals.
-- Match surrounding code style. Run `make test` (ruff + pytest) before considering work done; keep the suite green.
-- Static SPA (`rollmons/web_static/`) renders engine state only — no matrix/draft/assembly logic in JS. Bump the `?v=` cache string in `index.html` when editing `app.js`/`styles.css`.
+- `rollmons/` (Python) is the **reference implementation** of draft, matrix, loadout, pool, and set-override logic. Its tests define behavior. Port from it module by module; keep `make test` green until a module's TypeScript port replaces it.
+- Browser code lives under `web/` (TypeScript), the engine build under `engine/`. Game data (`rollmons/bosses`, `rollmons/sets`, `rollmons/pool`) stays in Showdown export format and is read by both implementations.
+- The AI battle runs in a Web Worker, never on the UI thread. Both sides use perfect information about sets (a deliberate v2 decision; see `docs/ARCHITECTURE.md`).
+- Match surrounding code style. Run `make test` (ruff + pytest) before considering work done.
 - Do only the requested scope; flag scope growth instead of silently building adjacent features.
 
 ## Hard constraints (never violate)
-- Keep `poke-engine==0.0.46` pinned and build **gen9 with `--no-default-features`** (Tera compiled out — a Tera-enabled engine can return illegal `-tera` choices).
-- Push project work only to the `origin` remote. The `upstream` foul-play remote is fetch-only — never push to it.
-- Never commit credentials, logs, caches, Node deps, audit clones, or vendored sprite/audio assets. Sprites/item icons are **hotlinked** from play.pokemonshowdown.com for dev only — do not vendor.
-- Don't upgrade a dependency just to make an error go away without checking the installed artifact's API.
+- Build poke-engine for wasm with `--features gen9 --no-default-features` (Tera compiled out). A Tera-enabled engine returns illegal `-tera` choices.
+- **No foul-play code in this repo** (foul-play is GPL-3.0). The export parser, battle-state mapping, and runner were written fresh. Dependencies are MIT: poke-engine, Pokémon Showdown / `@pkmn/*`.
+- Push only to `origin` (github.com/ziangit/Rollmon).
+- Never commit `node_modules`, build output, logs, or sprite/audio assets. Sprites and the replay player are hotlinked from play.pokemonshowdown.com (dev only; distribution decision deferred).
 
 ## Where to look
-- Deep technical reference, integration landmines, locked decisions: `AGENTS.md`
-- Architecture summary & hard-won gotchas: `docs/ARCHITECTURE.md` (read on demand)
+- `docs/ARCHITECTURE.md` — v2 target architecture, port status, gotchas carried over from v1
+- `docs/DIFFICULTY.md` — campaign ladder contract and tuning knobs
+- `docs/v1-foul-play-integration.md` — v1 integration notes (historical; the Tera, Mega, and replay-rendering landmines still apply)

@@ -1,7 +1,7 @@
 # rollmons — product
 
 ## What it is
-A single-player Pokémon roguelite/autobattler. The player drafts six Pokémon through a slot machine, builds each one's set, then runs a fixed gauntlet of AI-piloted battles against pre-authored boss teams. Both sides are AI-piloted — the player does not choose moves during battle. rollmons owns the draft, team assembly, bosses, loadout, results, and frontend; it treats foul-play/poke-engine/Showdown as the battle engine and referee.
+A single-player Pokémon roguelite/autobattler. The player drafts six Pokémon through a slot machine, builds each one's set, then runs a fixed gauntlet of AI-piloted battles against pre-authored boss teams. Both sides are AI-piloted — the player does not choose moves during battle. rollmons owns the draft, team assembly, bosses, loadout, results, and frontend; it treats poke-engine (search) and the Showdown simulator (referee) as the battle engine, both running in the player's browser.
 
 ## How a run works
 1. **Draft** — six rounds. Each round locks a random `(current type, generation of debut)` cell; the player picks one of the offered candidates (legendaries down-weighted, not banned; thin 1–2-candidate cells grant a free reroll; two manual skips).
@@ -13,7 +13,7 @@ A single-player Pokémon roguelite/autobattler. The player drafts six Pokémon t
 - Six-round weighted draft with dedupe, thin-cell rerolls, and manual skips.
 - Per-Pokémon multi-set loadout selection (post-draft), with Mega Evolution as an opt-in set.
 - Contributor data: boss teams (`rollmons/bosses/*.txt`) and per-species set overrides (`rollmons/sets/*.txt`, one or more export blocks each) in standard Showdown export format, validated existence-only without the live stack.
-- Live draft-to-battle stack (`make live`) and a headless containerized sandbox (`make stack`).
+- Battles run in the browser (poke-engine via WebAssembly + `@pkmn/sim`), so the game hosts as a static site.
 - Hosted-replay embedding for finished battles (dev-only dependency).
 
 ## Non-goals (explicitly out of scope for now)
