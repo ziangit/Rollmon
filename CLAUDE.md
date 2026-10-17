@@ -21,7 +21,8 @@ A single-player Pokémon draft/autobattler being rebuilt to run **entirely in th
 - Never commit `node_modules`, build output, logs, or sprite/audio assets. Sprites and the replay player are hotlinked from play.pokemonshowdown.com (dev only; distribution decision deferred).
 
 ## Toolchain
-- Rust via **rustup** (not Homebrew `rust`): `rustup target add wasm32-unknown-unknown` for the engine build. The sibling project `showdown-rs` also expects rustup (`~/.cargo/bin` first on PATH, `llvm-tools-preview` for its PGO script), so one rustup install serves both.
+- Rust via **rustup** (not Homebrew `rust`). Installed 2026-10-17 as Homebrew's keg-only `rustup` formula (no `rustup-init`; toolchains live in `~/.rustup`): `/opt/homebrew/opt/rustup/bin` is prepended to PATH in `~/.zshrc`, and `~/.cargo/bin` holds symlinks to those proxies because the sibling project `showdown-rs` puts `~/.cargo/bin` first on PATH (verified it still builds). Targets/components: `wasm32-unknown-unknown`, `llvm-tools-preview`. Homebrew `rust` is still installed but shadowed.
+- Engine build: `wasm-pack` (Homebrew) → `cd engine && wasm-pack build --release --target web --out-dir pkg`. Native checks: `cargo test --release`, `cargo run --release --bin bench`.
 - Node 24 for `@pkmn/sim`, the web bundle, and spikes. Python 3.11 only for the reference layer.
 
 ## Where to look

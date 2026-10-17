@@ -30,13 +30,30 @@ Kept as the behavioral spec until each module is ported. `make test` runs ruff +
 ## Port status
 | Module | Python | TypeScript |
 |---|---|---|
-| Engine wasm build | — | not started |
+| Engine wasm build | — | **done** (`engine/`, pinned poke-engine git rev, gen9 no-Tera; ~200 KB gzipped) |
 | Referee + driver worker | — | spike only (sim battle proven) |
 | Legality matrix / draft | reference | not started |
 | Loadout / set selection | reference | not started |
 | Pool / campaign | reference | not started |
 | Results / damage summary | reference | not started |
 | Replay embed | — | reuse from `web_static/app.js` |
+
+## Engine benchmark (2026-10-17, M1-class Mac, single thread)
+MCTS iterations completed per budget, mean over the ten states in `engine/bench/states.txt`
+(`cargo run --release --bin bench` vs `spikes/engine-bench/`):
+
+| budget | native | wasm in Node 24 | wasm in Chrome 155 Web Worker |
+|---|---|---|---|
+| 100 ms | 276k | 202k | 220k |
+| 25 ms | 57k | — | 52k |
+
+wasm runs at ~75–80 % of native, so the v1 think-time knobs (boss 25 ms /
+player 100 ms) carry over unchanged on desktop. Per-state counts vary 10×
+(states with few legal options converge faster); compare means only.
+Gotchas: the crates.io release lacks wasm support (pin the git rev);
+`rand 0.9`/`getrandom 0.3` need the `wasm_js` backend (feature + `--cfg` in
+`engine/.cargo/config.toml`); warm the module up once before timing (V8
+tier-up costs the first ~100 ms).
 
 ## Carried over from v1 (still true)
 - **Tera must be compiled out of the engine.** A Tera-enabled engine returns `-tera` choices the referee rejects.
