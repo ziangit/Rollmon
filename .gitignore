@@ -1,0 +1,34 @@
+.DS_Store
+logs/
+
+# Python (reference implementation)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Node / web
+node_modules/
+web/dist/
+
+# Rust / wasm
+target/
+engine/pkg/
+
+# Project data is Showdown export text; keep only the checked-in data dirs.
+*.txt
+!/requirements-pure.txt
+!/requirements-dev.txt
+!rollmons/bosses/*.txt
+!rollmons/bosses_2/*.txt
+!rollmons/sets/*.txt
+!rollmons/pool/**/*.txt
+
+# Vendored client assets are intentionally excluded (hotlinked for dev).
+sprites/
+audio/
+vendor/
+
+.tmp/
+tmp/
