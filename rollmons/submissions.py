@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from teams.team_converter import export_to_dict
+from rollmons.showdown_export import export_to_dict
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 POKEDEX_PATH = REPO_ROOT / "data" / "pokedex.json"

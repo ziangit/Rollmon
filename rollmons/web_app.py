@@ -314,15 +314,13 @@ def _condition_percent(condition: str) -> float:
 
 
 def _player_side_from_replay(replay_log: list[str], player_name: str) -> str:
-    from fp.helpers import normalize_name
-
-    normalized_player = normalize_name(player_name)
+    normalized_player = _normalize_species_key(player_name)
     for line in replay_log:
         parts = line.split("|")
         if len(parts) >= 4 and parts[1] == "player":
             side = parts[2]
             name = parts[3]
-            if normalize_name(name) == normalized_player:
+            if _normalize_species_key(name) == normalized_player:
                 return side
     return "p1"
 
