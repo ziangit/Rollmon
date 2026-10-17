@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>rollmons engine bench</title>
+<style>body{font-family:ui-monospace,monospace;padding:1rem}pre{white-space:pre}</style>
+<h1>poke-engine wasm MCTS bench</h1>
+<p>Budget <input id="budget" type="number" value="100"> ms <button id="run">run</button></p>
+<pre id="out">loading…</pre>
+<script type="module">
+  import { formatReport } from "./bench-shared.js";
+  const out = document.getElementById("out");
+  const worker = new Worker("./worker.js", { type: "module" });
+  worker.onmessage = ({ data }) => {
+    out.textContent = formatReport(data);
+    window.__benchReport = data;
+  };
+  worker.onerror = (e) => { out.textContent = "worker error: " + e.message; };
+  const run = () => {
+    out.textContent = "running…";
+    window.__benchReport = null;
+    worker.postMessage({ budgetMs: Number(document.getElementById("budget").value) });
+  };
+  document.getElementById("run").onclick = run;
+  const auto = new URLSearchParams(location.search).get("budget");
+  if (auto) { document.getElementById("budget").value = auto; run(); }
+</script>

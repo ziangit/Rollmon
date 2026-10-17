@@ -1,0 +1,14 @@
+{
+  "name": "rollmons-spike-engine-bench",
+  "private": true,
+  "type": "module",
+  "description": "MCTS iterations per time budget: poke-engine wasm in Node and Chrome vs the native bench in engine/",
+  "scripts": {
+    "node": "node bench-node.mjs",
+    "chrome": "node bench-chrome.mjs",
+    "serve": "python3 -m http.server 8974 --directory ../.."
+  },
+  "devDependencies": {
+    "puppeteer-core": "25.14.0"
+  }
+}
