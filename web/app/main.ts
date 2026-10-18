@@ -11,6 +11,7 @@ import {
   type SessionView, type SpeciesView,
 } from './session.ts';
 import {initRoller, rollMon} from './roller.js';
+import {applyStatic, initLang, localSpeciesName, setLang, t, type Lang} from './i18n.ts';
 
 /* =====================================================================
    STATE
@@ -58,6 +59,26 @@ const battles = new BattleClient(new Worker(new URL('./worker.js', import.meta.u
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e)) || 'Request failed';
 
+/* Language switch (docs/ROADMAP.md §9): UI strings via t(), species names
+   from data/species-names.json; replays and set exports stay English. */
+function setLanguage(l: string): void {
+  setLang(l as Lang);
+  applyStatic(document);
+  rerenderAll();
+}
+function rerenderAll(): void {
+  $('pokedex-btn').textContent = currentScreen === 'pool' ? t('← Back') : t('Pokédex');
+  if (state.matrix) renderMatrix();
+  renderBoard();
+  if (state.bossBook) renderBosses(state.bosses);
+  const view = state.view;
+  if (!view) return;
+  renderDraft(view);
+  renderLoadout();
+  if (view.gauntlet.bosses.length || view.battleResult) renderRun(view);
+  if (view.gauntlet.complete) renderResults(view.gauntlet);
+}
+
 /* =====================================================================
    ROUTER
    ===================================================================== */
@@ -73,7 +94,7 @@ function go(name: Screen): void {
   if (name === 'loadout') renderLoadout();
   // On the pool screen keep the step rail reflecting where Back will return to.
   updateSteps(name === 'pool' ? poolReturn : name);
-  $('pokedex-btn').textContent = name === 'pool' ? '← Back' : 'Pokédex';
+  $('pokedex-btn').textContent = name === 'pool' ? t('← Back') : t('Pokédex');
   try { localStorage.setItem('rollmons-screen', name); } catch { /* private mode */ }
   window.scrollTo(0, 0);
 }
@@ -98,9 +119,15 @@ function updateSteps(name: string): void {
    HELPERS
    ===================================================================== */
 function titleCase(v: unknown): string { return String(v).replaceAll('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase()); }
+/** Species display name in the current language (English title case as the fallback). */
+function monName(p: {id?: string; name: unknown}): string {
+  const id = String(p.id ?? p.name).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return localSpeciesName(titleCase(p.name), state.ctx?.data.pokedex[id], state.ctx?.data.speciesNames);
+}
+const typeName = (x: string) => t(titleCase(x));
 function typeChips(p: {types: string[]; legendary?: boolean}): string {
-  const t = p.types.map((x) => `<span class="chip t-${x.toLowerCase()}">${titleCase(x)}</span>`).join('');
-  return t + (p.legendary ? '<span class="chip legend">Legendary</span>' : '');
+  const chips = p.types.map((x) => `<span class="chip t-${x.toLowerCase()}">${typeName(x)}</span>`).join('');
+  return chips + (p.legendary ? `<span class="chip legend">${t('Legendary')}</span>` : '');
 }
 const TYPE_COLORS: Record<string, string> = {
   bug: '#92bc2c', dark: '#595761', dragon: '#0c69c8', electric: '#eab911', fairy: '#ee90e6', fighting: '#d3425f', fire: '#fba54c',
@@ -133,7 +160,7 @@ function renderDraft(draft: SessionView): void {
 
   renderPips(draft);
   renderParty(draft.team, 'party');
-  $('party-count').textContent = `${draft.team.length} / 6 drafted`;
+  $('party-count').textContent = t('{n} / 6 drafted', {n: draft.team.length});
 
   const live = $('draft-live');
   const done = $('draft-done');
@@ -152,22 +179,22 @@ function renderPips(draft: SessionView): void {
     const cls = i < filled ? 'filled' : (i === filled && !draft.complete ? 'current' : '');
     return `<span class="pip ${cls}"></span>`;
   }).join('');
-  $('round-label').textContent = draft.complete ? 'Complete' : `Round ${draft.offer!.roundNumber} of 6`;
+  $('round-label').textContent = draft.complete ? t('Complete') : t('Round {n} of 6', {n: draft.offer!.roundNumber});
 }
 function renderEncounter(draft: SessionView): void {
   const o = draft.offer!;
   const totalSkips = draft.draftConfig.manualSkipCount;
-  const thin = o.thinRerollAvailable ? '<button class="btn btn-warn btn-sm" onclick="thinReroll()">↻ Free re-spin</button>' : '';
+  const thin = o.thinRerollAvailable ? `<button class="btn btn-warn btn-sm" onclick="thinReroll()">${t('↻ Free re-spin')}</button>` : '';
   $('encounter').innerHTML = `
     <div>
-      <p class="eyebrow" style="margin:0 0 .25rem">Wild cell</p>
-      <div class="cell-name"><span style="color:${typeColor(o.cell.type)}">${titleCase(o.cell.type)}</span> · Gen ${o.cell.generation}</div>
-      ${o.thinRerollAvailable ? `<p class="thin-note">Thin cell — fewer than ${o.thinCellThreshold} choices left, this re-spin is free.</p>` : ''}
+      <p class="eyebrow" style="margin:0 0 .25rem">${t('Wild cell')}</p>
+      <div class="cell-name"><span style="color:${typeColor(o.cell.type)}">${typeName(o.cell.type)}</span> · ${t('Gen {n}', {n: o.cell.generation})}</div>
+      ${o.thinRerollAvailable ? `<p class="thin-note">${t('Thin cell — fewer than {n} choices left, this re-spin is free.', {n: o.thinCellThreshold})}</p>` : ''}
     </div>
     <div class="encounter-actions">
       ${thin}
       <button class="btn btn-ghost btn-sm" onclick="skip()" ${draft.skipsRemaining ? '' : 'disabled'}>
-        Skip cell (${draft.skipsRemaining}/${totalSkips})
+        ${t('Skip cell ({a}/{b})', {a: draft.skipsRemaining, b: totalSkips})}
       </button>
     </div>`;
 }
@@ -197,20 +224,20 @@ function renderCandidates(offer: OfferView): void {
     return `
     <article class="mon">
       <div class="mon-top">
-        <span class="mon-badge">Gen ${p.debutGeneration} · BST ${p.baseStatTotal}</span>
+        <span class="mon-badge">${t('Gen {g} · BST {b}', {g: p.debutGeneration, b: p.baseStatTotal})}</span>
         <div class="sprite-frame">${sprite(p)}</div>
-        <div class="mon-name">${titleCase(p.name)}</div>
+        <div class="mon-name">${monName(p)}</div>
         <div class="chips">${typeChips(p)}</div>
       </div>
       <div class="mon-body">
-        <div class="prob" title="Draft odds">
-          <span>Odds</span>
+        <div class="prob" title="${t('Draft odds')}">
+          <span>${t('Odds')}</span>
           <span class="bar"><i style="width:${Math.min(100, prob)}%"></i></span>
           <span class="mono">${prob.toFixed(1)}%</span>
         </div>
         ${setSummary(p)}
       </div>
-      <button class="btn btn-primary pick" onclick="pick('${p.id}')">Pick ${titleCase(p.name)}</button>
+      <button class="btn btn-primary pick" onclick="pick('${p.id}')">${t('Pick {name}', {name: monName(p)})}</button>
     </article>`;
   }).join('');
   fixImages(root);
@@ -221,18 +248,18 @@ function renderParty(team: SpeciesView[], targetId: string): void {
   while (slots.length < 6) slots.push(null);
   root.innerHTML = slots.map((p, i) => p
     ? `<li class="slot"><span class="mini">${sprite(p)}</span>
-         <span class="info"><strong>${titleCase(p.name)}</strong>
-         <span>Gen ${p.debutGeneration} · BST ${p.baseStatTotal}</span></span></li>`
-    : `<li class="slot empty"><span class="pokeball ball"></span><span class="info"><strong>Slot ${i + 1}</strong><span>Empty</span></span></li>`,
+         <span class="info"><strong>${monName(p)}</strong>
+         <span>${t('Gen {g} · BST {b}', {g: p.debutGeneration, b: p.baseStatTotal})}</span></span></li>`
+    : `<li class="slot empty"><span class="pokeball ball"></span><span class="info"><strong>${t('Slot {n}', {n: i + 1})}</strong><span>${t('Empty')}</span></span></li>`,
   ).join('');
   fixImages(root);
 }
 
 function newRun(): void {
   go('draft');
-  $('encounter').innerHTML = '<div><p class="lead">Rolling the first cell…</p></div>';
+  $('encounter').innerHTML = `<div><p class="lead">${t('Rolling the first cell…')}</p></div>`;
   try {
-    if (!state.ctx) throw new Error('game data is still loading');
+    if (!state.ctx) throw new Error(t('game data is still loading'));
     const seed = params.get('seed') ? Number(params.get('seed')) : undefined;
     state.session = new GameSession(state.ctx, {seed, bosses: state.bossBook!});
     state.gauntletRunning = false;
@@ -254,7 +281,7 @@ async function copyExport(): Promise<void> {
   if (!state.teamExport) return;
   try {
     await navigator.clipboard.writeText(state.teamExport);
-    document.querySelectorAll<HTMLButtonElement>('#copy-export').forEach((b) => { const t = b.textContent; b.textContent = 'Copied ✓'; setTimeout(() => { b.textContent = t; }, 1200); });
+    document.querySelectorAll<HTMLButtonElement>('#copy-export').forEach((b) => { const was = b.textContent; b.textContent = t('Copied ✓'); setTimeout(() => { b.textContent = was; }, 1200); });
   } catch { /* clipboard unavailable */ }
 }
 
@@ -275,8 +302,8 @@ function renderLoadout(): void {
       : `<span class="set-only">${esc(chosen.label)}${chosen.isMega ? ' ⚡ Mega' : ''}</span>`;
     return `
       <article class="loadout-card card">
-        <div class="loadout-head"><span class="mini">${sprite(entry)}</span><strong>${titleCase(entry.name)}</strong></div>
-        <label class="field set-field">Set ${picker}</label>
+        <div class="loadout-head"><span class="mini">${sprite(entry)}</span><strong>${monName({id: entry.speciesId, name: entry.name})}</strong></div>
+        <label class="field set-field">${t('Set')} ${picker}</label>
         <div class="setbox"><pre class="pokepaste-set">${esc(pokepaste(entry.name, chosen, null))}</pre></div>
       </article>`;
   }).join('');
@@ -296,7 +323,7 @@ function chooseSet(speciesId: string, setId: string): void {
 /* =====================================================================
    BOSSES
    ===================================================================== */
-function bossName(b: BossInfo): string { return b.source === 'custom' ? `${b.name} (pasted)` : b.source === 'edited' ? `${b.name} (edited)` : b.name; }
+function bossName(b: BossInfo): string { return b.source === 'custom' ? t('{name} (pasted)', {name: b.name}) : b.source === 'edited' ? t('{name} (edited)', {name: b.name}) : b.name; }
 function renderBosses(bosses: BossInfo[]): void {
   state.bosses = bosses;
   const ladder = $('ladder');
@@ -305,9 +332,9 @@ function renderBosses(bosses: BossInfo[]): void {
       <span class="handle" aria-hidden="true">⠿</span>
       <span class="num">${i + 1}</span>
       <span class="bname">${esc(b.name)}</span>
-      ${b.source === 'custom' || b.source === 'edited' ? `<span class="tag">${b.source}</span>` : ''}
+      ${b.source === 'custom' || b.source === 'edited' ? `<span class="tag">${t(b.source)}</span>` : ''}
       <span class="acts">
-        <button class="btn btn-ghost btn-sm" onclick="editBoss(${i})">Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="editBoss(${i})">${t('Edit')}</button>
         <button class="btn btn-danger btn-sm" onclick="discardBoss(${i})" ${bosses.length <= BOSS_ORDER_MIN ? 'disabled' : ''}>✕</button>
       </span>
     </li>`).join('');
@@ -316,7 +343,7 @@ function renderBosses(bosses: BossInfo[]): void {
   sel.replaceChildren(...bosses.map((b) => { const o = document.createElement('option'); o.value = b.id; o.textContent = bossName(b); return o; }));
   $<HTMLButtonElement>('run-btn').disabled = bosses.length === 0;
   $<HTMLButtonElement>('exhibition-btn').disabled = bosses.length === 0;
-  if (bosses.length === 0) $('boss-status').textContent = 'No bosses found under rollmons/bosses/.';
+  if (bosses.length === 0) $('boss-status').textContent = t('No bosses found under rollmons/bosses/.');
 }
 function wireDrag(root: HTMLElement): void {
   root.querySelectorAll<HTMLElement>('.boss').forEach((item) => {
@@ -335,7 +362,7 @@ function moveBoss(from: number, to: number): void {
   const b = [...state.bosses]; const [m] = b.splice(from, 1); b.splice(to, 0, m); renderBosses(b);
 }
 function discardBoss(i: number): void {
-  if (state.bosses.length <= BOSS_ORDER_MIN) { $('boss-form-status').textContent = 'At least one boss must remain.'; return; }
+  if (state.bosses.length <= BOSS_ORDER_MIN) { $('boss-form-status').textContent = t('At least one boss must remain.'); return; }
   renderBosses(state.bosses.filter((_, j) => j !== i)); resetBossForm();
 }
 function editBoss(i: number): void {
@@ -345,17 +372,17 @@ function editBoss(i: number): void {
     $<HTMLInputElement>('boss-id').value = d.id;
     $<HTMLInputElement>('boss-name').value = d.name;
     $<HTMLTextAreaElement>('boss-export').value = d.export;
-    $('boss-form-title').textContent = `Edit ${d.name}`;
-    $('boss-save').textContent = 'Save boss';
+    $('boss-form-title').textContent = t('Edit {name}', {name: d.name});
+    $('boss-save').textContent = t('Save boss');
     $('boss-cancel').classList.remove('hidden');
-    st.textContent = 'Validate and save to apply.';
+    st.textContent = t('Validate and save to apply.');
   } catch (e) { st.textContent = errorMessage(e); }
 }
 function resetBossForm(): void {
   $<HTMLFormElement>('boss-form').reset();
   $<HTMLInputElement>('boss-id').value = '';
-  $('boss-form-title').textContent = 'Add a boss';
-  $('boss-save').textContent = 'Add boss';
+  $('boss-form-title').textContent = t('Add a boss');
+  $('boss-save').textContent = t('Add boss');
   $('boss-cancel').classList.add('hidden');
 }
 function saveBoss(e: Event): void {
@@ -364,14 +391,14 @@ function saveBoss(e: Event): void {
   const id = $<HTMLInputElement>('boss-id').value;
   const name = $<HTMLInputElement>('boss-name').value.trim();
   const exp = $<HTMLTextAreaElement>('boss-export').value.trim();
-  if (!name || !exp) { st.textContent = 'Name and export are required.'; return; }
-  if (!id && state.bosses.length >= BOSS_ORDER_MAX) { st.textContent = `A run can hold at most ${BOSS_ORDER_MAX} bosses.`; return; }
-  st.textContent = 'Validating…';
+  if (!name || !exp) { st.textContent = t('Name and export are required.'); return; }
+  if (!id && state.bosses.length >= BOSS_ORDER_MAX) { st.textContent = t('A run can hold at most {n} bosses.', {n: BOSS_ORDER_MAX}); return; }
+  st.textContent = t('Validating…');
   try {
     const boss = id ? state.bossBook!.edit(id, name, exp) : state.bossBook!.addCustom(name, exp);
     renderBosses(id ? state.bosses.map((b) => (b.id === boss.id ? boss : b)) : [...state.bosses, boss]);
-    resetBossForm(); st.textContent = id ? `Saved ${boss.name}.` : `Added ${boss.name}.`;
-  } catch (err) { st.textContent = `Does not validate: ${errorMessage(err)}`; }
+    resetBossForm(); st.textContent = id ? t('Saved {name}.', {name: boss.name}) : t('Added {name}.', {name: boss.name});
+  } catch (err) { st.textContent = t('Does not validate: {error}', {error: errorMessage(err)}); }
 }
 
 /* =====================================================================
@@ -382,17 +409,17 @@ function renderRail(gauntlet: GauntletView): void {
   if (!gauntlet.bosses.length) { rail.innerHTML = ''; return; }
   rail.innerHTML = gauntlet.bosses.map((b, i) => {
     const r = gauntlet.results[i];
-    let cls = '', label = 'Waiting';
+    let cls = '', label = t('Waiting');
     if (r) { cls = r.winner === 'player' ? 'win' : r.winner === 'boss' ? 'loss' : 'tie'; label = `${r.turns}t`; }
-    else if (b.current) { cls = 'current'; label = 'Now'; }
+    else if (b.current) { cls = 'current'; label = t('Now'); }
     // A finished battle's rail entry scrolls its replay card into view.
-    const attrs = r ? ` class="${cls} clickable" onclick="jumpToReplay('${r.battleId}')" title="Watch this battle" role="button" tabindex="0"` : ` class="${cls}"`;
+    const attrs = r ? ` class="${cls} clickable" onclick="jumpToReplay('${r.battleId}')" title="${t('Watch this battle')}" role="button" tabindex="0"` : ` class="${cls}"`;
     return `<li${attrs}><span class="dot"></span><span>${i + 1}. ${esc(b.name)}</span><small>${label}</small></li>`;
   }).join('');
 }
 const resultChip = (r: BattleResult) => {
   const cls = r.winner === 'player' ? 'win' : r.winner === 'boss' ? 'loss' : 'tie';
-  const label = r.winner === 'tie' ? 'Tie' : `${r.winner === 'player' ? r.playerName : r.bossName} wins`;
+  const label = r.winner === 'tie' ? t('Tie') : t('{name} wins', {name: r.winner === 'player' ? r.playerName : r.bossName});
   return {cls, label, html: `<span class="res ${cls}">${esc(label)} · ${r.turns}t</span>`};
 };
 /* A battle's card is created when the battle starts (docs/ROADMAP.md §4): the
@@ -405,15 +432,15 @@ function mountLiveCard(spec: BattleSpec): LiveReplay {
   card.className = 'replay-card'; card.dataset.bid = spec.battleId; card.dataset.live = '1';
   card.innerHTML = `
     <div class="replay-head">
-      <h3>${esc(PLAYER_NAME)} <span style="color:var(--faint)">vs</span> ${esc(spec.bossName)}</h3>
-      <span class="res live">Live · turn 1</span>
+      <h3>${esc(PLAYER_NAME)} <span style="color:var(--faint)">${t('vs')}</span> ${esc(spec.bossName)}</h3>
+      <span class="res live">${t('Live · turn {n}', {n: 1})}</span>
     </div>`;
   theater.appendChild(card);
   return mountLiveReplay(card, spec.bossName, PLAYER_NAME);
 }
 function liveTurn(spec: BattleSpec, turn: number): void {
   const chip = document.querySelector(`#theater [data-bid="${spec.battleId}"] .res.live`);
-  if (chip) chip.textContent = `Live · turn ${turn}`;
+  if (chip) chip.textContent = t('Live · turn {n}', {n: turn});
 }
 /* The result chip of a live card is held back until its player has animated
    to the end (or was never loaded), so watching a battle live is not spoiled
@@ -451,7 +478,7 @@ function liveLines(live: LiveReplay, lines: string[]): void {
 function renderTheater(results: BattleResult[]): void {
   const theater = $('theater');
   if (!results.length) {
-    theater.innerHTML = '<div class="replay-card replay-placeholder"><div class="replay-ph"><div><div class="big">Waiting for the first battle…</div><div class="sm">Matchups stream in here as your team climbs the ladder.</div></div></div></div>';
+    theater.innerHTML = `<div class="replay-card replay-placeholder"><div class="replay-ph"><div><div class="big">${t('Waiting for the first battle…')}</div><div class="sm">${t('Matchups stream in here as your team climbs the ladder.')}</div></div></div></div>`;
     return;
   }
   // The first real battle replaces the waiting placeholder.
@@ -468,7 +495,7 @@ function renderTheater(results: BattleResult[]): void {
     card.className = 'replay-card'; card.dataset.bid = r.battleId;
     card.innerHTML = `
       <div class="replay-head">
-        <h3>${esc(r.playerName)} <span style="color:var(--faint)">vs</span> ${esc(r.bossName)}</h3>
+        <h3>${esc(r.playerName)} <span style="color:var(--faint)">${t('vs')}</span> ${esc(r.bossName)}</h3>
         ${chip.html}
       </div>`;
     if (r.log.length) {
@@ -477,7 +504,7 @@ function renderTheater(results: BattleResult[]): void {
       mountReplay(card, r.log, r.bossName, r.playerName);
     } else {
       const ph = document.createElement('div'); ph.className = 'replay-ph';
-      ph.innerHTML = `<div><div class="big">No replay for this battle</div><div class="sm">${esc(chip.label)} in ${r.turns} turns.</div></div>`;
+      ph.innerHTML = `<div><div class="big">${t('No replay for this battle')}</div><div class="sm">${esc(t('{label} in {n} turns.', {label: chip.label, n: r.turns}))}</div></div>`;
       card.appendChild(ph);
     }
     theater.appendChild(card);
@@ -491,7 +518,7 @@ function renderRun(draft: SessionView): void {
   renderTheater(results);
   if (!g.complete && g.bosses.length) {
     const nb = g.bosses[g.nextIndex];
-    if (nb) $('battle-lead').textContent = `Now battling ${nb.name} — ${g.nextIndex + 1} of ${g.bosses.length}.`;
+    if (nb) $('battle-lead').textContent = t('Now battling {name} — {i} of {n}.', {name: nb.name, i: g.nextIndex + 1, n: g.bosses.length});
   }
   $<HTMLButtonElement>('to-results').disabled = !g.complete;
 }
@@ -499,16 +526,16 @@ function renderRun(draft: SessionView): void {
 function orderedBossIds(): string[] { return state.bosses.map((b) => b.id); }
 
 function requireSession(): GameSession | null {
-  if (!state.session) { $('boss-status').textContent = 'Draft a team first.'; return null; }
+  if (!state.session) { $('boss-status').textContent = t('Draft a team first.'); return null; }
   return state.session;
 }
 
 function startRun(stopOnLoss: boolean): void {
   const session = requireSession();
   if (!session) return;
-  if (state.bosses.length < BOSS_ORDER_MIN) { $('boss-status').textContent = 'Add at least one boss first.'; return; }
+  if (state.bosses.length < BOSS_ORDER_MIN) { $('boss-status').textContent = t('Add at least one boss first.'); return; }
   go('battle');
-  $('battle-lead').textContent = stopOnLoss ? 'Climbing the ladder — one loss ends the run.' : 'Exhibition — playing every boss.';
+  $('battle-lead').textContent = stopOnLoss ? t('Climbing the ladder — one loss ends the run.') : t('Exhibition — playing every boss.');
   $('theater').innerHTML = '';
   state.gauntletRunning = true;
   try {
@@ -521,7 +548,7 @@ function startCampaign(stopOnLoss: boolean): void {
   const session = requireSession();
   if (!session) return;
   go('battle');
-  $('battle-lead').textContent = 'Tiered campaign — 10 battles, one random team drawn per level.';
+  $('battle-lead').textContent = t('Tiered campaign — 10 battles, one random team drawn per level.');
   $('theater').innerHTML = '';
   state.gauntletRunning = true;
   try {
@@ -539,7 +566,7 @@ async function runNext(): Promise<void> {
     const live = mountLiveCard(spec);
     const outcome = await battles.run({
       p1: {name: PLAYER_NAME, team: spec.playerTeam}, p2: {name: spec.bossName, team: spec.bossTeam}, seed: spec.seed, budgetMs: budgetMs(),
-      onTurn: (e) => { if (state.session === session) { $('battle-lead').textContent = `Now battling ${spec.bossName} — turn ${e.turn}.`; liveTurn(spec, e.turn); } },
+      onTurn: (e) => { if (state.session === session) { $('battle-lead').textContent = t('Now battling {name} — turn {n}.', {name: spec.bossName, n: e.turn}); liveTurn(spec, e.turn); } },
       onLog: (lines) => { if (state.session === session) liveLines(live, lines); },
     });
     if (state.session !== session) return; // a new run started meanwhile
@@ -556,7 +583,7 @@ function finishRun(): void {
   $<HTMLButtonElement>('to-results').disabled = false;
   renderResults(view.gauntlet);
   // Don't pull the viewer away from a replay that is still playing.
-  if (replaysStillPlaying()) $('battle-lead').textContent = 'Run complete — the replays are still playing. View the summary whenever you like.';
+  if (replaysStillPlaying()) $('battle-lead').textContent = t('Run complete — the replays are still playing. View the summary whenever you like.');
   else setTimeout(() => go('results'), 500);
 }
 
@@ -564,9 +591,9 @@ async function battleOne(): Promise<void> {
   const session = requireSession();
   if (!session) return;
   const id = $<HTMLSelectElement>('boss-select').value;
-  if (!id) { $('boss-status').textContent = 'Pick a boss to test.'; return; }
+  if (!id) { $('boss-status').textContent = t('Pick a boss to test.'); return; }
   go('battle');
-  $('battle-lead').textContent = 'Single exhibition battle.';
+  $('battle-lead').textContent = t('Single exhibition battle.');
   $('theater').innerHTML = '';
   try {
     const spec = session.singleBattleSpec(id);
@@ -596,9 +623,9 @@ function renderResults(g: GauntletView): void {
 
   const hero = $('result-hero');
   hero.className = 'result-hero ' + (cleared ? 'victory' : lastLoss ? 'defeat' : 'mixed');
-  $('result-eyebrow').textContent = `${total}-battle campaign`;
-  $('result-title').textContent = cleared ? 'Champion! 🏆' : lastLoss ? 'Run ended' : 'Gauntlet complete';
-  $('result-record').textContent = `${wins}–${losses}${ties ? `–${ties}` : ''}  ·  cleared ${wins}/${total}  ·  ${avg.toFixed(1)} avg turns`;
+  $('result-eyebrow').textContent = t('{n}-battle campaign', {n: total});
+  $('result-title').textContent = cleared ? t('Champion! 🏆') : lastLoss ? t('Run ended') : t('Gauntlet complete');
+  $('result-record').textContent = `${wins}–${losses}${ties ? `–${ties}` : ''}  ·  ${t('cleared {w}/{t}', {w: wins, t: total})}  ·  ${t('{avg} avg turns', {avg: avg.toFixed(1)})}`;
 
   // the climb, as one pip per battle slot in run order
   $('result-pips').innerHTML = g.bosses.map((b, i) => {
@@ -621,43 +648,43 @@ function renderResults(g: GauntletView): void {
         const isMvp = e.name === mvpName && e.contribution > 0;
         const w = Math.max(3, (e.contribution / maxShare) * 100);
         return `<div class="dmg-row${isMvp ? ' mvp' : ''}">
-          <span class="dmg-mon">${sp ? sprite({spriteUrl: sp}, 'mini') : '<span class="asset-host mini"></span>'}<span class="dmg-name">${titleCase(e.name)}${isMvp ? '<span class="mvp-tag">MVP</span>' : ''}</span></span>
+          <span class="dmg-mon">${sp ? sprite({spriteUrl: sp}, 'mini') : '<span class="asset-host mini"></span>'}<span class="dmg-name">${monName(e)}${isMvp ? `<span class="mvp-tag">${t('MVP')}</span>` : ''}</span></span>
           <span class="dmg-track"><i style="width:${w}%"></i></span>
-          <span class="dmg-num"><b>${e.contribution.toFixed(1)}%</b><small>${e.damage.toFixed(0)}% dealt</small></span>
+          <span class="dmg-num"><b>${e.contribution.toFixed(1)}%</b><small>${t('{n}% dealt', {n: e.damage.toFixed(0)})}</small></span>
         </div>`;
       }).join('')
-    : '<p class="panel-note" style="padding:.5rem">No damage was recorded this run.</p>';
+    : `<p class="panel-note" style="padding:.5rem">${t('No damage was recorded this run.')}</p>`;
   fixImages($('damage-bars'));
 
   const mvpEl = $('mvp-card');
   if (dmg.mvp) {
     const sp = spriteByName[String(dmg.mvp.name).toLowerCase()];
     mvpEl.classList.remove('hidden');
-    mvpEl.innerHTML = `<p class="eyebrow">Run MVP</p>
+    mvpEl.innerHTML = `<p class="eyebrow">${t('Run MVP')}</p>
       <div class="mvp-body">
         ${sp ? sprite({spriteUrl: sp}, 'mvp-sprite') : ''}
         <div class="mvp-meta">
-          <strong>${titleCase(dmg.mvp.name)}</strong>
+          <strong>${monName(dmg.mvp)}</strong>
           <p class="mvp-share">${dmg.mvp.contribution.toFixed(1)}%</p>
-          <p class="panel-note">of team damage · ${dmg.mvp.damage.toFixed(0)}% HP dealt</p>
+          <p class="panel-note">${t('of team damage · {n}% HP dealt', {n: dmg.mvp.damage.toFixed(0)})}</p>
         </div>
       </div>`;
     fixImages(mvpEl);
   } else { mvpEl.classList.add('hidden'); }
 
   $('stat-tiles').innerHTML = `
-    <div class="stat win"><div class="v">${wins}</div><div class="k">Wins</div></div>
-    <div class="stat loss"><div class="v">${losses}</div><div class="k">Losses</div></div>
-    ${ties ? `<div class="stat"><div class="v">${ties}</div><div class="k">Ties</div></div>` : ''}
-    <div class="stat"><div class="v">${avg.toFixed(1)}</div><div class="k">Avg turns</div></div>`;
+    <div class="stat win"><div class="v">${wins}</div><div class="k">${t('Wins')}</div></div>
+    <div class="stat loss"><div class="v">${losses}</div><div class="k">${t('Losses')}</div></div>
+    ${ties ? `<div class="stat"><div class="v">${ties}</div><div class="k">${t('Ties')}</div></div>` : ''}
+    <div class="stat"><div class="v">${avg.toFixed(1)}</div><div class="k">${t('Avg turns')}</div></div>`;
 
   renderScore(g);
 
   $('ladder-results').innerHTML = g.bosses.map((b, i) => {
     const r = results[i];
     const cls = !r ? 'pending' : r.winner === 'player' ? 'win' : r.winner === 'boss' ? 'loss' : 'tie';
-    const label = !r ? 'Not reached' : r.winner === 'tie' ? 'Tie' : r.winner === 'player' ? 'Win' : 'Loss';
-    const attrs = r ? `onclick="jumpToReplay('${r.battleId}')" title="Watch this battle" role="button" tabindex="0"` : '';
+    const label = !r ? t('Not reached') : r.winner === 'tie' ? t('Tie') : r.winner === 'player' ? t('Win') : t('Loss');
+    const attrs = r ? `onclick="jumpToReplay('${r.battleId}')" title="${t('Watch this battle')}" role="button" tabindex="0"` : '';
     return `<li class="ladder-row ${cls}${r ? ' clickable' : ''}" ${attrs}><span class="ln">${i + 1}</span><span class="lname">${esc(b.name)}</span><span class="lres">${label}${r ? ` · ${r.turns}t` : ''}</span></li>`;
   }).join('');
 }
@@ -673,19 +700,19 @@ function renderScore(g: GauntletView): void {
   if (!score) { card.classList.add('hidden'); card.innerHTML = ''; return; }
   card.classList.remove('hidden');
   const won = score.battles.filter((b) => b.won);
-  const rows = won.map((b) => `<li><span>${esc(g.bosses[b.index]?.name ?? '')} <small>(${BAND_LABEL[b.band] ?? b.band})</small></span><b>${(b.points * b.speedBonus).toFixed(1)}</b></li>`).join('');
+  const rows = won.map((b) => `<li><span>${esc(g.bosses[b.index]?.name ?? '')} <small>(${t(BAND_LABEL[b.band] ?? b.band)})</small></span><b>${(b.points * b.speedBonus).toFixed(1)}</b></li>`).join('');
   const proof = state.session?.runProof() ?? null;
   const runKey = g.results.at(-1)?.battleId ?? null;
   const already = runKey !== null && submittedFor === runKey;
   let name = '';
   try { name = localStorage.getItem(NAME_KEY) ?? ''; } catch { /* private mode */ }
-  card.innerHTML = `<p class="eyebrow">Score</p>
-    <div class="score-total"><span class="v" id="score-total">${score.total}</span><span class="k">points</span></div>
-    <ul class="score-rows">${rows || '<li><span>No wins</span><b>0</b></li>'}
-      <li><span>Base (wins × speed)</span><b>${score.base.toFixed(1)}</b></li>
-      <li><span>Team handicap <small>(by tier)</small></span><b>× ${score.handicap.toFixed(2)}</b></li></ul>
-    ${proof && !already ? `<form class="score-submit" onsubmit="submitScore(event)"><input id="score-name" maxlength="24" placeholder="Your name" value="${esc(name)}" required><button class="btn btn-primary btn-sm" type="submit">Submit to leaderboard</button></form>`
-      : `<p class="score-status">${already ? 'Submitted.' : 'Only fresh campaign runs can be submitted.'}</p>`}
+  card.innerHTML = `<p class="eyebrow">${t('Score')}</p>
+    <div class="score-total"><span class="v" id="score-total">${score.total}</span><span class="k">${t('points')}</span></div>
+    <ul class="score-rows">${rows || `<li><span>${t('No wins')}</span><b>0</b></li>`}
+      <li><span>${t('Base (wins × speed)')}</span><b>${score.base.toFixed(1)}</b></li>
+      <li><span>${t('Team handicap')} <small>${t('(by tier)')}</small></span><b>× ${score.handicap.toFixed(2)}</b></li></ul>
+    ${proof && !already ? `<form class="score-submit" onsubmit="submitScore(event)"><input id="score-name" maxlength="24" placeholder="${t('Your name')}" value="${esc(name)}" required><button class="btn btn-primary btn-sm" type="submit">${t('Submit to leaderboard')}</button></form>`
+      : `<p class="score-status">${already ? t('Submitted.') : t('Only fresh campaign runs can be submitted.')}</p>`}
     <p class="score-status" id="score-status"></p>`;
 }
 async function submitScore(ev: Event): Promise<void> {
@@ -693,35 +720,43 @@ async function submitScore(ev: Event): Promise<void> {
   const session = state.session;
   const proof = session?.runProof();
   const status = $('score-status');
-  if (!session || !proof) { status.textContent = 'This run cannot be submitted.'; return; }
+  if (!session || !proof) { status.textContent = t('This run cannot be submitted.'); return; }
   const name = $<HTMLInputElement>('score-name').value.trim();
-  if (!name) { status.textContent = 'Enter a name first.'; return; }
+  if (!name) { status.textContent = t('Enter a name first.'); return; }
   try { localStorage.setItem(NAME_KEY, name); } catch { /* private mode */ }
   const btn = document.querySelector<HTMLButtonElement>('#score-card button');
   if (btn) btn.disabled = true;
-  status.textContent = 'Verifying your run…';
+  status.textContent = t('Verifying your run…');
   try {
     const res = await fetch(`${API_BASE}/api/leaderboard`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, proof, token: clientToken()})});
     const body = await res.json().catch(() => ({})) as {rank?: number; error?: string};
     if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
     submittedFor = session.gauntletView().results.at(-1)?.battleId ?? null;
-    status.textContent = `Verified! You are #${body.rank} on the leaderboard.`;
+    status.textContent = t('Verified! You are #{rank} on the leaderboard.', {rank: body.rank ?? '?'});
     document.querySelector('#score-card form')?.remove();
     void loadBoard();
   } catch (e) {
-    status.textContent = `Could not submit: ${errorMessage(e)}`;
+    status.textContent = t('Could not submit: {error}', {error: errorMessage(e)});
     if (btn) btn.disabled = false;
   }
+}
+interface BoardEntry { name: string; score: number; wins: number; battles: number; team: string[]; createdAt: string }
+let boardEntries: BoardEntry[] | null = null;
+function renderBoard(): void {
+  const card = $('board-card');
+  const entries = boardEntries;
+  if (!entries) { card.classList.add('hidden'); return; }
+  card.innerHTML = `<div class="panel-head"><h3>${t('Leaderboard')}</h3><span class="panel-note">${t('top {n} · verified runs', {n: entries.length})}</span></div>
+    <ol class="board-list">${entries.map((e, i) => `<li><span class="rank">#${i + 1}</span><span>${esc(e.name)}<small>${t('{w}/{b} wins', {w: e.wins, b: e.battles})} · ${e.team.map((id) => monName({id, name: id})).join(', ')}</small></span><span class="score">${e.score}</span></li>`).join('') || `<li><span></span><span>${t('No runs yet. Be the first!')}</span><span></span></li>`}</ol>`;
+  card.classList.remove('hidden');
 }
 async function loadBoard(): Promise<void> {
   const card = $('board-card');
   try {
     const res = await fetch(`${API_BASE}/api/leaderboard?limit=10`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const {entries} = await res.json() as {entries: {name: string; score: number; wins: number; battles: number; team: string[]; createdAt: string}[]};
-    card.innerHTML = `<div class="panel-head"><h3>Leaderboard</h3><span class="panel-note">top ${entries.length} · verified runs</span></div>
-      <ol class="board-list">${entries.map((e, i) => `<li><span class="rank">#${i + 1}</span><span>${esc(e.name)}<small>${e.wins}/${e.battles} wins · ${e.team.map((t) => titleCase(t)).join(', ')}</small></span><span class="score">${e.score}</span></li>`).join('') || '<li><span></span><span>No runs yet. Be the first!</span><span></span></li>'}</ol>`;
-    card.classList.remove('hidden');
+    boardEntries = (await res.json() as {entries: BoardEntry[]}).entries;
+    renderBoard();
   } catch {
     card.classList.add('hidden'); // no API here (local build, or the function is not configured)
   }
@@ -732,19 +767,19 @@ async function loadBoard(): Promise<void> {
    ===================================================================== */
 function renderMatrix(): void {
   const m = state.matrix!; const grid = $('matrix');
-  grid.innerHTML = '<div class="mhead">Type</div>' + m.generations.map((g) => `<div class="mhead">G${g}</div>`).join('');
+  grid.innerHTML = `<div class="mhead">${t('Type')}</div>` + m.generations.map((g) => `<div class="mhead">G${g}</div>`).join('');
   for (const type of m.types) {
-    grid.insertAdjacentHTML('beforeend', `<div class="mhead type t-${type.toLowerCase()}">${titleCase(type)}</div>`);
+    grid.insertAdjacentHTML('beforeend', `<div class="mhead type t-${type.toLowerCase()}">${typeName(type)}</div>`);
     for (const gen of m.generations) {
       const cell = m.cells.find((c) => c.type === type && c.generation === gen)!;
       const btn = document.createElement('button');
       btn.className = `mcell ${cell.state}`;
-      btn.innerHTML = `${cell.eligibleCount}<small>${cell.state === 'normal' ? '' : cell.state}</small>`;
+      btn.innerHTML = `${cell.eligibleCount}<small>${cell.state === 'normal' ? '' : t(cell.state)}</small>`;
       btn.onclick = () => renderCell(cell, btn);
       grid.appendChild(btn);
     }
   }
-  $('matrix-summary').textContent = `${m.includedCellCount} included cells · ${m.atomCount} draftable Pokémon`;
+  $('matrix-summary').textContent = t('{n} included cells · {m} draftable Pokémon', {n: m.includedCellCount, m: m.atomCount});
 }
 function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
   document.querySelectorAll('.mcell').forEach((c) => c.classList.remove('selected'));
@@ -752,12 +787,12 @@ function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
   const d = $('detail');
   const list = cell.pokemon.length
     ? `<ul class="dlist">${cell.pokemon.map((p) => `<li><span class="mini">${sprite(p)}</span>
-         <span><strong>${titleCase(p.name)}</strong><div class="meta">Gen ${p.debutGeneration} · BST ${p.baseStatTotal}</div>
+         <span><strong>${monName(p)}</strong><div class="meta">${t('Gen {g} · BST {b}', {g: p.debutGeneration, b: p.baseStatTotal})}</div>
          <div class="chips" style="justify-content:flex-start;margin-top:.2rem">${typeChips(p)}</div></span></li>`).join('')}</ul>`
-    : '<p style="color:var(--muted)">No active-source Pokémon occupy this cell.</p>';
-  d.innerHTML = `<h3>${titleCase(cell.type)} · Gen ${cell.generation}</h3>
-    <p style="color:var(--muted);font-size:.88rem"><b style="color:var(--ink)">${cell.eligibleCount}</b> eligible · ${
-      cell.state === 'excluded' ? 'excluded from rolls' : cell.state === 'thin' ? 'thin — free reroll' : 'included'}</p>${list}`;
+    : `<p style="color:var(--muted)">${t('No active-source Pokémon occupy this cell.')}</p>`;
+  d.innerHTML = `<h3>${typeName(cell.type)} · ${t('Gen {n}', {n: cell.generation})}</h3>
+    <p style="color:var(--muted);font-size:.88rem">${t('{n} eligible', {n: `<b style="color:var(--ink)">${cell.eligibleCount}</b>`})} · ${
+      cell.state === 'excluded' ? t('excluded from rolls') : cell.state === 'thin' ? t('thin — free reroll') : t('included')}</p>${list}`;
   fixImages(d);
 }
 
@@ -766,16 +801,18 @@ function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, thinReroll, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, thinReroll, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
 
 async function boot(): Promise<void> {
+  initLang(params.get('lang'));
+  applyStatic(document);
   go('title');
   initRoller();
   $<HTMLInputElement>('low-power').checked = lowPower;
-  $('title-foot').textContent = 'Loading game data…';
+  $('title-foot').textContent = t('Loading game data…');
   try {
     const res = await fetch(new URL('./data/game-data.json', import.meta.url));
     if (!res.ok) throw new Error(`game data: HTTP ${res.status}`);
@@ -785,11 +822,11 @@ async function boot(): Promise<void> {
     state.matrix = matrixView(state.ctx);
     renderMatrix();
     renderBosses(state.bossBook.list());
-    $('title-foot').textContent = 'Lv 100 · Gen 9 · engine-enforced dedupe';
+    $('title-foot').textContent = t('Lv 100 · Gen 9 · engine-enforced dedupe');
     void loadBoard();
   } catch (e) {
     $('matrix-summary').textContent = errorMessage(e);
-    $('title-foot').textContent = `Could not load game data: ${errorMessage(e)}`;
+    $('title-foot').textContent = t('Could not load game data: {error}', {error: errorMessage(e)});
   }
 }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rollmons — Draft &amp; Battle</title>
+<title data-i18n="Rollmons — Draft & Battle">Rollmons — Draft &amp; Battle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -19,13 +19,14 @@
     <span class="pokeball"></span>Rollmons
   </div>
   <nav class="steps" id="steps">
-    <span class="step" data-step="draft">Draft</span>
-    <span class="step" data-step="loadout">Loadout</span>
-    <span class="step" data-step="bosses">Gauntlet</span>
-    <span class="step" data-step="battle">Battle</span>
-    <span class="step" data-step="results">Results</span>
+    <span class="step" data-step="draft" data-i18n="Draft">Draft</span>
+    <span class="step" data-step="loadout" data-i18n="Loadout">Loadout</span>
+    <span class="step" data-step="bosses" data-i18n="Gauntlet">Gauntlet</span>
+    <span class="step" data-step="battle" data-i18n="Battle">Battle</span>
+    <span class="step" data-step="results" data-i18n="Results">Results</span>
   </nav>
   <span class="spacer"></span>
+  <select class="lang" data-lang-select onchange="setLanguage(this.value)" aria-label="Language"><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select>
   <button class="btn btn-ghost btn-sm" id="pokedex-btn" onclick="togglePool()">Pokédex</button>
 </header>
 
@@ -35,41 +36,42 @@
   <div class="cloud" style="width:62px;top:19%;left:71%;animation-delay:-26s"></div>
   <div class="cloud" style="width:116px;top:5%;left:43%;animation-delay:-44s"></div>
   <div class="title-inner">
-    <h1 class="logo">Rollmons<span class="tail">Draft · Battle · Conquer</span></h1>
-    <p class="title-sub">Roll 6 mons via Gen × Type, battle 10 bosses.</p>
+    <h1 class="logo">Rollmons<span class="tail" data-i18n="Draft · Battle · Conquer">Draft · Battle · Conquer</span></h1>
+    <p class="title-sub" data-i18n="Roll 6 mons via Gen × Type, battle 10 bosses.">Roll 6 mons via Gen × Type, battle 10 bosses.</p>
     <div class="title-panel">
       <div class="title-actions">
-        <button class="btn btn-primary btn-lg" onclick="newRun()">▶ Start a new run</button>
-        <button class="btn btn-ghost btn-lg" onclick="go('pool')">Browse the pool</button>
+        <button class="btn btn-primary btn-lg" onclick="newRun()" data-i18n="▶ Start a new run">▶ Start a new run</button>
+        <button class="btn btn-ghost btn-lg" onclick="go('pool')" data-i18n="Browse the pool">Browse the pool</button>
       </div>
       <p class="title-foot" id="title-foot">Lv 100 · Gen 9 · engine-enforced dedupe</p>
+      <select class="lang lang-title" data-lang-select onchange="setLanguage(this.value)" aria-label="Language"><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select>
     </div>
     <div class="card board-card hidden" id="board-card"></div>
   </div>
   <div class="roller" id="roller">
-    <p class="roller-head">◓ Gen × Type Slot Roller</p>
+    <p class="roller-head" data-i18n="◓ Gen × Type Slot Roller">◓ Gen × Type Slot Roller</p>
     <div class="roller-stage">
       <div class="reel-bank">
         <div class="reel-col">
-          <span class="reel-tag">GEN</span>
+          <span class="reel-tag" data-i18n="GEN">GEN</span>
           <div class="reel" id="reel-gen"><div class="reel-window gen"><div class="reel-strip" id="genstrip"></div></div></div>
         </div>
         <span class="reel-cross">×</span>
         <div class="reel-col">
-          <span class="reel-tag">TYPE</span>
+          <span class="reel-tag" data-i18n="TYPE">TYPE</span>
           <div class="reel" id="reel-type"><div class="reel-window type"><div class="reel-strip" id="typestrip"></div></div></div>
         </div>
       </div>
       <div class="summon" id="summon">
         <span class="summon-gen" id="summon-gen" hidden></span>
-        <p class="summon-empty" id="summon-empty">A wild ’mon<br>appears here</p>
+        <p class="summon-empty" id="summon-empty" data-i18n-html="A wild ’mon<br>appears here">A wild ’mon<br>appears here</p>
         <img class="summon-mon" id="rollmon" alt="" hidden>
         <div class="summon-name" id="rollname" hidden></div>
         <div class="tpills" id="rolltypes"></div>
       </div>
     </div>
     <div class="roller-foot">
-      <button class="btn btn-primary btn-lg" id="rollbtn" onclick="rollMon()">● Roll</button>
+      <button class="btn btn-primary btn-lg" id="rollbtn" onclick="rollMon()" data-i18n="● Roll">● Roll</button>
     </div>
   </div>
 </section>
@@ -79,10 +81,10 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <p class="eyebrow">Step 1 — Build your team</p>
-        <h1>Draft your six</h1>
+        <p class="eyebrow" data-i18n="Step 1 — Build your team">Step 1 — Build your team</p>
+        <h1 data-i18n="Draft your six">Draft your six</h1>
       </div>
-      <button class="btn btn-ghost btn-sm" id="copy-export" disabled onclick="copyExport()">Copy team export</button>
+      <button class="btn btn-ghost btn-sm" id="copy-export" disabled onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
     </div>
     <div class="round-bar">
       <div class="pips" id="pips"></div>
@@ -95,7 +97,7 @@
       <div class="draft-grid">
         <div class="candidate-grid" id="candidates"></div>
         <aside class="party card" style="padding:1.1rem">
-          <h3>Your party</h3>
+          <h3 data-i18n="Your party">Your party</h3>
           <p class="sub" id="party-count">0 / 6 drafted</p>
           <ul class="party-list" id="party"></ul>
         </aside>
@@ -103,11 +105,11 @@
     </div>
 
     <div id="draft-done" class="hidden card" style="padding:1.6rem;text-align:center">
-      <h2 style="font-size:1.6rem">Team assembled 🎉</h2>
-      <p class="lead">Six unique Pokémon, locked at level 100. Next, choose each one's set.</p>
+      <h2 style="font-size:1.6rem" data-i18n="Team assembled 🎉">Team assembled 🎉</h2>
+      <p class="lead" data-i18n="Six unique Pokémon, locked at level 100. Next, choose each one's set.">Six unique Pokémon, locked at level 100. Next, choose each one's set.</p>
       <div style="display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;margin-top:1.2rem">
-        <button class="btn btn-primary btn-lg" onclick="go('loadout')">Choose sets →</button>
-        <button class="btn btn-ghost" onclick="copyExport()">Copy team export</button>
+        <button class="btn btn-primary btn-lg" onclick="go('loadout')" data-i18n="Choose sets →">Choose sets →</button>
+        <button class="btn btn-ghost" onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
       </div>
       <ul class="party-list" id="party-done" style="max-width:420px;margin:1.6rem auto 0;text-align:left"></ul>
     </div>
@@ -119,11 +121,11 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <p class="eyebrow">Step 2 — Build each set</p>
-        <h1>Choose your sets</h1>
-        <p class="lead">Pick one set per Pokémon. Mega is opt-in — only one Mega can evolve per battle.</p>
+        <p class="eyebrow" data-i18n="Step 2 — Build each set">Step 2 — Build each set</p>
+        <h1 data-i18n="Choose your sets">Choose your sets</h1>
+        <p class="lead" data-i18n="Pick one set per Pokémon. Mega is opt-in — only one Mega can evolve per battle.">Pick one set per Pokémon. Mega is opt-in — only one Mega can evolve per battle.</p>
       </div>
-      <button class="btn btn-primary" onclick="go('bosses')">To the gauntlet →</button>
+      <button class="btn btn-primary" onclick="go('bosses')" data-i18n="To the gauntlet →">To the gauntlet →</button>
     </div>
     <p class="status-line" id="loadout-status"></p>
     <div class="loadout-list" id="loadout-list"></div>
@@ -135,37 +137,37 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <p class="eyebrow">Step 3 — Set the ladder</p>
-        <h1>Boss gauntlet</h1>
-        <p class="lead">Run the tiered 10-battle campaign (random team per level), or set a manual ladder below.</p>
+        <p class="eyebrow" data-i18n="Step 3 — Set the ladder">Step 3 — Set the ladder</p>
+        <h1 data-i18n="Boss gauntlet">Boss gauntlet</h1>
+        <p class="lead" data-i18n="Run the tiered 10-battle campaign (random team per level), or set a manual ladder below.">Run the tiered 10-battle campaign (random team per level), or set a manual ladder below.</p>
       </div>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-        <button class="btn btn-primary" id="campaign-btn" onclick="startCampaign(true)">🏔 Start campaign (10, tiered)</button>
-        <button class="btn btn-ghost" id="exhibition-btn" onclick="startRun(false)">Manual: exhibition</button>
-        <button class="btn btn-ghost" id="run-btn" onclick="startRun(true)">Manual: run ladder</button>
+        <button class="btn btn-primary" id="campaign-btn" onclick="startCampaign(true)" data-i18n="🏔 Start campaign (10, tiered)">🏔 Start campaign (10, tiered)</button>
+        <button class="btn btn-ghost" id="exhibition-btn" onclick="startRun(false)" data-i18n="Manual: exhibition">Manual: exhibition</button>
+        <button class="btn btn-ghost" id="run-btn" onclick="startRun(true)" data-i18n="Manual: run ladder">Manual: run ladder</button>
       </div>
     </div>
     <p class="status-line" id="boss-status"></p>
     <div class="boss-cols">
       <ol class="ladder" id="ladder"></ol>
       <aside class="card" style="padding:1.2rem">
-        <h3 id="boss-form-title" style="margin-bottom:.2rem">Add a boss</h3>
-        <p class="sub" style="color:var(--muted);font-size:.82rem;margin:0 0 .9rem">Paste a Showdown team export.</p>
+        <h3 id="boss-form-title" style="margin-bottom:.2rem" data-i18n="Add a boss">Add a boss</h3>
+        <p class="sub" style="color:var(--muted);font-size:.82rem;margin:0 0 .9rem" data-i18n="Paste a Showdown team export.">Paste a Showdown team export.</p>
         <form id="boss-form">
           <input type="hidden" id="boss-id">
-          <label class="field">Boss name<input id="boss-name" autocomplete="off" placeholder="e.g. Champion Geeta"></label>
-          <label class="field">PokéPaste export<textarea id="boss-export" rows="8" placeholder="Garchomp @ Life Orb&#10;Ability: Rough Skin&#10;..."></textarea></label>
+          <label class="field"><span data-i18n="Boss name">Boss name</span><input id="boss-name" autocomplete="off" placeholder="e.g. Champion Geeta" data-i18n-placeholder="e.g. Champion Geeta"></label>
+          <label class="field"><span data-i18n="PokéPaste export">PokéPaste export</span><textarea id="boss-export" rows="8" placeholder="Garchomp @ Life Orb&#10;Ability: Rough Skin&#10;..."></textarea></label>
           <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-            <button class="btn btn-primary btn-sm" type="submit" id="boss-save">Add boss</button>
-            <button class="btn btn-ghost btn-sm hidden" type="button" id="boss-cancel" onclick="resetBossForm()">Cancel</button>
+            <button class="btn btn-primary btn-sm" type="submit" id="boss-save" data-i18n="Add boss">Add boss</button>
+            <button class="btn btn-ghost btn-sm hidden" type="button" id="boss-cancel" onclick="resetBossForm()" data-i18n="Cancel">Cancel</button>
           </div>
           <p class="status-line" id="boss-form-status"></p>
         </form>
         <details class="raw" style="margin-top:1rem">
-          <summary>Advanced: single-boss test</summary>
+          <summary data-i18n="Advanced: single-boss test">Advanced: single-boss test</summary>
           <div style="margin-top:.7rem">
-            <label class="field">Boss<select id="boss-select"></select></label>
-            <button class="btn btn-ghost btn-sm" type="button" onclick="battleOne()">Battle this boss</button>
+            <label class="field"><span data-i18n="Boss">Boss</span><select id="boss-select"></select></label>
+            <button class="btn btn-ghost btn-sm" type="button" onclick="battleOne()" data-i18n="Battle this boss">Battle this boss</button>
           </div>
         </details>
       </aside>
@@ -178,13 +180,13 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <p class="eyebrow">Step 4 — The arena</p>
-        <h1>Battle</h1>
-        <p class="lead" id="battle-lead">Each matchup plays out in the live Showdown engine.</p>
-        <p class="cpu-note">Both AIs think on <em>your</em> device (about 4 s of one CPU core per battle, nothing is sent to a server).
-          <label class="toggle"><input type="checkbox" id="low-power" onchange="setLowPower(this.checked)"> Low power: half the think time, slightly weaker play</label></p>
+        <p class="eyebrow" data-i18n="Step 4 — The arena">Step 4 — The arena</p>
+        <h1 data-i18n="Battle">Battle</h1>
+        <p class="lead" id="battle-lead" data-i18n="Each matchup plays out in the live Showdown engine.">Each matchup plays out in the live Showdown engine.</p>
+        <p class="cpu-note"><span data-i18n-html="Both AIs think on <em>your</em> device (about 4 s of one CPU core per battle, nothing is sent to a server).">Both AIs think on <em>your</em> device (about 4 s of one CPU core per battle, nothing is sent to a server).</span>
+          <label class="toggle"><input type="checkbox" id="low-power" onchange="setLowPower(this.checked)"> <span data-i18n="Low power: half the think time, slightly weaker play">Low power: half the think time, slightly weaker play</span></label></p>
       </div>
-      <button class="btn btn-ghost btn-sm" id="to-results" onclick="go('results')" disabled>View run summary →</button>
+      <button class="btn btn-ghost btn-sm" id="to-results" onclick="go('results')" disabled data-i18n="View run summary →">View run summary →</button>
     </div>
     <div class="battle-cols">
       <ol class="rail" id="rail"></ol>
@@ -197,15 +199,15 @@
 <section class="screen" id="screen-results">
   <div class="wrap" style="max-width:1000px">
     <header class="result-hero" id="result-hero">
-      <p class="eyebrow" id="result-eyebrow">Campaign complete</p>
-      <h1 id="result-title">Run complete</h1>
+      <p class="eyebrow" id="result-eyebrow" data-i18n="Campaign complete">Campaign complete</p>
+      <h1 id="result-title" data-i18n="Run complete">Run complete</h1>
       <p class="result-record" id="result-record"></p>
       <div class="result-pips" id="result-pips" aria-label="Battle outcomes in order"></div>
     </header>
 
     <div class="result-grid">
       <section class="card panel-damage">
-        <div class="panel-head"><h3>Damage by Pokémon</h3><span class="panel-note">share of team damage</span></div>
+        <div class="panel-head"><h3 data-i18n="Damage by Pokémon">Damage by Pokémon</h3><span class="panel-note" data-i18n="share of team damage">share of team damage</span></div>
         <div id="damage-bars" class="damage-bars"></div>
       </section>
       <aside class="result-side">
@@ -216,13 +218,13 @@
     </div>
 
     <section class="card panel-ladder">
-      <div class="panel-head"><h3>The climb</h3><span class="panel-note">tier by tier</span></div>
+      <div class="panel-head"><h3 data-i18n="The climb">The climb</h3><span class="panel-note" data-i18n="tier by tier">tier by tier</span></div>
       <ol class="ladder-results" id="ladder-results"></ol>
     </section>
 
     <div class="result-actions">
-      <button class="btn btn-ghost" onclick="go('battle')">Rewatch battles</button>
-      <button class="btn btn-primary" onclick="newRun()">↻ New run</button>
+      <button class="btn btn-ghost" onclick="go('battle')" data-i18n="Rewatch battles">Rewatch battles</button>
+      <button class="btn btn-primary" onclick="newRun()" data-i18n="↻ New run">↻ New run</button>
     </div>
   </div>
 </section>
@@ -232,21 +234,21 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <p class="eyebrow">Reference</p>
-        <h1>Draft pool</h1>
-        <p class="lead" id="matrix-summary">Loading pool…</p>
+        <p class="eyebrow" data-i18n="Reference">Reference</p>
+        <h1 data-i18n="Draft pool">Draft pool</h1>
+        <p class="lead" id="matrix-summary" data-i18n="Loading pool…">Loading pool…</p>
       </div>
       <div class="legend">
-        <span><i class="mcell normal" style="width:.8rem;height:.8rem;min-height:0;padding:0"></i>Normal</span>
-        <span><i class="mcell thin" style="width:.8rem;height:.8rem;min-height:0;padding:0"></i>Thin</span>
-        <span><i style="background:var(--surface-2);border:1px solid var(--border)"></i>Excluded</span>
+        <span><i class="mcell normal" style="width:.8rem;height:.8rem;min-height:0;padding:0"></i><span data-i18n="Included">Included</span></span>
+        <span><i class="mcell thin" style="width:.8rem;height:.8rem;min-height:0;padding:0"></i><span data-i18n="Thin">Thin</span></span>
+        <span><i style="background:var(--surface-2);border:1px solid var(--border)"></i><span data-i18n="Excluded">Excluded</span></span>
       </div>
     </div>
     <div class="matrix-wrap">
       <div class="matrix" id="matrix"></div>
       <aside class="card detail" id="detail" style="padding:1.2rem">
-        <h3>Pick a cell</h3>
-        <p style="color:var(--muted);font-size:.88rem">Tap any type × generation cell to see who lives there.</p>
+        <h3 data-i18n="Pick a cell">Pick a cell</h3>
+        <p style="color:var(--muted);font-size:.88rem" data-i18n="Tap any type × generation cell to see who lives there.">Tap any type × generation cell to see who lives there.</p>
       </aside>
     </div>
   </div>
