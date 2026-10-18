@@ -1,13 +1,16 @@
-// Bundles the battle worker and copies the wasm next to it.
+// Bundles the battle worker, copies the wasm next to it, and emits the pure
+// layer's data bundle (pokedex, moves, sets, overrides, pool, bosses) as JSON.
 //   node scripts/build.mjs [--serve]
 import {build, context} from 'esbuild';
-import {copyFileSync, mkdirSync} from 'node:fs';
+import {copyFileSync, mkdirSync, writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
+import {loadGameData} from './game-data.ts';
 
 const web = fileURLToPath(new URL('../', import.meta.url));
 const repo = `${web}../`;
-mkdirSync(`${web}dist`, {recursive: true});
+mkdirSync(`${web}dist/data`, {recursive: true});
 copyFileSync(`${repo}engine/pkg/rollmons_engine_bg.wasm`, `${web}dist/rollmons_engine_bg.wasm`);
+writeFileSync(`${web}dist/data/game-data.json`, JSON.stringify(loadGameData(repo)));
 
 const options = {
   entryPoints: [`${web}battle/worker.ts`, `${web}dev/battle-page.ts`],
