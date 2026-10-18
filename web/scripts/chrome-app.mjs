@@ -57,19 +57,38 @@ try {
   // campaign: ten tiered battles in the worker (stops on the first loss)
   await click('#campaign-btn');
   await page.waitForFunction(() => window.__rollmons.screen() === 'battle');
+  // Spoiler gate: after the engine has finished battle 1, nothing about it (or
+  // about later bosses) is shown until its replay has been watched to the end.
+  await page.waitForFunction(() => window.__rollmons.view()?.gauntlet.results.length >= 1, {timeout: 120_000});
+  await new Promise((r) => setTimeout(r, 1500));
+  const gate = await page.evaluate(() => ({
+    cards: document.querySelectorAll('#theater .replay-card').length,
+    decided: document.querySelectorAll('#rail li.win, #rail li.loss, #rail li.tie').length,
+    hidden: Array.from(document.querySelectorAll('#rail li')).filter((l) => l.textContent.includes('???')).length,
+    summary: document.getElementById('to-results').disabled && document.getElementById('summary-fab').classList.contains('hidden'),
+    lead: document.getElementById('battle-lead').textContent,
+  }));
+  console.log(`[${elapsed()}] gate while battle 1 plays:`, JSON.stringify(gate));
+  if (gate.cards !== 1 || gate.decided !== 0 || gate.hidden < 8 || !gate.summary) { console.error('spoiler gate failed: next battle, results, or boss names shown before the replay ended'); process.exitCode = 1; }
+  // Watch each battle by seeking its player to the end as soon as the engine has finished it.
   let last = '';
   const poll = setInterval(async () => {
     try {
       const rail = await page.$$eval('#rail li', (ls) => ls.map((l) => l.textContent.replace(/\s+/g, ' ').trim()).join(' | '));
       if (rail !== last) { last = rail; console.log(`  [${elapsed()}] ${rail}`); }
+      await page.evaluate(() => {
+        const done = window.__rollmons.view()?.gauntlet.results.length ?? 0;
+        document.querySelectorAll('#theater iframe.replay-frame').forEach((f, i) => { const b = f.contentWindow?.rollmonsLive?.battle; if (i < done && b && !b.ended) b.seekTurn(Infinity); });
+      });
     } catch { /* page navigating */ }
   }, 1500);
-  // the run is over when the summary button unlocks; the page only auto-navigates once no live replay is still playing
+  // the run is over when the summary button unlocks (after the last battle has been watched); the page never auto-navigates
   await page.waitForFunction(() => !document.getElementById('to-results').disabled, {timeout: 600_000});
   clearInterval(poll);
-  const autoNavigated = await page.evaluate(() => new Promise((r) => setTimeout(() => r(window.__rollmons.screen() === 'results'), 800)));
-  console.log(`[${elapsed()}] run over; auto-navigated to results: ${autoNavigated} (false while a live replay is still animating)`);
-  if (!autoNavigated) await click('#to-results');
+  const fab = await page.evaluate(() => ({shown: !document.getElementById('summary-fab').classList.contains('hidden'), screen: window.__rollmons.screen(), lead: document.getElementById('battle-lead').textContent}));
+  console.log(`[${elapsed()}] run over:`, JSON.stringify(fab));
+  if (!fab.shown || fab.screen !== 'battle') { console.error('summary button not shown on the battle screen after the run'); process.exitCode = 1; }
+  await click('#summary-fab');
   await page.waitForFunction(() => window.__rollmons.screen() === 'results');
   const view = await page.evaluate(() => { const v = window.__rollmons.view(); return {summary: v.gauntlet.summary, score: v.gauntlet.score?.total, results: v.gauntlet.results.map((r) => [r.bossName, r.winner, r.turns, r.megas, r.problems.length])}; });
   console.log(`[${elapsed()}] results:`, await page.$eval('#result-title', (e) => e.textContent), '|', await page.$eval('#result-record', (e) => e.textContent));

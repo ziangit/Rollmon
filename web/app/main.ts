@@ -33,6 +33,8 @@ const params = new URLSearchParams(location.search);
 // budgets and override the player's low-power switch (docs/ROADMAP.md §2).
 /* Leaderboard API (docs/ROADMAP.md §7): the Vercel function; the GitHub
    Pages mirror calls the Vercel deployment cross-origin. ?api=<origin> overrides. */
+// ?gate=0 lets the next battle start before the previous replay has been watched (scripts only).
+const GATE = params.get('gate') !== '0';
 const API_BASE = params.get('api') ?? (/\.vercel\.app$/.test(location.hostname) ? '' : 'https://rollmon.vercel.app');
 const TOKEN_KEY = 'rollmons-token', NAME_KEY = 'rollmons-name';
 function clientToken(): string | null {
@@ -95,6 +97,7 @@ function go(name: Screen): void {
   // On the pool screen keep the step rail reflecting where Back will return to.
   updateSteps(name === 'pool' ? poolReturn : name);
   $('pokedex-btn').textContent = name === 'pool' ? t('← Back') : t('Pokédex');
+  updateSummaryAccess();
   try { localStorage.setItem('rollmons-screen', name); } catch { /* private mode */ }
   window.scrollTo(0, 0);
 }
@@ -407,14 +410,18 @@ function saveBoss(e: Event): void {
 function renderRail(gauntlet: GauntletView): void {
   const rail = $('rail');
   if (!gauntlet.bosses.length) { rail.innerHTML = ''; return; }
+  const now = nowIndex(gauntlet);
   rail.innerHTML = gauntlet.bosses.map((b, i) => {
     const r = gauntlet.results[i];
+    const seen = !!r && watched.has(r.battleId);
     let cls = '', label = t('Waiting');
-    if (r) { cls = r.winner === 'player' ? 'win' : r.winner === 'boss' ? 'loss' : 'tie'; label = `${r.turns}t`; }
-    else if (b.current) { cls = 'current'; label = t('Now'); }
-    // A finished battle's rail entry scrolls its replay card into view.
-    const attrs = r ? ` class="${cls} clickable" onclick="jumpToReplay('${r.battleId}')" title="${t('Watch this battle')}" role="button" tabindex="0"` : ` class="${cls}"`;
-    return `<li${attrs}><span class="dot"></span><span>${i + 1}. ${esc(b.name)}</span><small>${label}</small></li>`;
+    if (seen) { cls = r.winner === 'player' ? 'win' : r.winner === 'boss' ? 'loss' : 'tie'; label = `${r.turns}t`; }
+    else if (i === now) { cls = 'current'; label = t('Now'); }
+    // In the campaign the player did not choose the order, so bosses not yet reached stay hidden.
+    const name = gauntlet.campaign && i > now ? '???' : b.name;
+    // A watched battle's rail entry scrolls its replay card into view.
+    const attrs = seen ? ` class="${cls} clickable" onclick="jumpToReplay('${r.battleId}')" title="${t('Watch this battle')}" role="button" tabindex="0"` : ` class="${cls}"`;
+    return `<li${attrs}><span class="dot"></span><span>${i + 1}. ${esc(name)}</span><small>${label}</small></li>`;
   }).join('');
 }
 const resultChip = (r: BattleResult) => {
@@ -442,33 +449,67 @@ function liveTurn(spec: BattleSpec, turn: number): void {
   const chip = document.querySelector(`#theater [data-bid="${spec.battleId}"] .res.live`);
   if (chip) chip.textContent = t('Live · turn {n}', {n: turn});
 }
-/* The result chip of a live card is held back until its player has animated
-   to the end (or was never loaded), so watching a battle live is not spoiled
-   by the engine finishing it seconds earlier. */
+/* A battle counts as *watched* once its live player has animated to the end
+   (or no player appeared within a grace period, e.g. the hosted client is
+   blocked). Everything that would spoil the outcome waits for that: the
+   result chip, the rail entry, the next battle (runNext gates on it), the
+   names of later campaign bosses, and the summary button. */
 const livePlayer = (card: Element | null) => {
   const w = card?.querySelector<HTMLIFrameElement>('iframe.replay-frame')?.contentWindow as (Window & {rollmonsLive?: {battle: {ended: boolean}}}) | null | undefined;
   return w?.rollmonsLive?.battle;
 };
-const heldResults = new Map<string, string>(); // battleId -> result chip html
+const NO_PLAYER_GRACE_MS = 10_000;
+const watched = new Set<string>();
+const heldResults = new Map<string, {html: string; since: number}>(); // battleId -> result chip
+const watchers = new Map<string, () => void>(); // battleId -> resolver of whenWatched()
 let revealTimer: number | undefined;
+function markWatched(bid: string): void {
+  if (watched.has(bid)) return;
+  watched.add(bid);
+  watchers.get(bid)?.(); watchers.delete(bid);
+  const session = state.session;
+  if (!session) return;
+  const g = session.gauntletView();
+  renderRail(g);
+  if (g.complete && allWatched(g) && !state.gauntletRunning) $('battle-lead').textContent = t('Run complete — view the summary.');
+  updateSummaryAccess();
+}
 function revealWatchedResults(): void {
-  for (const [bid, html] of heldResults) {
+  for (const [bid, held] of heldResults) {
     const card = document.querySelector(`#theater [data-bid="${bid}"]`);
-    const chip = card?.querySelector('.res.live');
-    if (!card || !chip) { heldResults.delete(bid); continue; }
+    if (!card) { heldResults.delete(bid); markWatched(bid); continue; }
     const b = livePlayer(card);
-    if (!b || b.ended) { chip.outerHTML = html; heldResults.delete(bid); }
+    const done = b ? b.ended : Date.now() - held.since > NO_PLAYER_GRACE_MS;
+    if (!done) continue;
+    const chip = card.querySelector('.res.live');
+    if (chip) chip.outerHTML = held.html;
+    heldResults.delete(bid); markWatched(bid);
   }
   if (!heldResults.size && revealTimer) { clearInterval(revealTimer); revealTimer = undefined; }
 }
 function holdResult(battleId: string, chipHtml: string): void {
-  heldResults.set(battleId, chipHtml);
+  if (heldResults.has(battleId) || watched.has(battleId)) return;
+  heldResults.set(battleId, {html: chipHtml, since: Date.now()});
   if (!revealTimer) revealTimer = window.setInterval(revealWatchedResults, 500);
   revealWatchedResults();
 }
-/** True while any live player on the battle screen is still animating. */
-function replaysStillPlaying(): boolean {
-  return Array.from(document.querySelectorAll('#theater .replay-card')).some((c) => { const b = livePlayer(c); return !!b && !b.ended; });
+/** Resolves once the battle has been watched (immediately with ?gate=0). */
+function whenWatched(battleId: string): Promise<void> {
+  if (!GATE || watched.has(battleId)) return Promise.resolve();
+  return new Promise((resolve) => watchers.set(battleId, resolve));
+}
+const allWatched = (g: GauntletView) => g.results.every((r) => watched.has(r.battleId));
+/** Index of the battle being watched (or, when all are watched, the one the engine plays next). */
+function nowIndex(g: GauntletView): number {
+  const i = g.results.findIndex((r) => !watched.has(r.battleId));
+  return i >= 0 ? i : g.nextIndex;
+}
+/** The summary opens only once the run is over and its last battle has been watched. */
+function updateSummaryAccess(): void {
+  const g = state.session?.gauntletView();
+  const ready = !!g && g.complete && !state.gauntletRunning && allWatched(g);
+  $<HTMLButtonElement>('to-results').disabled = !ready;
+  $('summary-fab').classList.toggle('hidden', !(ready && currentScreen === 'battle'));
 }
 function liveLines(live: LiveReplay, lines: string[]): void {
   live.add(lines);
@@ -489,8 +530,10 @@ function renderTheater(results: BattleResult[]): void {
     if (seen.has(r.battleId)) {
       // a live card: the player already holds the whole log, so only the chip changes
       if (theater.querySelector(`[data-bid="${r.battleId}"] .res.live`)) holdResult(r.battleId, chip.html);
+      else markWatched(r.battleId);
       return;
     }
+    markWatched(r.battleId); // a card built after the fact has nothing left to spoil
     const card = document.createElement('div');
     card.className = 'replay-card'; card.dataset.bid = r.battleId;
     card.innerHTML = `
@@ -516,11 +559,11 @@ function renderRun(draft: SessionView): void {
   const results = g.results.length ? g.results : (draft.battleResult ? [draft.battleResult] : []);
   if (results.length === 0) $('theater').innerHTML = '';
   renderTheater(results);
-  if (!g.complete && g.bosses.length) {
-    const nb = g.bosses[g.nextIndex];
-    if (nb) $('battle-lead').textContent = t('Now battling {name} — {i} of {n}.', {name: nb.name, i: g.nextIndex + 1, n: g.bosses.length});
+  if (g.bosses.length && !(g.complete && allWatched(g))) {
+    const now = nowIndex(g), nb = g.bosses[now];
+    if (nb) $('battle-lead').textContent = t('Now battling {name} — {i} of {n}.', {name: nb.name, i: now + 1, n: g.bosses.length});
   }
-  $<HTMLButtonElement>('to-results').disabled = !g.complete;
+  updateSummaryAccess();
 }
 
 function orderedBossIds(): string[] { return state.bosses.map((b) => b.id); }
@@ -572,19 +615,21 @@ async function runNext(): Promise<void> {
     if (state.session !== session) return; // a new run started meanwhile
     session.recordGauntletBattle(spec, outcome);
     renderRun(refreshView());
-    if (!session.gauntletComplete) { if (state.gauntletRunning) setTimeout(runNext, 650); }
-    else finishRun();
+    if (session.gauntletComplete) { finishRun(); return; }
+    // The next battle starts only once this one has been watched to the end.
+    await whenWatched(spec.battleId);
+    if (state.session === session && state.gauntletRunning) setTimeout(runNext, 400);
   } catch (e) { $('battle-lead').textContent = errorMessage(e); state.gauntletRunning = false; }
 }
 function finishRun(): void {
   state.gauntletRunning = false;
   const view = refreshView();
   renderRun(view);
-  $<HTMLButtonElement>('to-results').disabled = false;
   renderResults(view.gauntlet);
-  // Don't pull the viewer away from a replay that is still playing.
-  if (replaysStillPlaying()) $('battle-lead').textContent = t('Run complete — the replays are still playing. View the summary whenever you like.');
-  else setTimeout(() => go('results'), 500);
+  // No auto-navigation: the summary button (and the fixed one top right)
+  // unlock once the last battle has been watched, so a loss is not spoiled.
+  if (allWatched(view.gauntlet)) $('battle-lead').textContent = t('Run complete — view the summary.');
+  updateSummaryAccess();
 }
 
 async function battleOne(): Promise<void> {
