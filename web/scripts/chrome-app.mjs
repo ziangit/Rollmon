@@ -1,7 +1,7 @@
 // Plays one whole run of the built game (dist/index.html) in headless Chrome:
 // draft six by first pick, keep the default loadout, start the tiered
 // campaign, and wait for the results screen. Needs `npm run build` first.
-//   node scripts/chrome-app.mjs [seed] [p1ms] [p2ms]
+//   node scripts/chrome-app.mjs [seed] [p1ms] [p2ms]          (ROLLMONS_URL=https://… to check a deployed site)
 import {context} from 'esbuild';
 import puppeteer from 'puppeteer-core';
 import {fileURLToPath} from 'node:url';
@@ -10,7 +10,8 @@ const [seed = 7, p1ms = 10, p2ms = 10] = process.argv.slice(2);
 const web = fileURLToPath(new URL('../', import.meta.url));
 const ctx = await context({entryPoints: [], outdir: `${web}dist`});
 const {hosts, port} = await ctx.serve({servedir: `${web}../`, port: 8977});
-const base = `http://${hosts[0]}:${port}/web/dist`;
+// ROLLMONS_URL=https://… checks a deployed site instead of the local build.
+const base = (process.env.ROLLMONS_URL ?? `http://${hosts[0]}:${port}/web/dist/`).replace(/\/$/, '');
 const executablePath = process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const browser = await puppeteer.launch({executablePath, headless: true, args: ['--no-proxy-server']});
 const t0 = Date.now();

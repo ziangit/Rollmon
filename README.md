@@ -2,9 +2,11 @@
 
 A single-player Pokémon draft/autobattler. Draft six Pokémon through a slot machine, pick each one's set, then watch an AI-piloted ten-battle boss gauntlet.
 
+**Play it:** https://ziangit.github.io/Rollmon/ — everything runs in your browser (no account, no server).
+
 **v2 goal:** run the whole game in the browser. The battle AI ([poke-engine](https://github.com/pmariglia/poke-engine), Rust) compiles to WebAssembly and [`@pkmn/sim`](https://github.com/pkmn/ps/tree/main/sim) referees in a Web Worker, so there is no battle server and the game hosts as a static site. v1, which ran [foul-play](https://github.com/pmariglia/foul-play) against a local Pokémon Showdown server and shipped as a macOS app, is archived at [ziangit/rollmons](https://github.com/ziangit/rollmons).
 
-## Screenshots (v1 UI, being ported)
+## Screenshots
 
 | | |
 |:--:|:--:|
@@ -12,16 +14,19 @@ A single-player Pokémon draft/autobattler. Draft six Pokémon through a slot ma
 | ![AI-piloted battle replay](rollmons/screenshot/battle.png)<br>**Battle theater** | ![Campaign results dashboard](rollmons/screenshot/win_summary.png)<br>**Results** — outcome, MVP, damage breakdown |
 
 ## Status
-- Reference Python implementation of the draft, loadout, pool, and results logic with its test suite (`make test`).
-- Browser referee spike done: a full gen9 custom-game battle with Mega Evolution runs in-process through `@pkmn/sim`.
-- Next: poke-engine wasm build, then the battle worker. See `session-handoff.md`.
+- The whole game runs in the browser: poke-engine (WebAssembly) searches moves, `@pkmn/sim` referees, both in a Web Worker; the draft, loadout, campaign, and results logic is TypeScript under `web/`. Every push to `main` redeploys the site via GitHub Pages.
+- The Python layer under `rollmons/` remains the reference implementation and test oracle for the pure game logic (`make test`).
+- Next: playtesting and difficulty tuning. See `session-handoff.md`.
 
 ## Quick start
 
 ```bash
-make test      # ruff + pytest for the reference layer (Python 3.11, no Rust/Node)
-make harness   # reference draft/loadout UI at http://127.0.0.1:8973 (battles stubbed)
+make test                      # ruff + pytest for the reference layer (Python 3.11)
+cd engine && wasm-pack build --release --target web --out-dir pkg   # engine wasm (rustup + wasm-pack)
+cd web && npm install && npm run typecheck && npm test && npm run dev   # game at http://127.0.0.1:8975/dist/index.html
 ```
+
+See `web/README.md` for the scripts (headless-Chrome full-run check, battle sweeps, name checks).
 
 ## Contributing data
 Boss teams (`rollmons/bosses/*.txt`, `rollmons/pool/<tier>/*.txt`) and per-species set overrides (`rollmons/sets/*.txt`) are plain Showdown export text. Validate with:

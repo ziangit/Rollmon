@@ -38,7 +38,7 @@ Kept as the behavioral spec until each module is ported. `make test` runs ruff +
 | Results / damage summary | reference | **done** (`web/battle/summary.ts`, reference tests ported) |
 | Replay embed | — | **done** (`web/replay/embed.ts`, ported from `web_static/app.js`; hosted player, dev-only) |
 | Game UI (SPA) | `web_static/` + `web_app.py` | **done** (`web/app/`: screens carried over, `GameSession` replaces the FastAPI session, battles via the worker; `scripts/chrome-app.mjs` plays a whole run) |
-| Static hosting | — | **workflow in place** (`.github/workflows/pages.yml` builds engine + web and deploys `web/dist`; Pages must be enabled with the GitHub Actions source) |
+| Static hosting | — | **done** (`.github/workflows/pages.yml` builds engine + web and deploys `web/dist`; live at https://ziangit.github.io/Rollmon/) |
 
 ## Engine benchmark (2026-10-17, M1-class Mac, single thread)
 MCTS iterations completed per budget, mean over the ten states in `engine/bench/states.txt`
