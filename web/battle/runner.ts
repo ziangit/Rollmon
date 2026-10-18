@@ -44,6 +44,8 @@ export interface BattleConfig {
   /** uniform [0,1) source for choice sampling; defaults to a seeded PRNG */
   rng?: () => number;
   onTurn?: (e: TurnEvent) => void;
+  /** omniscient protocol lines appended since the last call (feeds the live replay) */
+  onLog?: (lines: string[]) => void;
 }
 
 export interface Outcome {
@@ -70,11 +72,21 @@ export function runBattle(cfg: BattleConfig): Outcome {
   let fallbacks = 0;
   const problems: string[] = [];
   const t0 = now();
+  let logIndex = 0;
+  const flushLog = () => {
+    if (!cfg.onLog || battle.log.length === logIndex) return;
+    const raw = battle.log.slice(logIndex);
+    logIndex = battle.log.length;
+    // the sim appends a |split| block in one call, so a slice never cuts one in half
+    const lines = extractChannelMessages(raw.join('\n'), [-1])[-1].filter((l) => l !== '');
+    if (lines.length) cfg.onLog(lines);
+  };
 
   // `battle.choose` commits the turn itself once every side's choice is in,
   // so this loop only has to answer each outstanding request.
   let guard = 0;
   while (!battle.ended && guard++ < 5000) {
+    flushLog();
     const reqs = battle.sides.map((s) => requestOf(s));
     if (reqs.some((r) => r?.teamPreview)) {
       // Custom Game has Team Preview; keep file order (lead = first listed).
@@ -120,6 +132,7 @@ export function runBattle(cfg: BattleConfig): Outcome {
   return finish();
 
   function finish(): Outcome {
+    flushLog();
     const log = extractChannelMessages(battle.log.join('\n'), [-1])[-1];
     return {
       winner: battle.winner ?? '(none)',

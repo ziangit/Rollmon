@@ -10,6 +10,8 @@ export interface BattleJob {
   seed?: number;
   budgetMs?: {p1: number; p2: number};
   onTurn?: (e: TurnEvent) => void;
+  /** protocol lines as the battle produces them, in order; their concatenation is the outcome's log */
+  onLog?: (lines: string[]) => void;
 }
 
 export class BattleClient {
@@ -44,6 +46,7 @@ export class BattleClient {
     return new Promise((resolve, reject) => {
       const onMessage = ({data}: MessageEvent<WorkerResponse>) => {
         if (data.type === 'turn') job.onTurn?.(data.event);
+        else if (data.type === 'log') job.onLog?.(data.lines);
         else if (data.type === 'done') { cleanup(); resolve(data.outcome); }
         else if (data.type === 'error') { cleanup(); reject(new Error(data.message)); }
       };

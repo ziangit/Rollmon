@@ -6,10 +6,11 @@ import {runBattle, type BattleConfig, type Outcome, type TurnEvent} from './runn
 
 /** Teams arrive as a Showdown export (parsed here, so the page never bundles the sim) or already parsed. */
 export interface WorkerTeam { name: string; team: string | PokemonSet[] }
-export type WorkerRequest = {type: 'battle'; p1: WorkerTeam; p2: WorkerTeam} & Omit<BattleConfig, 'engine' | 'onTurn' | 'rng' | 'p1' | 'p2'>;
+export type WorkerRequest = {type: 'battle'; p1: WorkerTeam; p2: WorkerTeam} & Omit<BattleConfig, 'engine' | 'onTurn' | 'onLog' | 'rng' | 'p1' | 'p2'>;
 export type WorkerResponse =
   | {type: 'ready'; version: string}
   | {type: 'turn'; event: TurnEvent}
+  | {type: 'log'; lines: string[]}
   | {type: 'done'; outcome: Outcome}
   | {type: 'error'; message: string};
 
@@ -28,7 +29,7 @@ self.onmessage = async ({data}: MessageEvent<WorkerRequest>) => {
   if (data.type !== 'battle') return;
   try {
     await ready;
-    const outcome = runBattle({...data, p1: parseTeam('p1', data.p1), p2: parseTeam('p2', data.p2), engine, onTurn: (event) => post({type: 'turn', event})});
+    const outcome = runBattle({...data, p1: parseTeam('p1', data.p1), p2: parseTeam('p2', data.p2), engine, onTurn: (event) => post({type: 'turn', event}), onLog: (lines) => post({type: 'log', lines})});
     post({type: 'done', outcome});
   } catch (err) {
     post({type: 'error', message: (err as Error).stack ?? String(err)});
