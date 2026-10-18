@@ -1,6 +1,7 @@
 # Session handoff
 
 **Current phase:** milestone 5 deployed (2026-10-18): the game is live at **https://ziangit.github.io/Rollmon/** (GitHub Pages, repo private, site public; every push to `main` redeploys via `.github/workflows/pages.yml`). `ROLLMONS_URL=https://ziangit.github.io/Rollmon/ node scripts/chrome-app.mjs` played a full run against the deployed site. `make test`, `cd web && npm run typecheck && npm test` (77 tests) green.
+Vercel: `vercel.json` + `deploy/vercel-build.sh` build the same site on Vercel (project `rollmons`, linked from this checkout; `vercel --prod` or connect the repo in the Vercel dashboard for deploys on push).
 **Next concrete step:** playtest on real devices (mobile Safari wasm performance is unmeasured; the first battle is the wasm + sim cold start). Then the tuning knobs: think time per band (`budgetMs` is one pair for the whole run today; `docs/DIFFICULTY.md`), deepen the Middle band, and decide the sprite/replay distribution question before sharing the link widely. Not done from milestone 2: win-rate validation against the archived v1 stack.
 
 ## Why v2 exists

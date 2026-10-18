@@ -38,7 +38,7 @@ Kept as the behavioral spec until each module is ported. `make test` runs ruff +
 | Results / damage summary | reference | **done** (`web/battle/summary.ts`, reference tests ported) |
 | Replay embed | — | **done** (`web/replay/embed.ts`, ported from `web_static/app.js`; hosted player, dev-only) |
 | Game UI (SPA) | `web_static/` + `web_app.py` | **done** (`web/app/`: screens carried over, `GameSession` replaces the FastAPI session, battles via the worker; `scripts/chrome-app.mjs` plays a whole run) |
-| Static hosting | — | **done** (`.github/workflows/pages.yml` builds engine + web and deploys `web/dist`; live at https://ziangit.github.io/Rollmon/) |
+| Static hosting | — | **done** (`.github/workflows/pages.yml` builds engine + web and deploys `web/dist`; live at https://ziangit.github.io/Rollmon/. `vercel.json` + `deploy/vercel-build.sh` do the same build on Vercel) |
 
 ## Engine benchmark (2026-10-17, M1-class Mac, single thread)
 MCTS iterations completed per budget, mean over the ten states in `engine/bench/states.txt`
@@ -83,7 +83,8 @@ Module-by-module port of the Python reference, using its tests as the spec (`web
 - `index.html` + `styles.css` are v1's `web_static/` files with local asset paths; `main.ts` is a port of `app.js` whose `fetch('/api/...')` calls became calls on an in-page `GameSession`. The inline `onclick` handlers in the markup are kept, so the handlers are published on `window`.
 - `session.ts` replaces `web_app.py`: `createGameContext(data)` derives legality/matrix/sets once; `GameSession` holds one run (draft → default non-Mega loadout → `chooseSet` until battles start → `startGauntlet(bossIds, stopOnLoss)` / `startCampaign(stopOnLoss)`); battles are driven by the page (`nextBattleSpec()` → worker → `recordGauntletBattle(spec, outcome)`), which keeps the session synchronous and testable (`session.test.ts` mirrors `tests/test_web_app.py` with synthetic logs). `BossBook` holds the authored bosses plus pasted/edited ones (validated existence-only, as v1). Seeds: `?seed=N` makes the draft, campaign draw, and battle seeds reproducible.
 - `battle/client.ts` wraps the worker as a promise queue; the worker now accepts teams as export text and imports them itself, so the page bundle (`dist/app.js`, ~95 KB) does not contain `@pkmn/sim`.
-- `dist/` is the whole site: `index.html`, `styles.css`, `app.js`, `worker.js`, the wasm, `data/game-data.json`. All paths are relative, so it hosts under a sub-path (GitHub Pages project site). `?p1ms=&p2ms=` override the search budgets (dev knob; `scripts/chrome-app.mjs` uses 10/10 ms to play a run in ~8 s).
+- `dist/` is the whole site: `index.html`, `styles.css`, `app.js`, `worker.js`, the wasm, `data/game-data.json`. All paths are relative, so it hosts under a sub-path (GitHub Pages project site) or at a root (Vercel). Both hosts build from source: there is no checked-in build output, so each needs a Rust toolchain + wasm-pack at build time (the Pages workflow via `dtolnay/rust-toolchain`, Vercel via `deploy/vercel-build.sh`, which installs rustup minimal + wasm-pack if missing).
+- The replay log is embedded unescaped in a `<script type="text/plain">` (slashes escaped as `\/`, as Showdown's replay downloads do). v1 HTML-escaped it, which made the `|raw|` custom-rules box render as literal markup, because script content is raw text and entities are not decoded. `?p1ms=&p2ms=` override the search budgets (dev knob; `scripts/chrome-app.mjs` uses 10/10 ms to play a run in ~8 s).
 - Dropped from v1: the item-icon sprite-sheet payload (never rendered by `app.js`), the set editor page (authoring tool; needs a writable `rollmons/sets/`, see open questions), and the per-request `skip_count` override.
 
 ## Carried over from v1 (still true)
