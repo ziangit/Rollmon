@@ -13,7 +13,7 @@
   - *Engine:* poke-engine compiled to wasm (`engine/`, wasm-bindgen), features `gen9` only, Tera compiled out. Exposed calls: state from string, time-boxed MCTS, damage calc. Single-thread search.
   - *Driver:* builds the poke-engine state **directly from the sim's omniscient battle object** for the side to move (perfect information, both sides), runs MCTS for the side's budget (boss 25 ms / player 100 ms by default; per-band later), picks a choice (sample among choices within 75% of the best, as v1 did), issues `move X [mega]` / `switch N`.
   - *Output:* the standard Showdown protocol log → the existing replay embed (hosted player, hotlinked sprites) and the damage summary.
-- **Data:** `rollmons/bosses`, `rollmons/sets`, `rollmons/pool` (Showdown export text, read at build or fetch time); `@pkmn/dex` for species/move data; `rollmons/data/smogon_sets.json` and `gen9randombattle.json` for set sources.
+- **Data:** `rollmons/bosses`, `rollmons/sets`, `rollmons/pool` (Showdown export text), `data/pokedex.json` + `moves.json` (species/move data), `rollmons/data/smogon_sets.json` and `gen9randombattle.json` (set sources). The build inlines all of it into `dist/data/game-data.json` (1.5 MB, ~200 KB gzipped), which the page fetches once.
 - **Hosting:** static (GitHub Pages or equivalent). Sprites and the replay player stay hotlinked from play.pokemonshowdown.com for dev; distribution decision deferred.
 
 ## Reference implementation (Python, `rollmons/`)
@@ -32,9 +32,9 @@ Kept as the behavioral spec until each module is ported. `make test` runs ruff +
 |---|---|---|
 | Engine wasm build | — | **done** (`engine/`, pinned poke-engine git rev, gen9 no-Tera; ~200 KB gzipped) |
 | Referee + driver worker | — | **done** (`web/battle/`: mapper, driver, runner, worker; 60-battle sweep clean) |
-| Legality matrix / draft | reference | not started |
-| Loadout / set selection | reference | not started |
-| Pool / campaign | reference | not started |
+| Legality matrix / draft | reference | **done** (`web/game/legality-matrix.ts`, `draft.ts`, `draft-config.ts`; reference tests ported) |
+| Loadout / set selection | reference | **done** (`web/game/team-assembly.ts`, `smogon-sets.ts`; reference tests ported) |
+| Pool / campaign | reference | **done** (`web/game/pool.ts`, `bosses.ts`, `submissions.ts`, `showdown-export.ts`) |
 | Results / damage summary | reference | **done** (`web/battle/summary.ts`, reference tests ported) |
 | Replay embed | — | **done** (`web/replay/embed.ts`, ported from `web_static/app.js`; hosted player, dev-only) |
 
@@ -67,6 +67,14 @@ tier-up costs the first ~100 ms).
 - The worker's `Outcome.log` is the **omniscient** channel of the sim's log (`extractChannelMessages(..., [-1])`): exact HP for both sides, no `|split|`/`|request|` lines. The hosted replay player renders it as-is; the damage summary measures percent of each target's max HP, so absolute (`141/297`) and percent (`48/100`) conditions give the same numbers.
 - `web/replay/embed.ts` keeps v1's behaviour verbatim: boss `|player|` line rewritten with a trainer avatar, srcdoc iframe, lazy load on intersection, re-measure after load (the measure uses `max(body, documentElement).scrollHeight`, so it only ever grows past the 620 px fallback — as in v1).
 - `node scripts/chrome-battle.mjs` now also waits for the replay player to paint inside the iframe and prints the summary sentence.
+
+## Pure game layer (2026-10-17, `web/game/`)
+Module-by-module port of the Python reference, using its tests as the spec (`web/game/*.test.ts`, 53 tests; the same data-count oracles: 424 usable Smogon species, 720/650/70 Smogon sets in/usable/excluded, 508 randbats atoms, campaign of 10).
+- **Data in, no I/O.** Every function takes plain objects (`GameData` in `game/data.ts`: pokedex, moves, randbats, Smogon JSON, overrides, pool, bosses). Node fills it from the repo (`scripts/game-data.ts`); the browser gets the JSON the build emits. Checked-in `data/pokedex.json` / `moves.json` stay the species/move source rather than `@pkmn/dex`, so the forme debut-generation overrides and base-stat totals match the reference exactly.
+- **RNG is injected** (`game/rng.ts`: `choice` / `weightedChoice` / `sample` interfaces, `seededRng(seed)` on mulberry32, shared with the battle runner). The draft, campaign, and set selection are reproducible under a seed; the Python `random.Random` streams are not reproduced, only the behaviour.
+- **Ids** use Showdown's `[a-z0-9]` rule (`toId`), matching `@pkmn/sim`. The reference's `to_id` keeps non-ASCII letters instead; the two differ only for Flabébé (pokedex key `flabebe`, which neither produces) and no checked-in data contains accented names.
+- **Deliberate deviation:** an override block without a nickname (e.g. `Charizard @ Charizardite X`) is labelled "Mega X" / "Custom N". The reference compared the nickname against the lowercase pokedex name and so labelled it "Charizard".
+- **Dropped:** the `ROLLMONS_DRAFT_*` environment overrides (the config object is the knob) and the `_sets_dir` path parameters (overrides are a `{speciesId: text}` map).
 
 ## Carried over from v1 (still true)
 - **Tera must be compiled out of the engine.** A Tera-enabled engine returns `-tera` choices the referee rejects.
