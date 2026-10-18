@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "cd web && npm ci",
+  "buildCommand": "sh deploy/vercel-build.sh",
+  "outputDirectory": "web/dist",
+  "cleanUrls": true,
+  "headers": [
+    {"source": "/(.*)\\.wasm", "headers": [{"key": "Content-Type", "value": "application/wasm"}]},
+    {"source": "/data/(.*)", "headers": [{"key": "Cache-Control", "value": "public, max-age=3600"}]}
+  ]
+}

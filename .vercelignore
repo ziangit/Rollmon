@@ -1,0 +1,11 @@
+# Only the sources Vercel's build needs are uploaded; everything else is built there.
+node_modules
+web/node_modules
+web/dist
+engine/pkg
+engine/target
+target
+.venv
+spikes
+logs
+rollmons/screenshot
