@@ -35,8 +35,8 @@ Kept as the behavioral spec until each module is ported. `make test` runs ruff +
 | Legality matrix / draft | reference | not started |
 | Loadout / set selection | reference | not started |
 | Pool / campaign | reference | not started |
-| Results / damage summary | reference | not started |
-| Replay embed | — | reuse from `web_static/app.js` |
+| Results / damage summary | reference | **done** (`web/battle/summary.ts`, reference tests ported) |
+| Replay embed | — | **done** (`web/replay/embed.ts`, ported from `web_static/app.js`; hosted player, dev-only) |
 
 ## Engine benchmark (2026-10-17, M1-class Mac, single thread)
 MCTS iterations completed per budget, mean over the ten states in `engine/bench/states.txt`
@@ -62,6 +62,11 @@ tier-up costs the first ~100 ms).
 - **Engine outputs are structured** (`{kind, index, mega}`), never parsed from move names.
 - **Known inaccuracies**: Team Preview keeps file order (no lead search); seven items in the data are unknown to the engine and searched as "no item" (Terrain Extender, Heat/Damp Rock, Scope Lens, Quick Claw, Eject Pack, Eject Button — `node scripts/check-names.ts`); engine durations for Encore/Taunt/Yawn/locked moves are approximated from the sim's remaining turns; the engine's Mega legality is per Pokémon, not per team.
 - **Cost**: ~3.5–4.5 s per battle at 100 ms (p1) / 25 ms (p2) per decision; the `@pkmn/sim` + engine worker bundle is 9.7 MB unminified, **1.04 MB minified+gzipped** (plus 203 KB wasm) — all generations' data are included, tree-shaking gen9 is future work.
+
+## Replay + summary (2026-10-17)
+- The worker's `Outcome.log` is the **omniscient** channel of the sim's log (`extractChannelMessages(..., [-1])`): exact HP for both sides, no `|split|`/`|request|` lines. The hosted replay player renders it as-is; the damage summary measures percent of each target's max HP, so absolute (`141/297`) and percent (`48/100`) conditions give the same numbers.
+- `web/replay/embed.ts` keeps v1's behaviour verbatim: boss `|player|` line rewritten with a trainer avatar, srcdoc iframe, lazy load on intersection, re-measure after load (the measure uses `max(body, documentElement).scrollHeight`, so it only ever grows past the 620 px fallback — as in v1).
+- `node scripts/chrome-battle.mjs` now also waits for the replay player to paint inside the iframe and prints the summary sentence.
 
 ## Carried over from v1 (still true)
 - **Tera must be compiled out of the engine.** A Tera-enabled engine returns `-tera` choices the referee rejects.
