@@ -1,8 +1,8 @@
 # web
 
-The browser app. Today: the **battle worker**, the replay embed, the damage
-summary (milestones 2–3), and the **pure game layer** (milestone 4: legality
-matrix, draft, loadout, pool/campaign, bosses). The game UI comes with milestone 5.
+The browser app: the **game page** (`app/`), the **battle worker** (`battle/`),
+the replay embed, the damage summary, and the **pure game layer** (`game/`).
+`npm run build` writes the whole static site to `dist/`.
 
 ```
 npm install
@@ -11,18 +11,28 @@ npm test                   # node:test suites in battle/, replay/, game/
 npm run battle -- pool/advanced/Cynthia.txt bosses/leon.txt 1   # one traced battle in Node
 node scripts/sweep.ts 40 10          # many quick battles, reports problems
 node scripts/check-names.ts          # every species/move/item/ability in rollmons/ known to the engine
-npm run build              # dist/worker.js + dist/battle-page.js + wasm copy + dist/data/game-data.json
-npm run dev                # same, watching, serves dev/battle.html on :8975
-node scripts/chrome-battle.mjs 1     # headless Chrome runs the worker page end to end
+npm run build              # dist/: index.html, styles.css, app.js, worker.js, wasm, data/game-data.json (+ dev battle-page.js)
+npm run build -- --minify  # same, minified, no sourcemaps (what the Pages workflow deploys)
+npm run dev                # watch + serve: game at /dist/index.html, worker page at /dev/battle.html (:8975)
+node scripts/chrome-app.mjs [seed] [p1ms] [p2ms]   # headless Chrome plays a whole run (draft → campaign → results → replay)
+node scripts/chrome-battle.mjs 1     # headless Chrome runs the worker dev page end to end
 ```
 
 Needs `engine/pkg` first: `cd engine && wasm-pack build --release --target web --out-dir pkg`.
+
+## app/
+- `index.html`, `styles.css` — v1's screens and styles, unchanged apart from local asset paths.
+- `main.ts` — port of v1 `app.js`: router, renderers for draft / loadout / bosses / battle / results / pool; drives the worker through `BattleClient`. Dev knobs: `?seed=N`, `?p1ms=&p2ms=`; `window.__rollmons` exposes the session view for scripts.
+- `session.ts` — `GameSession` (one run: draft, loadout, gauntlet/campaign, results), `BossBook` (authored + pasted bosses), `createGameContext`, view builders. Replaces the v1 FastAPI session; tests in `session.test.ts`.
+- `sprites.ts` — Showdown sprite URLs (hotlinked, dev-only).
+- `roller.js` — the title-screen slot roller, verbatim from v1 (decorative).
 
 ## battle/
 - `engine-state.ts` — omniscient mapper: `@pkmn/sim` `Battle` → poke-engine state string.
 - `driver.ts` — sim request → legal choices; MCTS result → one choice (75 %-of-best visit rule, visit-weighted sample; random legal fallback).
 - `runner.ts` — the synchronous battle loop (`runBattle`), format constant, outcome + omniscient protocol log.
-- `worker.ts` — Web Worker entry: `{type:'battle', p1, p2, seed, budgetMs}` → `turn` events → `done`.
+- `worker.ts` — Web Worker entry: `{type:'battle', p1, p2, seed, budgetMs}` (teams as export text or parsed sets) → `turn` events → `done`.
+- `client.ts` — `BattleClient`: promise wrapper over the worker (one battle at a time, per-turn callback).
 - `summary.ts` — damage summary from the protocol log (MVP, per-Pokémon %, gauntlet sentence); port of the Python reference.
 
 ## game/

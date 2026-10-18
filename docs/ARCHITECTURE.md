@@ -37,6 +37,8 @@ Kept as the behavioral spec until each module is ported. `make test` runs ruff +
 | Pool / campaign | reference | **done** (`web/game/pool.ts`, `bosses.ts`, `submissions.ts`, `showdown-export.ts`) |
 | Results / damage summary | reference | **done** (`web/battle/summary.ts`, reference tests ported) |
 | Replay embed | — | **done** (`web/replay/embed.ts`, ported from `web_static/app.js`; hosted player, dev-only) |
+| Game UI (SPA) | `web_static/` + `web_app.py` | **done** (`web/app/`: screens carried over, `GameSession` replaces the FastAPI session, battles via the worker; `scripts/chrome-app.mjs` plays a whole run) |
+| Static hosting | — | **workflow in place** (`.github/workflows/pages.yml` builds engine + web and deploys `web/dist`; Pages must be enabled with the GitHub Actions source) |
 
 ## Engine benchmark (2026-10-17, M1-class Mac, single thread)
 MCTS iterations completed per budget, mean over the ten states in `engine/bench/states.txt`
@@ -65,7 +67,8 @@ tier-up costs the first ~100 ms).
 
 ## Replay + summary (2026-10-17)
 - The worker's `Outcome.log` is the **omniscient** channel of the sim's log (`extractChannelMessages(..., [-1])`): exact HP for both sides, no `|split|`/`|request|` lines. The hosted replay player renders it as-is; the damage summary measures percent of each target's max HP, so absolute (`141/297`) and percent (`48/100`) conditions give the same numbers.
-- `web/replay/embed.ts` keeps v1's behaviour verbatim: boss `|player|` line rewritten with a trainer avatar, srcdoc iframe, lazy load on intersection, re-measure after load (the measure uses `max(body, documentElement).scrollHeight`, so it only ever grows past the 620 px fallback — as in v1).
+- `web/replay/embed.ts` keeps v1's behaviour: boss `|player|` line rewritten with a trainer avatar, srcdoc iframe, lazy load on intersection, re-measure after load (the measure uses `max(body, documentElement).scrollHeight`, so it only ever grows past the 620 px fallback — as in v1).
+- **The hosted `js/replay-embed.js` loader is not used.** It appends its sixteen script tags with `appendChild`, which makes them async, so execution order is a race: sometimes a data script ran before jQuery (`$ is not defined`, blank replay) or `graphics.js` before `Dex` (effect images requested relative to our page, 404). The srcdoc now lists the same stylesheets and scripts (same order, same `?a7` version) as ordinary script tags, which execute in document order, and includes a ~30-line bootstrap (build the `Battle`, play/pause/reset/step/switch-sides controls, speed chooser). The player's internal API (`new Battle({...})`, `seekBy`, `switchViewpoint`) is therefore a dependency; if the hosted client changes it, update `PLAYER_BOOTSTRAP`.
 - `node scripts/chrome-battle.mjs` now also waits for the replay player to paint inside the iframe and prints the summary sentence.
 
 ## Pure game layer (2026-10-17, `web/game/`)
@@ -75,6 +78,13 @@ Module-by-module port of the Python reference, using its tests as the spec (`web
 - **Ids** use Showdown's `[a-z0-9]` rule (`toId`), matching `@pkmn/sim`. The reference's `to_id` keeps non-ASCII letters instead; the two differ only for Flabébé (pokedex key `flabebe`, which neither produces) and no checked-in data contains accented names.
 - **Deliberate deviation:** an override block without a nickname (e.g. `Charizard @ Charizardite X`) is labelled "Mega X" / "Custom N". The reference compared the nickname against the lowercase pokedex name and so labelled it "Charizard".
 - **Dropped:** the `ROLLMONS_DRAFT_*` environment overrides (the config object is the knob) and the `_sets_dir` path parameters (overrides are a `{speciesId: text}` map).
+
+## Game page (2026-10-17, `web/app/`)
+- `index.html` + `styles.css` are v1's `web_static/` files with local asset paths; `main.ts` is a port of `app.js` whose `fetch('/api/...')` calls became calls on an in-page `GameSession`. The inline `onclick` handlers in the markup are kept, so the handlers are published on `window`.
+- `session.ts` replaces `web_app.py`: `createGameContext(data)` derives legality/matrix/sets once; `GameSession` holds one run (draft → default non-Mega loadout → `chooseSet` until battles start → `startGauntlet(bossIds, stopOnLoss)` / `startCampaign(stopOnLoss)`); battles are driven by the page (`nextBattleSpec()` → worker → `recordGauntletBattle(spec, outcome)`), which keeps the session synchronous and testable (`session.test.ts` mirrors `tests/test_web_app.py` with synthetic logs). `BossBook` holds the authored bosses plus pasted/edited ones (validated existence-only, as v1). Seeds: `?seed=N` makes the draft, campaign draw, and battle seeds reproducible.
+- `battle/client.ts` wraps the worker as a promise queue; the worker now accepts teams as export text and imports them itself, so the page bundle (`dist/app.js`, ~95 KB) does not contain `@pkmn/sim`.
+- `dist/` is the whole site: `index.html`, `styles.css`, `app.js`, `worker.js`, the wasm, `data/game-data.json`. All paths are relative, so it hosts under a sub-path (GitHub Pages project site). `?p1ms=&p2ms=` override the search budgets (dev knob; `scripts/chrome-app.mjs` uses 10/10 ms to play a run in ~8 s).
+- Dropped from v1: the item-icon sprite-sheet payload (never rendered by `app.js`), the set editor page (authoring tool; needs a writable `rollmons/sets/`, see open questions), and the per-request `skip_count` override.
 
 ## Carried over from v1 (still true)
 - **Tera must be compiled out of the engine.** A Tera-enabled engine returns `-tera` choices the referee rejects.

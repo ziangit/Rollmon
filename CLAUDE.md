@@ -23,7 +23,7 @@ A single-player Pokémon draft/autobattler being rebuilt to run **entirely in th
 ## Toolchain
 - Rust via **rustup** (not Homebrew `rust`). Installed 2026-10-17 as Homebrew's keg-only `rustup` formula (no `rustup-init`; toolchains live in `~/.rustup`): `/opt/homebrew/opt/rustup/bin` is prepended to PATH in `~/.zshrc`, and `~/.cargo/bin` holds symlinks to those proxies because the sibling project `showdown-rs` puts `~/.cargo/bin` first on PATH (verified it still builds). Targets/components: `wasm32-unknown-unknown`, `llvm-tools-preview`. Homebrew `rust` is still installed but shadowed.
 - Engine build: `wasm-pack` (Homebrew) → `cd engine && wasm-pack build --release --target web --out-dir pkg` (needed before anything in `web/` runs). Native checks: `cargo test --release`, `cargo run --release --bin bench`.
-- Web: `cd web && npm install && npm run build`; TypeScript runs directly under Node 24 (type stripping, so no enums/namespaces and `.ts` import extensions); `npm run dev` serves `dev/battle.html`.
+- Web: `cd web && npm install && npm run build` writes the static site to `web/dist`; TypeScript runs directly under Node 24 (type stripping, so no enums/namespaces and `.ts` import extensions); `npm run dev` serves the game at `/dist/index.html` and the worker page at `/dev/battle.html`. `node scripts/chrome-app.mjs` plays a whole run in headless Chrome (needs Chrome installed).
 - Node 24 for `@pkmn/sim`, the web bundle, and spikes. Python 3.11 only for the reference layer.
 
 ## Where to look
