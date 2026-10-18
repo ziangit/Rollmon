@@ -19,4 +19,6 @@ export interface GameData {
   bosses: Bosses;
   /** data/tiers.json: species id -> Showdown tier (scripts/tiers.ts) */
   tiers: Record<string, string>;
+  /** data/species-names.json: dex number -> {zh, ja} (scripts/species-names.ts) */
+  speciesNames: Record<string, {zh?: string; ja?: string}>;
 }
