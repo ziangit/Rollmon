@@ -28,5 +28,6 @@ A single-player Pokémon draft/autobattler being rebuilt to run **entirely in th
 
 ## Where to look
 - `docs/ARCHITECTURE.md` — v2 target architecture, port status, gotchas carried over from v1
+- `docs/BATTLE_AI.md` — how the battle runs in the browser (cost to the player's machine) and how the AI compares with v1's foul-play
 - `docs/DIFFICULTY.md` — campaign ladder contract and tuning knobs
 - `docs/v1-foul-play-integration.md` — v1 integration notes (historical; the Tera, Mega, and replay-rendering landmines still apply)

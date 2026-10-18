@@ -16,7 +16,7 @@ A single-player Pokémon draft/autobattler. Draft six Pokémon through a slot ma
 ## Status
 - The whole game runs in the browser: poke-engine (WebAssembly) searches moves, `@pkmn/sim` referees, both in a Web Worker; the draft, loadout, campaign, and results logic is TypeScript under `web/`. Every push to `main` redeploys the site via GitHub Pages.
 - The Python layer under `rollmons/` remains the reference implementation and test oracle for the pure game logic (`make test`).
-- Next: playtesting and difficulty tuning. See `session-handoff.md`.
+- Next: playtesting and difficulty tuning. See `session-handoff.md`. How the AI works and how strong it is: `docs/BATTLE_AI.md`.
 
 ## Quick start
 
