@@ -427,6 +427,24 @@ details.raw pre{margin:.4rem 0 0;font-size:.78rem;line-height:1.45;white-space:p
 
 .result-side{display:flex;flex-direction:column;gap:1.1rem}
 .mvp-card{padding:1.2rem;border-color:var(--gold);background:linear-gradient(180deg,rgba(255,204,62,.14),var(--surface))}
+.score-card{padding:1.2rem}
+.score-total{display:flex;align-items:baseline;gap:.6rem;margin:.3rem 0 .2rem}
+.score-total .v{font-family:var(--font-pixel);font-size:1.9rem;color:var(--gold);text-shadow:2px 2px 0 var(--edge)}
+.score-total .k{font-family:var(--font-pixel);font-size:.5rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.score-rows{list-style:none;margin:.6rem 0 0;padding:0;display:grid;gap:.25rem;font-size:.82rem;color:var(--muted)}
+.score-rows li{display:flex;justify-content:space-between;gap:.6rem}
+.score-rows b{color:var(--ink)}
+.score-submit{display:flex;gap:.5rem;margin-top:.9rem;align-items:center;flex-wrap:wrap}
+.score-submit input{flex:1 1 9rem;min-width:0;padding:.5rem .6rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font:inherit}
+.score-submit input:focus{outline:3px solid var(--gold);outline-offset:0}
+.score-status{margin:.5rem 0 0;font-size:.82rem;color:var(--muted);min-height:1.2em}
+.board-card{margin:1.4rem auto 0;padding:1rem 1.2rem;max-width:34rem;text-align:left}
+.board-card .panel-head{margin-bottom:.6rem}
+.board-list{list-style:none;margin:0;padding:0;display:grid;gap:.3rem}
+.board-list li{display:grid;grid-template-columns:2rem 1fr auto;gap:.6rem;align-items:baseline;font-size:.9rem}
+.board-list .rank{font-family:var(--font-pixel);font-size:.55rem;color:var(--faint)}
+.board-list .score{font-family:var(--font-pixel);font-size:.6rem;color:var(--gold)}
+.board-list small{display:block;color:var(--faint);font-size:.72rem}
 .mvp-body{display:flex;align-items:center;gap:.9rem;margin-top:.5rem}
 .asset-host.mvp-sprite{width:84px;height:84px;flex:0 0 84px;display:grid;place-items:center}
 .asset-host.mvp-sprite img{max-width:100%;max-height:100%;image-rendering:pixelated;filter:drop-shadow(3px 3px 0 rgba(8,6,18,.4))}

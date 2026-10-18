@@ -30,6 +30,17 @@ const state: State = {ctx: null, bossBook: null, session: null, view: null, boss
 const params = new URLSearchParams(location.search);
 // Dev knobs: ?seed=N makes the run reproducible; ?p1ms=&p2ms= set the search
 // budgets and override the player's low-power switch (docs/ROADMAP.md §2).
+/* Leaderboard API (docs/ROADMAP.md §7): the Vercel function; the GitHub
+   Pages mirror calls the Vercel deployment cross-origin. ?api=<origin> overrides. */
+const API_BASE = params.get('api') ?? (/\.vercel\.app$/.test(location.hostname) ? '' : 'https://rollmon.vercel.app');
+const TOKEN_KEY = 'rollmons-token', NAME_KEY = 'rollmons-name';
+function clientToken(): string | null {
+  try {
+    let t = localStorage.getItem(TOKEN_KEY);
+    if (!t) { t = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem(TOKEN_KEY, t); }
+    return t;
+  } catch { return null; }
+}
 const LOW_POWER_KEY = 'rollmons-low-power';
 let lowPower = false;
 try { lowPower = localStorage.getItem(LOW_POWER_KEY) === '1'; } catch { /* private mode */ }
@@ -640,6 +651,8 @@ function renderResults(g: GauntletView): void {
     ${ties ? `<div class="stat"><div class="v">${ties}</div><div class="k">Ties</div></div>` : ''}
     <div class="stat"><div class="v">${avg.toFixed(1)}</div><div class="k">Avg turns</div></div>`;
 
+  renderScore(g);
+
   $('ladder-results').innerHTML = g.bosses.map((b, i) => {
     const r = results[i];
     const cls = !r ? 'pending' : r.winner === 'player' ? 'win' : r.winner === 'boss' ? 'loss' : 'tie';
@@ -647,6 +660,71 @@ function renderResults(g: GauntletView): void {
     const attrs = r ? `onclick="jumpToReplay('${r.battleId}')" title="Watch this battle" role="button" tabindex="0"` : '';
     return `<li class="ladder-row ${cls}${r ? ' clickable' : ''}" ${attrs}><span class="ln">${i + 1}</span><span class="lname">${esc(b.name)}</span><span class="lres">${label}${r ? ` · ${r.turns}t` : ''}</span></li>`;
   }).join('');
+}
+
+/* =====================================================================
+   LEADERBOARD
+   ===================================================================== */
+const BAND_LABEL: Record<string, string> = {level_1: 'Cakewalk', level_2: 'Meme', level_3: 'Red', middle: 'Middle', advanced: 'Advanced', level_10: 'Air'};
+let submittedFor: string | null = null; // battleId of the last battle of the run already submitted
+function renderScore(g: GauntletView): void {
+  const card = $('score-card');
+  const score = g.score;
+  if (!score) { card.classList.add('hidden'); card.innerHTML = ''; return; }
+  card.classList.remove('hidden');
+  const won = score.battles.filter((b) => b.won);
+  const rows = won.map((b) => `<li><span>${esc(g.bosses[b.index]?.name ?? '')} <small>(${BAND_LABEL[b.band] ?? b.band})</small></span><b>${(b.points * b.speedBonus).toFixed(1)}</b></li>`).join('');
+  const proof = state.session?.runProof() ?? null;
+  const runKey = g.results.at(-1)?.battleId ?? null;
+  const already = runKey !== null && submittedFor === runKey;
+  let name = '';
+  try { name = localStorage.getItem(NAME_KEY) ?? ''; } catch { /* private mode */ }
+  card.innerHTML = `<p class="eyebrow">Score</p>
+    <div class="score-total"><span class="v" id="score-total">${score.total}</span><span class="k">points</span></div>
+    <ul class="score-rows">${rows || '<li><span>No wins</span><b>0</b></li>'}
+      <li><span>Base (wins × speed)</span><b>${score.base.toFixed(1)}</b></li>
+      <li><span>Team handicap <small>(by tier)</small></span><b>× ${score.handicap.toFixed(2)}</b></li></ul>
+    ${proof && !already ? `<form class="score-submit" onsubmit="submitScore(event)"><input id="score-name" maxlength="24" placeholder="Your name" value="${esc(name)}" required><button class="btn btn-primary btn-sm" type="submit">Submit to leaderboard</button></form>`
+      : `<p class="score-status">${already ? 'Submitted.' : 'Only fresh campaign runs can be submitted.'}</p>`}
+    <p class="score-status" id="score-status"></p>`;
+}
+async function submitScore(ev: Event): Promise<void> {
+  ev.preventDefault();
+  const session = state.session;
+  const proof = session?.runProof();
+  const status = $('score-status');
+  if (!session || !proof) { status.textContent = 'This run cannot be submitted.'; return; }
+  const name = $<HTMLInputElement>('score-name').value.trim();
+  if (!name) { status.textContent = 'Enter a name first.'; return; }
+  try { localStorage.setItem(NAME_KEY, name); } catch { /* private mode */ }
+  const btn = document.querySelector<HTMLButtonElement>('#score-card button');
+  if (btn) btn.disabled = true;
+  status.textContent = 'Verifying your run…';
+  try {
+    const res = await fetch(`${API_BASE}/api/leaderboard`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, proof, token: clientToken()})});
+    const body = await res.json().catch(() => ({})) as {rank?: number; error?: string};
+    if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+    submittedFor = session.gauntletView().results.at(-1)?.battleId ?? null;
+    status.textContent = `Verified! You are #${body.rank} on the leaderboard.`;
+    document.querySelector('#score-card form')?.remove();
+    void loadBoard();
+  } catch (e) {
+    status.textContent = `Could not submit: ${errorMessage(e)}`;
+    if (btn) btn.disabled = false;
+  }
+}
+async function loadBoard(): Promise<void> {
+  const card = $('board-card');
+  try {
+    const res = await fetch(`${API_BASE}/api/leaderboard?limit=10`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const {entries} = await res.json() as {entries: {name: string; score: number; wins: number; battles: number; team: string[]; createdAt: string}[]};
+    card.innerHTML = `<div class="panel-head"><h3>Leaderboard</h3><span class="panel-note">top ${entries.length} · verified runs</span></div>
+      <ol class="board-list">${entries.map((e, i) => `<li><span class="rank">#${i + 1}</span><span>${esc(e.name)}<small>${e.wins}/${e.battles} wins · ${e.team.map((t) => titleCase(t)).join(', ')}</small></span><span class="score">${e.score}</span></li>`).join('') || '<li><span></span><span>No runs yet. Be the first!</span><span></span></li>'}</ol>`;
+    card.classList.remove('hidden');
+  } catch {
+    card.classList.add('hidden'); // no API here (local build, or the function is not configured)
+  }
 }
 
 /* =====================================================================
@@ -688,7 +766,7 @@ function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, thinReroll, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, thinReroll, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
@@ -708,6 +786,7 @@ async function boot(): Promise<void> {
     renderMatrix();
     renderBosses(state.bossBook.list());
     $('title-foot').textContent = 'Lv 100 · Gen 9 · engine-enforced dedupe';
+    void loadBoard();
   } catch (e) {
     $('matrix-summary').textContent = errorMessage(e);
     $('title-foot').textContent = `Could not load game data: ${errorMessage(e)}`;

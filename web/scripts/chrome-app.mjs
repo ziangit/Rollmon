@@ -23,7 +23,7 @@ try {
   const click = (sel) => page.$eval(sel, (el) => el.click());
   page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('favicon')) console.error('page:', m.text()); });
   page.on('pageerror', (e) => console.error('pageerror:', e.message));
-  page.on('response', (r) => { if (r.status() >= 400 && !r.url().includes('pokemonshowdown.com')) console.error('http', r.status(), r.url()); });
+  page.on('response', (r) => { if (r.status() >= 400 && !r.url().includes('pokemonshowdown.com') && !r.url().includes('/api/')) console.error('http', r.status(), r.url()); });
   await page.goto(`${base}/index.html?seed=${seed}&p1ms=${p1ms}&p2ms=${p2ms}`);
 
   // boot: data loaded, matrix rendered, worker ready
@@ -71,10 +71,13 @@ try {
   console.log(`[${elapsed()}] run over; auto-navigated to results: ${autoNavigated} (false while a live replay is still animating)`);
   if (!autoNavigated) await click('#to-results');
   await page.waitForFunction(() => window.__rollmons.screen() === 'results');
-  const view = await page.evaluate(() => { const v = window.__rollmons.view(); return {summary: v.gauntlet.summary, results: v.gauntlet.results.map((r) => [r.bossName, r.winner, r.turns, r.megas, r.problems.length])}; });
+  const view = await page.evaluate(() => { const v = window.__rollmons.view(); return {summary: v.gauntlet.summary, score: v.gauntlet.score?.total, results: v.gauntlet.results.map((r) => [r.bossName, r.winner, r.turns, r.megas, r.problems.length])}; });
   console.log(`[${elapsed()}] results:`, await page.$eval('#result-title', (e) => e.textContent), '|', await page.$eval('#result-record', (e) => e.textContent));
   for (const r of view.results) console.log('  ', r.join(' '));
   console.log('  summary:', view.summary);
+  const score = await page.evaluate(() => ({total: Number(document.getElementById('score-total')?.textContent), form: !!document.querySelector('#score-card form'), board: !document.getElementById('board-card').classList.contains('hidden')}));
+  console.log('  score:', JSON.stringify(score), '| view score:', view.score);
+  if (!(score.total >= 0) || score.total !== view.score || !score.form) { console.error('score card missing or does not match the session score'); process.exitCode = 1; }
   console.log('  damage rows:', await page.$$eval('#damage-bars .dmg-row', (r) => r.length), '| ladder rows:', await page.$$eval('#ladder-results .ladder-row', (r) => r.length), '| mvp:', await page.$eval('#mvp-card', (e) => e.classList.contains('hidden') ? 'none' : e.querySelector('strong').textContent));
 
   // rewatch: the replay player paints inside the first theater card
