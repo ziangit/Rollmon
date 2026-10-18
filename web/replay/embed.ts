@@ -68,6 +68,7 @@ const playerBootstrap = (live: boolean) => `(function () {
   var $el = $('.wrapper');
   var log = ($('script.battle-log-data').text() || '').replace(/\\\\\\//g, '/');
   var battle = new Battle({id: '', $frame: $el.find('.battle'), $logFrame: $el.find('.battle-log'), log: log ? log.split('\\n') : [], paused: ${live ? 'false' : 'true'}, autoresize: true});
+  battle.setMute(true); // never play the battle music
   var kicked = false;
   window.rollmonsLive = {
     battle: battle,
