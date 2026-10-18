@@ -2,7 +2,7 @@
 
 A single-player Pokémon draft/autobattler. Draft six Pokémon through a slot machine, pick each one's set, then watch an AI-piloted ten-battle boss gauntlet.
 
-**Play it:** https://playrollmons.vercel.app (mirror: https://ziangit.github.io/Rollmon/) — everything runs in your browser (no account, no server).
+**Play it:** https://rollmon.vercel.app (mirror: https://ziangit.github.io/Rollmon/) — everything runs in your browser (no account, no server).
 
 **v2 goal:** run the whole game in the browser. The battle AI ([poke-engine](https://github.com/pmariglia/poke-engine), Rust) compiles to WebAssembly and [`@pkmn/sim`](https://github.com/pkmn/ps/tree/main/sim) referees in a Web Worker, so there is no battle server and the game hosts as a static site. v1, which ran [foul-play](https://github.com/pmariglia/foul-play) against a local Pokémon Showdown server and shipped as a macOS app, is archived at [ziangit/rollmons](https://github.com/ziangit/rollmons).
 
