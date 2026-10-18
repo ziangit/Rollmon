@@ -4,10 +4,10 @@
 import {BattleClient} from '../battle/client.ts';
 import {DEFAULT_BUDGET_MS} from '../battle/runner.ts';
 import type {GameData} from '../game/data.ts';
-import {esc, mountReplay} from '../replay/embed.ts';
+import {esc, mountLiveReplay, mountReplay, type LiveReplay} from '../replay/embed.ts';
 import {
-  BOSS_ORDER_MAX, BOSS_ORDER_MIN, BossBook, DraftError, GameSession, SessionError, createGameContext, matrixView,
-  type BattleResult, type BossInfo, type GameContext, type GauntletView, type MatrixCellView, type MatrixView, type OfferView,
+  BOSS_ORDER_MAX, BOSS_ORDER_MIN, BossBook, DraftError, GameSession, PLAYER_NAME, SessionError, createGameContext, matrixView,
+  type BattleResult, type BattleSpec, type BossInfo, type GameContext, type GauntletView, type MatrixCellView, type MatrixView, type OfferView,
   type SessionView, type SpeciesView,
 } from './session.ts';
 import {initRoller, rollMon} from './roller.js';
@@ -379,6 +379,64 @@ function renderRail(gauntlet: GauntletView): void {
     return `<li${attrs}><span class="dot"></span><span>${i + 1}. ${esc(b.name)}</span><small>${label}</small></li>`;
   }).join('');
 }
+const resultChip = (r: BattleResult) => {
+  const cls = r.winner === 'player' ? 'win' : r.winner === 'boss' ? 'loss' : 'tie';
+  const label = r.winner === 'tie' ? 'Tie' : `${r.winner === 'player' ? r.playerName : r.bossName} wins`;
+  return {cls, label, html: `<span class="res ${cls}">${esc(label)} · ${r.turns}t</span>`};
+};
+/* A battle's card is created when the battle starts (docs/ROADMAP.md §4): the
+   replay player inside animates the protocol lines as the worker streams
+   them, so the player watches the fight live instead of waiting for the end. */
+function mountLiveCard(spec: BattleSpec): LiveReplay {
+  const theater = $('theater');
+  theater.querySelector('.replay-placeholder')?.remove();
+  const card = document.createElement('div');
+  card.className = 'replay-card'; card.dataset.bid = spec.battleId; card.dataset.live = '1';
+  card.innerHTML = `
+    <div class="replay-head">
+      <h3>${esc(PLAYER_NAME)} <span style="color:var(--faint)">vs</span> ${esc(spec.bossName)}</h3>
+      <span class="res live">Live · turn 1</span>
+    </div>`;
+  theater.appendChild(card);
+  return mountLiveReplay(card, spec.bossName, PLAYER_NAME);
+}
+function liveTurn(spec: BattleSpec, turn: number): void {
+  const chip = document.querySelector(`#theater [data-bid="${spec.battleId}"] .res.live`);
+  if (chip) chip.textContent = `Live · turn ${turn}`;
+}
+/* The result chip of a live card is held back until its player has animated
+   to the end (or was never loaded), so watching a battle live is not spoiled
+   by the engine finishing it seconds earlier. */
+const livePlayer = (card: Element | null) => {
+  const w = card?.querySelector<HTMLIFrameElement>('iframe.replay-frame')?.contentWindow as (Window & {rollmonsLive?: {battle: {ended: boolean}}}) | null | undefined;
+  return w?.rollmonsLive?.battle;
+};
+const heldResults = new Map<string, string>(); // battleId -> result chip html
+let revealTimer: number | undefined;
+function revealWatchedResults(): void {
+  for (const [bid, html] of heldResults) {
+    const card = document.querySelector(`#theater [data-bid="${bid}"]`);
+    const chip = card?.querySelector('.res.live');
+    if (!card || !chip) { heldResults.delete(bid); continue; }
+    const b = livePlayer(card);
+    if (!b || b.ended) { chip.outerHTML = html; heldResults.delete(bid); }
+  }
+  if (!heldResults.size && revealTimer) { clearInterval(revealTimer); revealTimer = undefined; }
+}
+function holdResult(battleId: string, chipHtml: string): void {
+  heldResults.set(battleId, chipHtml);
+  if (!revealTimer) revealTimer = window.setInterval(revealWatchedResults, 500);
+  revealWatchedResults();
+}
+/** True while any live player on the battle screen is still animating. */
+function replaysStillPlaying(): boolean {
+  return Array.from(document.querySelectorAll('#theater .replay-card')).some((c) => { const b = livePlayer(c); return !!b && !b.ended; });
+}
+function liveLines(live: LiveReplay, lines: string[]): void {
+  live.add(lines);
+  const card = live.frame.parentElement;
+  if (card) card.dataset.lines = String(live.lines); // read by scripts/chrome-app.mjs
+}
 function renderTheater(results: BattleResult[]): void {
   const theater = $('theater');
   if (!results.length) {
@@ -389,15 +447,18 @@ function renderTheater(results: BattleResult[]): void {
   theater.querySelector('.replay-placeholder')?.remove();
   const seen = new Set(Array.from(theater.querySelectorAll<HTMLElement>('[data-bid]'), (n) => n.dataset.bid));
   results.forEach((r) => {
-    if (seen.has(r.battleId)) return;
-    const cls = r.winner === 'player' ? 'win' : r.winner === 'boss' ? 'loss' : 'tie';
-    const resLabel = r.winner === 'tie' ? 'Tie' : `${r.winner === 'player' ? r.playerName : r.bossName} wins`;
+    const chip = resultChip(r);
+    if (seen.has(r.battleId)) {
+      // a live card: the player already holds the whole log, so only the chip changes
+      if (theater.querySelector(`[data-bid="${r.battleId}"] .res.live`)) holdResult(r.battleId, chip.html);
+      return;
+    }
     const card = document.createElement('div');
     card.className = 'replay-card'; card.dataset.bid = r.battleId;
     card.innerHTML = `
       <div class="replay-head">
         <h3>${esc(r.playerName)} <span style="color:var(--faint)">vs</span> ${esc(r.bossName)}</h3>
-        <span class="res ${cls}">${esc(resLabel)} · ${r.turns}t</span>
+        ${chip.html}
       </div>`;
     if (r.log.length) {
       // The srcdoc is deferred until the card is visible: the Showdown player
@@ -405,7 +466,7 @@ function renderTheater(results: BattleResult[]): void {
       mountReplay(card, r.log, r.bossName, r.playerName);
     } else {
       const ph = document.createElement('div'); ph.className = 'replay-ph';
-      ph.innerHTML = `<div><div class="big">No replay for this battle</div><div class="sm">${esc(resLabel)} in ${r.turns} turns.</div></div>`;
+      ph.innerHTML = `<div><div class="big">No replay for this battle</div><div class="sm">${esc(chip.label)} in ${r.turns} turns.</div></div>`;
       card.appendChild(ph);
     }
     theater.appendChild(card);
@@ -464,9 +525,11 @@ async function runNext(): Promise<void> {
     const spec = session.nextBattleSpec();
     if (!spec) { finishRun(); return; }
     renderRail(session.gauntletView());
+    const live = mountLiveCard(spec);
     const outcome = await battles.run({
-      p1: {name: 'Player', team: spec.playerTeam}, p2: {name: spec.bossName, team: spec.bossTeam}, seed: spec.seed, budgetMs: budgetMs(),
-      onTurn: (e) => { if (state.session === session) $('battle-lead').textContent = `Now battling ${spec.bossName} — turn ${e.turn}.`; },
+      p1: {name: PLAYER_NAME, team: spec.playerTeam}, p2: {name: spec.bossName, team: spec.bossTeam}, seed: spec.seed, budgetMs: budgetMs(),
+      onTurn: (e) => { if (state.session === session) { $('battle-lead').textContent = `Now battling ${spec.bossName} — turn ${e.turn}.`; liveTurn(spec, e.turn); } },
+      onLog: (lines) => { if (state.session === session) liveLines(live, lines); },
     });
     if (state.session !== session) return; // a new run started meanwhile
     session.recordGauntletBattle(spec, outcome);
@@ -481,7 +544,9 @@ function finishRun(): void {
   renderRun(view);
   $<HTMLButtonElement>('to-results').disabled = false;
   renderResults(view.gauntlet);
-  setTimeout(() => go('results'), 500);
+  // Don't pull the viewer away from a replay that is still playing.
+  if (replaysStillPlaying()) $('battle-lead').textContent = 'Run complete — the replays are still playing. View the summary whenever you like.';
+  else setTimeout(() => go('results'), 500);
 }
 
 async function battleOne(): Promise<void> {
@@ -494,7 +559,12 @@ async function battleOne(): Promise<void> {
   $('theater').innerHTML = '';
   try {
     const spec = session.singleBattleSpec(id);
-    const outcome = await battles.run({p1: {name: 'Player', team: spec.playerTeam}, p2: {name: spec.bossName, team: spec.bossTeam}, seed: spec.seed, budgetMs: budgetMs()});
+    const live = mountLiveCard(spec);
+    const outcome = await battles.run({
+      p1: {name: PLAYER_NAME, team: spec.playerTeam}, p2: {name: spec.bossName, team: spec.bossTeam}, seed: spec.seed, budgetMs: budgetMs(),
+      onTurn: (e) => { if (state.session === session) liveTurn(spec, e.turn); },
+      onLog: (lines) => { if (state.session === session) liveLines(live, lines); },
+    });
     if (state.session !== session) return;
     session.recordSingleBattle(spec, outcome);
     renderRun(refreshView());

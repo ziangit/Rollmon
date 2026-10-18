@@ -59,10 +59,23 @@ export const PLAYER_SCRIPTS = [
 
 // Player bootstrap: the part of replay-embed.js that reads the log from the
 // page, builds the Battle, and wires the controls (colour/sound choosers dropped).
-const PLAYER_BOOTSTRAP = `(function () {
+// Live mode (docs/ROADMAP.md §4) starts unpaused with an empty queue and
+// exposes `rollmonsLive.add(lines)` for the parent page to feed protocol lines
+// as the worker produces them; `Battle.add` resumes stepping whenever the
+// player had run out of lines. (The hosted player ignores `isReplay` as a
+// constructor option, so running out of lines never ends the battle early.)
+const playerBootstrap = (live: boolean) => `(function () {
   var $el = $('.wrapper');
   var log = ($('script.battle-log-data').text() || '').replace(/\\\\\\//g, '/');
-  var battle = new Battle({id: '', $frame: $el.find('.battle'), $logFrame: $el.find('.battle-log'), log: log.split('\\n'), isReplay: true, paused: true, autoresize: true});
+  var battle = new Battle({id: '', $frame: $el.find('.battle'), $logFrame: $el.find('.battle-log'), log: log ? log.split('\\n') : [], paused: ${live ? 'false' : 'true'}, autoresize: true});
+  var kicked = false;
+  window.rollmonsLive = {
+    battle: battle,
+    add: function (lines) {
+      for (var i = 0; i < lines.length; i++) battle.add(lines[i]);
+      if (!kicked) { kicked = true; if (!battle.paused) battle.play(); }
+    }
+  };
   var SPEEDS = {hyperfast: [40, 1], fast: [50, 1], normal: [300, 1], slow: [500, 1000], reallyslow: [1000, 3000]};
   var actions = {
     play: function () { battle.play(); }, pause: function () { battle.pause(); }, reset: function () { battle.reset(); },
@@ -85,8 +98,8 @@ const PLAYER_BOOTSTRAP = `(function () {
   battle.subscribe(function () { controls(); });
 })();`;
 
-/** Self-contained srcdoc for an iframe running the hosted replay player. */
-export function replayDoc(log: string[], bossName: string, playerName: string): string {
+/** Self-contained srcdoc for an iframe running the hosted replay player; `live` starts it empty and unpaused. */
+export function replayDoc(log: string[], bossName: string, playerName: string, opts: {live?: boolean} = {}): string {
   // The log sits in a <script type="text/plain">, whose content is raw text:
   // entities are not decoded, so HTML-escaping it (as v1 did) made the player
   // show |raw| lines as literal markup. Like Showdown's own replay downloads,
@@ -103,7 +116,7 @@ ${styles}
 <script type="text/plain" class="battle-log-data">${protocol}<\/script></div>
 <script>window.exports = window;<\/script>
 ${scripts}
-<script>${PLAYER_BOOTSTRAP}<\/script>`;
+<script>${playerBootstrap(!!opts.live)}<\/script>`;
 }
 
 /* The replay is a srcdoc iframe (same-origin), so size it to its real content
@@ -137,6 +150,39 @@ export function lazyLoadReplay(iframe: HTMLIFrameElement, doc: string): void {
     for (const e of entries) if (e.isIntersecting) { load(); io.disconnect(); break; }
   }, {root: null, threshold: 0.01});
   io.observe(iframe);
+}
+
+export interface LiveReplay {
+  frame: HTMLIFrameElement;
+  /** lines fed so far (including those still buffered) */
+  lines: number;
+  /** feed protocol lines in order; buffered until the player has loaded */
+  add(lines: string[]): void;
+}
+
+/** Create a replay iframe that animates a battle while the worker is still playing it. */
+export function mountLiveReplay(container: HTMLElement, bossName: string, playerName: string): LiveReplay {
+  const f = document.createElement('iframe');
+  f.className = 'replay-frame';
+  f.title = `${playerName} vs ${bossName} live`;
+  f.style.cssText = 'width:100%;height:620px;border:0;background:#f5f7fb;display:block';
+  fitReplayFrameOnLoad(f);
+  container.appendChild(f);
+  const pending: string[] = [];
+  const player = () => (f.contentWindow as (Window & {rollmonsLive?: {add(lines: string[]): void}}) | null)?.rollmonsLive;
+  // `load` fires after the in-order scripts and the bootstrap have run (same-origin srcdoc).
+  f.addEventListener('load', () => { const p = player(); if (p && pending.length) p.add(pending.splice(0)); });
+  lazyLoadReplay(f, replayDoc([], bossName, playerName, {live: true}));
+  const live: LiveReplay = {
+    frame: f, lines: 0,
+    add(lines) {
+      live.lines += lines.length;
+      const mapped = withBossAvatar(lines, bossName, playerName);
+      const p = player();
+      if (p && !pending.length) p.add(mapped); else pending.push(...mapped);
+    },
+  };
+  return live;
 }
 
 /** Create a replay iframe for a finished battle's protocol log. */

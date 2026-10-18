@@ -28,4 +28,13 @@ test('replayDoc embeds the escaped protocol and loads the player scripts in orde
   assert.ok(srcs.at(-1)!.includes('/js/battle.js'));
   assert.ok(doc.indexOf('class="battle-log-data"') < doc.indexOf('<script src='), 'the log precedes the scripts');
   assert.ok(doc.trimEnd().endsWith('</script>') && doc.includes('new Battle({'));
+  assert.ok(doc.includes('paused: true,'), 'a finished replay waits for Play');
+});
+
+test('a live replay document starts empty and unpaused and accepts lines from the page', () => {
+  const doc = replayDoc([], 'Leon', 'Player', {live: true});
+  assert.ok(doc.includes('class="battle-log-data"></script>'));
+  assert.ok(doc.includes('paused: false,'));
+  assert.ok(doc.includes('window.rollmonsLive = {'));
+  assert.ok(doc.includes('battle.add(lines[i])'));
 });

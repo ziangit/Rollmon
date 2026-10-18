@@ -64,8 +64,13 @@ try {
       if (rail !== last) { last = rail; console.log(`  [${elapsed()}] ${rail}`); }
     } catch { /* page navigating */ }
   }, 1500);
-  await page.waitForFunction(() => window.__rollmons.screen() === 'results', {timeout: 600_000});
+  // the run is over when the summary button unlocks; the page only auto-navigates once no live replay is still playing
+  await page.waitForFunction(() => !document.getElementById('to-results').disabled, {timeout: 600_000});
   clearInterval(poll);
+  const autoNavigated = await page.evaluate(() => new Promise((r) => setTimeout(() => r(window.__rollmons.screen() === 'results'), 800)));
+  console.log(`[${elapsed()}] run over; auto-navigated to results: ${autoNavigated} (false while a live replay is still animating)`);
+  if (!autoNavigated) await click('#to-results');
+  await page.waitForFunction(() => window.__rollmons.screen() === 'results');
   const view = await page.evaluate(() => { const v = window.__rollmons.view(); return {summary: v.gauntlet.summary, results: v.gauntlet.results.map((r) => [r.bossName, r.winner, r.turns, r.megas, r.problems.length])}; });
   console.log(`[${elapsed()}] results:`, await page.$eval('#result-title', (e) => e.textContent), '|', await page.$eval('#result-record', (e) => e.textContent));
   for (const r of view.results) console.log('  ', r.join(' '));
@@ -86,6 +91,17 @@ try {
   });
   console.log(`[${elapsed()}] replay cards:`, await page.$$eval('#theater .replay-card', (c) => c.length), '| first frame painted |', JSON.stringify(replay));
   if (!replay.infobox || replay.literalMarkup) { console.error('replay rendered |raw| html as text'); process.exitCode = 1; }
+  // every card was mounted live and fed the whole battle as it was played
+  const live = await page.$$eval('#theater .replay-card', (cs) => cs.map((c) => {
+    const b = c.querySelector('iframe.replay-frame')?.contentWindow?.rollmonsLive?.battle;
+    return {live: c.dataset.live === '1', lines: Number(c.dataset.lines || 0), chip: c.querySelector('.res')?.className, playing: !!b && !b.ended};
+  }));
+  console.log('  live cards:', live.map((l) => `${l.lines} lines/${l.chip?.replace('res ', '')}${l.playing ? ' (still animating)' : ''}`).join(', '));
+  // a chip may still read "Live" only while its player is still animating the battle
+  if (!live.length || live.some((l) => !l.live || l.lines < 20 || (l.chip?.includes('live') && !l.playing))) { console.error('live replay cards missing, unfed, or never resolved'); process.exitCode = 1; }
+  const firstQueue = await page.evaluate(() => { const w = document.querySelector('#theater iframe.replay-frame').contentWindow; return w.rollmonsLive ? {queued: w.rollmonsLive.battle.stepQueue.length, ended: w.rollmonsLive.battle.ended} : null; });
+  console.log('  first player:', JSON.stringify(firstQueue));
+  if (!firstQueue || firstQueue.queued < 20) { console.error('the live player did not receive the streamed lines'); process.exitCode = 1; }
   // rail entries of finished battles jump to their replay card
   await click('#rail li.clickable');
   await page.waitForFunction(() => window.__rollmons.screen() === 'battle');

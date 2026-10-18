@@ -108,6 +108,7 @@ test('the campaign runs ten tiered battles, folds damage, and summarises', () =>
     assert.equal(spec.playerTeam, s.view().teamExport);
     const result = s.recordGauntletBattle(spec, outcomeFor(spec, n % 3 === 2 ? 'boss' : 'player', lead, 5 + n));
     assert.equal(result.winner, n % 3 === 2 ? 'boss' : 'player');
+    assert.equal(result.battleId, spec.battleId, 'the id is minted with the spec so the live card can be built first');
     n++;
     g = s.gauntletView();
     assert.equal(g.nextIndex, n);

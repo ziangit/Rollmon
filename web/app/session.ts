@@ -114,7 +114,7 @@ export interface BattleResult {
 }
 
 /** What the worker needs for the next battle. */
-export interface BattleSpec { bossId: string; bossName: string; playerTeam: string; bossTeam: string; seed: number }
+export interface BattleSpec { battleId: string; bossId: string; bossName: string; playerTeam: string; bossTeam: string; seed: number }
 
 export interface GauntletView {
   bosses: {id: string; name: string; complete: boolean; current: boolean}[];
@@ -413,7 +413,8 @@ export class GameSession {
     const playerTeam = this.requireTeam();
     const bossTeam = this.resolveBossTeam(bossId);
     verifyTeamEntitiesExist({player: playerTeam, boss: bossTeam}, this.ctx.data);
-    return {bossId, bossName: this.resolveBossName(bossId), playerTeam, bossTeam, seed: this.seed * 1000 + ++this.battleCounter};
+    const n = ++this.battleCounter;
+    return {battleId: `b${this.seed}-${n}`, bossId, bossName: this.resolveBossName(bossId), playerTeam, bossTeam, seed: this.seed * 1000 + n};
   }
 
   get gauntletComplete(): boolean {
@@ -451,7 +452,7 @@ export class GameSession {
   private toResult(spec: BattleSpec, o: {winner: string; turns: number; log: string[]; megas?: number; problems?: string[]}): BattleResult {
     const winner = o.winner === PLAYER_NAME ? 'player' : o.winner === spec.bossName ? 'boss' : 'tie';
     return {
-      battleId: `b${this.seed}-${++this.battleCounter}`, playerName: PLAYER_NAME, bossName: spec.bossName, winner, turns: o.turns,
+      battleId: spec.battleId, playerName: PLAYER_NAME, bossName: spec.bossName, winner, turns: o.turns,
       log: o.log, megas: o.megas ?? 0, problems: o.problems ?? [],
     };
   }
