@@ -4,6 +4,9 @@
 import {Battle, extractChannelMessages, type PokemonSet, type PRNGSeed} from '@pkmn/sim';
 import {battleToEngineState} from './engine-state.ts';
 import {legalChoices, needsDecision, pickChoice, requestOf, type MctsResult, type SideResult} from './driver.ts';
+import {mulberry32} from '../game/rng.ts';
+
+export {mulberry32};
 
 // v1 also listed "Z-Move Clause" and "CFZ Clause"; @pkmn/sim 0.10.11 has
 // neither rule and gen9 has no Z-moves, so they are dropped here.
@@ -53,15 +56,6 @@ export interface Outcome {
   problems: string[];
   /** omniscient Showdown protocol log, one line per entry (feeds the replay embed) */
   log: string[];
-}
-
-export function mulberry32(seed: number): () => number {
-  return () => {
-    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 export function runBattle(cfg: BattleConfig): Outcome {
