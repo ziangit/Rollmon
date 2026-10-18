@@ -1,0 +1,22 @@
+{
+  "name": "rollmons-web",
+  "private": true,
+  "type": "module",
+  "description": "rollmons browser app: battle worker (referee + engine driver), later the draft/loadout UI.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --serve",
+    "test": "node --test battle/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "battle": "node scripts/battle.ts"
+  },
+  "dependencies": {
+    "@pkmn/sim": "0.10.11"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "esbuild": "0.25.12",
+    "puppeteer-core": "25.14.0",
+    "typescript": "5.9.3"
+  }
+}

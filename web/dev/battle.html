@@ -1,0 +1,57 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>rollmons battle worker</title>
+<style>
+  body { font-family: ui-monospace, monospace; padding: 1rem; max-width: 70rem; }
+  textarea { width: 100%; height: 9rem; font: inherit; }
+  pre { white-space: pre-wrap; background: #f4f4f4; padding: .5rem; max-height: 24rem; overflow: auto; }
+  .row { display: flex; gap: 1rem; } .row > div { flex: 1; }
+</style>
+<h1>battle worker dev page</h1>
+<p id="status">loading worker…</p>
+<div class="row">
+  <div><label>p1 (Showdown export)<textarea id="p1"></textarea></label></div>
+  <div><label>p2 (Showdown export)<textarea id="p2"></textarea></label></div>
+</div>
+<p>
+  seed <input id="seed" type="number" value="1" style="width:5rem">
+  p1 ms <input id="b1" type="number" value="100" style="width:5rem">
+  p2 ms <input id="b2" type="number" value="25" style="width:5rem">
+  <button id="run" disabled>run battle</button>
+</p>
+<pre id="trace"></pre>
+<pre id="log"></pre>
+<script type="module">
+  import {Teams} from '../dist/sim-teams.js';
+  const $ = (id) => document.getElementById(id);
+  const worker = new Worker('../dist/worker.js', {type: 'module'});
+  const defaults = ['../../rollmons/pool/advanced/Cynthia.txt', '../../rollmons/bosses/leon.txt'];
+  Promise.all(defaults.map((u) => fetch(u).then((r) => r.text()))).then(([a, b]) => { $('p1').value = a; $('p2').value = b; });
+  worker.onmessage = ({data}) => {
+    if (data.type === 'ready') { $('status').textContent = `worker ready: ${data.version}`; $('run').disabled = false; }
+    if (data.type === 'turn') $('trace').textContent += `T${data.event.turn} ${data.event.side} ${data.event.choice} (${data.event.iterations} it)\n`;
+    if (data.type === 'done') {
+      const o = data.outcome;
+      $('status').textContent = `winner=${o.winner} turns=${o.turns} ${o.ms} ms megas=${o.megas} fallbacks=${o.fallbacks} problems=${o.problems.length}`;
+      $('log').textContent = o.problems.concat(o.log).join('\n');
+      window.__outcome = o;
+      $('run').disabled = false;
+    }
+    if (data.type === 'error') { $('status').textContent = 'worker error: ' + data.message; $('run').disabled = false; }
+  };
+  $('run').onclick = () => {
+    $('trace').textContent = ''; $('log').textContent = ''; $('run').disabled = true; window.__outcome = null;
+    worker.postMessage({
+      type: 'battle',
+      p1: {name: 'Player', team: Teams.import($('p1').value)},
+      p2: {name: 'Boss', team: Teams.import($('p2').value)},
+      seed: Number($('seed').value),
+      budgetMs: {p1: Number($('b1').value), p2: Number($('b2').value)},
+    });
+  };
+  const params = new URLSearchParams(location.search);
+  if (params.get('seed')) $('seed').value = params.get('seed');
+  if (params.get('auto')) {
+    const tick = setInterval(() => { if (!$('run').disabled && $('p1').value) { clearInterval(tick); $('run').click(); } }, 100);
+  }
+</script>
