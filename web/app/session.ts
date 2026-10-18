@@ -2,6 +2,7 @@
 // run's draft, loadout, gauntlet/campaign progress, custom bosses, and damage
 // totals, plus the view objects the page renders. Pure: battles are run by the
 // caller (the worker client) and recorded here.
+import type {Choice} from '../battle/runner.ts';
 import {accumulatePlayerDamage, damagePayload, gauntletDamageSummary, seedDamageTracking, type DamagePayload} from '../battle/summary.ts';
 import {bossDisplayName, listBossIds, loadBossTeam, type Bosses} from '../game/bosses.ts';
 import type {GameData} from '../game/data.ts';
@@ -13,6 +14,7 @@ import {
 } from '../game/legality-matrix.ts';
 import {buildCampaign, PoolError} from '../game/pool.ts';
 import {seededRng, type Rng} from '../game/rng.ts';
+import {scoreRun, type RunScore} from '../game/score.ts';
 import {loadUsableSmogonSets, type SmogonSet} from '../game/smogon-sets.ts';
 import {BattleEntityNotFoundError, SubmissionError, parseShowdownExport, verifyTeamEntitiesExist} from '../game/submissions.ts';
 import {
@@ -111,6 +113,17 @@ export interface BattleResult {
   log: string[];
   megas: number;
   problems: string[];
+  /** every choice the sim accepted, in order (the run proof; docs/ROADMAP.md §7) */
+  choices: Choice[];
+}
+
+/** Everything needed to re-run a campaign without the search engine: verifyRun() in verify.ts. */
+export interface RunProof {
+  version: 1;
+  seed: number;
+  /** draft and loadout actions in order: pick:<id>, skip, reroll, set:<id>:<setId>, campaign:<0|1> */
+  actions: string[];
+  battles: {choices: Choice[]}[];
 }
 
 /** What the worker needs for the next battle. */
@@ -124,6 +137,10 @@ export interface GauntletView {
   stopOnLoss: boolean;
   damage: DamagePayload;
   results: BattleResult[];
+  /** true for the tiered campaign (the scored mode), false for a manual ladder */
+  campaign: boolean;
+  /** leaderboard score once a campaign is complete */
+  score: RunScore | null;
 }
 
 export interface SessionView {
@@ -308,6 +325,10 @@ export class GameSession {
   /** campaign mode: pool-team stem -> export (the stem is also the display name) */
   private campaignTeams: Map<string, string> | null = null;
   private battleCounter = 0;
+  /** draft/loadout/campaign actions, replayable from the seed (RunProof) */
+  private readonly actions: string[] = [];
+  /** false once a manual ladder or exhibition battle has consumed battle seeds */
+  private proofEligible = true;
   private readonly ctx: GameContext;
 
   constructor(ctx: GameContext, opts: SessionOptions = {}) {
@@ -322,14 +343,15 @@ export class GameSession {
 
   pick(speciesId: string): void {
     this.draft.submitPick(speciesId);
+    this.actions.push(`pick:${speciesId}`);
     if (this.draft.complete) {
       this.loadout = this.defaultLoadout();
       this.teamExport = this.assembleFromLoadout();
     }
   }
 
-  skip(): void { this.draft.useSkip(); }
-  thinReroll(): void { this.draft.useThinReroll(); }
+  skip(): void { this.draft.useSkip(); this.actions.push('skip'); }
+  thinReroll(): void { this.draft.useThinReroll(); this.actions.push('reroll'); }
 
   // ---- loadout
 
@@ -342,6 +364,7 @@ export class GameSession {
     if (!speciesSetOptions(this.ctx, speciesId).some((o) => o.setId === setId)) throw new SessionError('unknown set for this species');
     this.loadout[speciesId] = setId;
     this.teamExport = this.assembleFromLoadout();
+    this.actions.push(`set:${speciesId}:${setId}`);
   }
 
   private defaultLoadout(): Record<string, string> {
@@ -386,6 +409,7 @@ export class GameSession {
     if (ids.length > BOSS_ORDER_MAX) throw new SessionError(`boss rush supports at most ${BOSS_ORDER_MAX} bosses`);
     for (const id of ids) this.bosses.team(id);
     this.campaignTeams = null;
+    this.proofEligible = false;
     this.resetGauntlet([...ids], stopOnLoss);
   }
 
@@ -398,6 +422,8 @@ export class GameSession {
       throw err;
     }
     this.campaignTeams = new Map(campaign.map((b) => [b.teamId, b.export]));
+    if (this.battleCounter > 0) this.proofEligible = false; // earlier battles consumed seeds the proof cannot replay
+    this.actions.push(`campaign:${stopOnLoss ? 1 : 0}`);
     this.resetGauntlet(campaign.map((b) => b.teamId), stopOnLoss);
   }
 
@@ -429,7 +455,7 @@ export class GameSession {
   }
 
   /** Record a finished gauntlet battle, fold its damage in, and advance (or stop on a loss). */
-  recordGauntletBattle(spec: BattleSpec, outcome: {winner: string; turns: number; log: string[]; megas?: number; problems?: string[]}): BattleResult {
+  recordGauntletBattle(spec: BattleSpec, outcome: {winner: string; turns: number; log: string[]; megas?: number; problems?: string[]; choices?: Choice[]}): BattleResult {
     if (this.gauntletBossIds[this.gauntletNextIndex] !== spec.bossId) throw new SessionError('battle does not match the next gauntlet boss');
     const result = this.toResult(spec, outcome);
     this.gauntletResults.push(result);
@@ -442,19 +468,37 @@ export class GameSession {
   }
 
   /** A single exhibition battle outside the gauntlet. */
-  singleBattleSpec(bossId: string): BattleSpec { return this.spec(bossId); }
+  singleBattleSpec(bossId: string): BattleSpec { this.proofEligible = false; return this.spec(bossId); }
 
-  recordSingleBattle(spec: BattleSpec, outcome: {winner: string; turns: number; log: string[]; megas?: number; problems?: string[]}): BattleResult {
+  recordSingleBattle(spec: BattleSpec, outcome: {winner: string; turns: number; log: string[]; megas?: number; problems?: string[]; choices?: Choice[]}): BattleResult {
     this.battleResult = this.toResult(spec, outcome);
     return this.battleResult;
   }
 
-  private toResult(spec: BattleSpec, o: {winner: string; turns: number; log: string[]; megas?: number; problems?: string[]}): BattleResult {
+  private toResult(spec: BattleSpec, o: {winner: string; turns: number; log: string[]; megas?: number; problems?: string[]; choices?: Choice[]}): BattleResult {
     const winner = o.winner === PLAYER_NAME ? 'player' : o.winner === spec.bossName ? 'boss' : 'tie';
     return {
       battleId: spec.battleId, playerName: PLAYER_NAME, bossName: spec.bossName, winner, turns: o.turns,
-      log: o.log, megas: o.megas ?? 0, problems: o.problems ?? [],
+      log: o.log, megas: o.megas ?? 0, problems: o.problems ?? [], choices: o.choices ?? [],
     };
+  }
+
+  // ---- score and proof
+
+  get isCampaign(): boolean { return this.campaignTeams !== null; }
+
+  /** Leaderboard score of a complete campaign (docs/ROADMAP.md §7), else null. */
+  score(): RunScore | null {
+    if (!this.isCampaign || !this.gauntletComplete || !this.gauntletResults.length) return null;
+    const team = this.draft.picks.map((id) => ({speciesId: id, tier: this.ctx.data.tiers[id], baseStatTotal: this.ctx.legality.species[id].baseStatTotal}));
+    return scoreRun(this.gauntletResults, team);
+  }
+
+  /** The replayable record of a complete campaign, or null if this run cannot be verified. */
+  runProof(): RunProof | null {
+    if (!this.proofEligible || !this.isCampaign || !this.gauntletComplete) return null;
+    if (this.gauntletResults.some((r) => !r.choices.length)) return null;
+    return {version: 1, seed: this.seed, actions: [...this.actions], battles: this.gauntletResults.map((r) => ({choices: r.choices}))};
   }
 
   // ---- views
@@ -499,6 +543,8 @@ export class GameSession {
       nextIndex: this.gauntletNextIndex, complete, summary, stopOnLoss: this.gauntletStopOnLoss,
       damage: this.damage ? damagePayload(this.damage.totals, this.damage.display) : damagePayload(new Map()),
       results: [...results],
+      campaign: this.isCampaign,
+      score: this.score(),
     };
   }
 

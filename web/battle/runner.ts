@@ -1,6 +1,8 @@
 // Environment-agnostic battle loop: @pkmn/sim `Battle` as referee, poke-engine
 // (wasm) MCTS for both sides from the omniscient state. Runs synchronously;
 // callers put it in a Web Worker (worker.ts) or a Node script (scripts/).
+// `replayBattle` re-runs a battle from its recorded choices with the sim alone
+// (no search), which is how a leaderboard submission is verified.
 import {Battle, extractChannelMessages, type PokemonSet, type PRNGSeed} from '@pkmn/sim';
 import {battleToEngineState} from './engine-state.ts';
 import {legalChoices, needsDecision, pickChoice, requestOf, type MctsResult, type SideResult} from './driver.ts';
@@ -24,11 +26,13 @@ export interface Engine {
 
 export interface Team { name: string; team: PokemonSet[] }
 
+export type SideId = 'p1' | 'p2';
+
 export interface TurnEvent {
   /** engine state string the decision was searched from (debugging aid) */
   state: string;
   turn: number;
-  side: 'p1' | 'p2';
+  side: SideId;
   choice: string;
   iterations: number;
   candidates: SideResult[];
@@ -48,6 +52,9 @@ export interface BattleConfig {
   onLog?: (lines: string[]) => void;
 }
 
+/** One accepted decision, in submission order: the run proof for a leaderboard entry. */
+export interface Choice { side: SideId; choice: string }
+
 export interface Outcome {
   winner: string;
   turns: number;
@@ -58,19 +65,36 @@ export interface Outcome {
   problems: string[];
   /** omniscient Showdown protocol log, one line per entry (feeds the replay embed) */
   log: string[];
+  /** every choice the sim accepted, in order (replayBattle reproduces the battle from them) */
+  choices: Choice[];
 }
 
-export function runBattle(cfg: BattleConfig): Outcome {
+export class ReplayMismatchError extends Error {}
+
+interface LoopConfig {
+  p1: Team;
+  p2: Team;
+  seed?: number;
+  onLog?: (lines: string[]) => void;
+  /**
+   * Decide for `side`; `legal` maps a canonical key to the sim choice string.
+   * Returns the choice to submit plus bookkeeping; a rejected choice is retried
+   * with `fallbackOf`, and `null` from it aborts the battle.
+   */
+  decide(side: SideId, legal: Map<string, string>, state: () => string, battle: Battle): {choice: string; fallback: boolean; problem?: string};
+  fallbackOf(side: SideId, rejected: string, legal: Map<string, string>, battle: Battle): string | null;
+}
+
+function play(cfg: LoopConfig): Outcome {
   const seedNum = cfg.seed ?? 1;
   const seed = `sodium,${(seedNum >>> 0).toString(16).padStart(16, '0')}` as PRNGSeed;
-  const budget = cfg.budgetMs ?? DEFAULT_BUDGET_MS;
-  const rng = cfg.rng ?? mulberry32(seedNum);
   const battle = new Battle({formatid: FORMAT as never, seed, strictChoices: true});
   battle.setPlayer('p1', cfg.p1);
   battle.setPlayer('p2', cfg.p2);
 
   let fallbacks = 0;
   const problems: string[] = [];
+  const choices: Choice[] = [];
   const t0 = now();
   let logIndex = 0;
   const flushLog = () => {
@@ -98,35 +122,23 @@ export function runBattle(cfg: BattleConfig): Outcome {
       problems.push(`stuck at turn ${battle.turn}: ${battle.sides.map((s) => `${s.id}=${s.requestState || 'wait'}/${s.isChoiceDone()}`).join(' ')}`);
       break;
     }
-    const state = battleToEngineState(battle, {
-      p1ForceSwitch: !!reqs[0]?.forceSwitch,
-      p2ForceSwitch: !!reqs[1]?.forceSwitch,
-    });
+    let stateCache: string | null = null;
+    const state = () => (stateCache ??= battleToEngineState(battle, {p1ForceSwitch: !!reqs[0]?.forceSwitch, p2ForceSwitch: !!reqs[1]?.forceSwitch}));
     for (const side of pending) {
-      const id = side.id as 'p1' | 'p2';
+      const id = side.id as SideId;
       const legal = legalChoices(requestOf(side) as never);
-      let choice: string;
-      let event: TurnEvent;
-      try {
-        const result: MctsResult = JSON.parse(cfg.engine.mcts(state, budget[id], 0));
-        const pick = pickChoice(id === 'p1' ? result.s1 : result.s2, legal, rng);
-        if (pick.source === 'fallback') { fallbacks++; problems.push(`fallback turn ${battle.turn} ${id}: ${pick.reason}`); }
-        choice = pick.choice;
-        event = {state, turn: battle.turn, side: id, choice, iterations: result.iterations, candidates: pick.candidates, source: pick.source};
-      } catch (err) {
-        fallbacks++;
-        problems.push(`engine error turn ${battle.turn} ${id}: ${(err as Error).message}`);
-        const all = [...legal.values()];
-        choice = all[Math.floor(rng() * all.length)];
-        event = {state, turn: battle.turn, side: id, choice, iterations: 0, candidates: [], source: 'fallback'};
-      }
-      cfg.onTurn?.(event);
+      const decision = cfg.decide(id, legal, state, battle);
+      if (decision.fallback) fallbacks++;
+      if (decision.problem) problems.push(decision.problem);
+      let choice = decision.choice;
       if (!battle.choose(id, choice)) {
         problems.push(`sim rejected '${choice}' for ${id} on turn ${battle.turn}`);
-        const rest = [...legal.values()].filter((c) => c !== choice);
-        if (!rest.length || !battle.choose(id, rest[0])) { problems.push('no accepted choice; aborting'); return finish(); }
+        const retry = cfg.fallbackOf(id, choice, legal, battle);
+        if (retry === null || !battle.choose(id, retry)) { problems.push('no accepted choice; aborting'); return finish(); }
+        choice = retry;
         fallbacks++;
       }
+      choices.push({side: id, choice});
     }
   }
   return finish();
@@ -142,8 +154,72 @@ export function runBattle(cfg: BattleConfig): Outcome {
       fallbacks,
       problems,
       log,
+      choices,
     };
   }
+}
+
+export function runBattle(cfg: BattleConfig): Outcome {
+  const seedNum = cfg.seed ?? 1;
+  const budget = cfg.budgetMs ?? DEFAULT_BUDGET_MS;
+  const rng = cfg.rng ?? mulberry32(seedNum);
+  const randomLegal = (legal: Map<string, string>) => { const all = [...legal.values()]; return all[Math.floor(rng() * all.length)]; };
+  return play({
+    p1: cfg.p1, p2: cfg.p2, seed: cfg.seed, onLog: cfg.onLog,
+    decide(id, legal, state, battle) {
+      let out: {choice: string; fallback: boolean; problem?: string};
+      let event: TurnEvent;
+      try {
+        const result: MctsResult = JSON.parse(cfg.engine.mcts(state(), budget[id], 0));
+        const pick = pickChoice(id === 'p1' ? result.s1 : result.s2, legal, rng);
+        out = {choice: pick.choice, fallback: pick.source === 'fallback', problem: pick.source === 'fallback' ? `fallback turn ${battle.turn} ${id}: ${pick.reason}` : undefined};
+        event = {state: state(), turn: battle.turn, side: id, choice: pick.choice, iterations: result.iterations, candidates: pick.candidates, source: pick.source};
+      } catch (err) {
+        out = {choice: randomLegal(legal), fallback: true, problem: `engine error turn ${battle.turn} ${id}: ${(err as Error).message}`};
+        event = {state: state(), turn: battle.turn, side: id, choice: out.choice, iterations: 0, candidates: [], source: 'fallback'};
+      }
+      cfg.onTurn?.(event);
+      return out;
+    },
+    fallbackOf(_id, rejected, legal) {
+      const rest = [...legal.values()].filter((c) => c !== rejected);
+      return rest.length ? rest[0] : null;
+    },
+  });
+}
+
+export interface ReplayConfig { p1: Team; p2: Team; seed?: number; choices: Choice[]; onLog?: (lines: string[]) => void }
+
+/**
+ * Re-run a battle from its recorded choices with the simulator only. The sim
+ * is seeded, so the result and log are identical to the original battle;
+ * any deviation (wrong side, a choice the sim rejects, too few or too many
+ * choices) throws ReplayMismatchError.
+ */
+export function replayBattle(cfg: ReplayConfig): Outcome {
+  let next = 0;
+  let outcome: Outcome;
+  try {
+    outcome = play({
+      p1: cfg.p1, p2: cfg.p2, seed: cfg.seed, onLog: cfg.onLog,
+      decide(id, _legal, _state, battle) {
+        const c = cfg.choices[next++];
+        if (!c) throw new ReplayMismatchError(`ran out of choices at turn ${battle.turn} (${id})`);
+        if (c.side !== id) throw new ReplayMismatchError(`choice ${next} is for ${c.side}, the sim asked ${id} (turn ${battle.turn})`);
+        return {choice: c.choice, fallback: false};
+      },
+      fallbackOf(id, rejected, _legal, battle) {
+        throw new ReplayMismatchError(`the sim rejected '${rejected}' for ${id} on turn ${battle.turn}`);
+      },
+    });
+  } catch (err) {
+    // strictChoices makes the sim throw on an illegal choice; the proof is untrusted input
+    if (err instanceof ReplayMismatchError) throw err;
+    throw new ReplayMismatchError((err as Error).message);
+  }
+  if (next !== cfg.choices.length) throw new ReplayMismatchError(`${cfg.choices.length - next} recorded choices were never used`);
+  if (outcome.problems.length) throw new ReplayMismatchError(outcome.problems.join('; '));
+  return outcome;
 }
 
 function now(): number {
