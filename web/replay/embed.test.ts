@@ -17,7 +17,9 @@ test('only the boss player line gets the avatar', () => {
 
 test('replayDoc embeds the escaped protocol and loads the player scripts in order', () => {
   const doc = replayDoc(['|player|p2|Boss||', '|c|<b>x</b>'], 'Leon', 'Player');
-  assert.ok(doc.includes('class="battle-log-data">|player|p2|Boss|leon|\n|c|&lt;b&gt;x&lt;/b&gt;</script>'));
+  // raw text inside <script type="text/plain">: slashes escaped (never "</script>"), nothing HTML-escaped
+  assert.ok(doc.includes('class="battle-log-data">|player|p2|Boss|leon|\n|c|<b>x<\\/b></script>'));
+  assert.ok(doc.includes(".replace(/\\\\\\//g, '/')"), 'the bootstrap restores the slashes');
   assert.ok(!doc.includes('replay-embed.js'), 'the racy hosted loader is not used');
   const srcs = [...doc.matchAll(/<script src="([^"]+)">/g)].map((m) => m[1]);
   assert.deepEqual(srcs, PLAYER_SCRIPTS.map((p) => `${PLAYER_ROOT}/${p}`));

@@ -61,7 +61,7 @@ export const PLAYER_SCRIPTS = [
 // page, builds the Battle, and wires the controls (colour/sound choosers dropped).
 const PLAYER_BOOTSTRAP = `(function () {
   var $el = $('.wrapper');
-  var log = $('script.battle-log-data').text() || '';
+  var log = ($('script.battle-log-data').text() || '').replace(/\\\\\\//g, '/');
   var battle = new Battle({id: '', $frame: $el.find('.battle'), $logFrame: $el.find('.battle-log'), log: log.split('\\n'), isReplay: true, paused: true, autoresize: true});
   var SPEEDS = {hyperfast: [40, 1], fast: [50, 1], normal: [300, 1], slow: [500, 1000], reallyslow: [1000, 3000]};
   var actions = {
@@ -87,7 +87,12 @@ const PLAYER_BOOTSTRAP = `(function () {
 
 /** Self-contained srcdoc for an iframe running the hosted replay player. */
 export function replayDoc(log: string[], bossName: string, playerName: string): string {
-  const protocol = esc(withBossAvatar(log, bossName, playerName).join('\n'));
+  // The log sits in a <script type="text/plain">, whose content is raw text:
+  // entities are not decoded, so HTML-escaping it (as v1 did) made the player
+  // show |raw| lines as literal markup. Like Showdown's own replay downloads,
+  // escape "/" as "\/" instead (so "</script>" cannot occur) and undo it in
+  // the bootstrap.
+  const protocol = withBossAvatar(log, bossName, playerName).join('\n').replaceAll('/', '\\/');
   const styles = PLAYER_STYLES.map((p) => `<link rel="stylesheet" href="${PLAYER_ROOT}/${p}">`).join('\n');
   const scripts = PLAYER_SCRIPTS.map((p) => `<script src="${PLAYER_ROOT}/${p}"><\/script>`).join('\n');
   return `<!doctype html><meta charset="utf-8">
