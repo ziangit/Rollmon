@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["app", "battle", "game", "replay", "dev", "scripts"]
+  "include": ["api", "app", "battle", "game", "replay", "dev", "scripts"]
 }

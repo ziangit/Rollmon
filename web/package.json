@@ -5,12 +5,14 @@
   "description": "rollmons browser app: battle worker (referee + engine driver), later the draft/loadout UI.",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "build:api": "node scripts/build-api.mjs",
     "dev": "node scripts/build.mjs --serve",
-    "test": "node --test app/*.test.ts battle/*.test.ts replay/*.test.ts game/*.test.ts",
+    "test": "node --test api/*.test.ts app/*.test.ts battle/*.test.ts replay/*.test.ts game/*.test.ts",
     "typecheck": "tsc --noEmit",
     "battle": "node scripts/battle.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
     "@pkmn/sim": "0.10.11"
   },
   "devDependencies": {

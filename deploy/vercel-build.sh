@@ -1,8 +1,9 @@
 #!/bin/sh
-# Vercel build: the same steps as .github/workflows/pages.yml, on Vercel's
-# build image (which has Node but no Rust). Installs a minimal rustup
-# toolchain and wasm-pack when missing, builds the engine wasm, then the site.
-#   vercel.json: installCommand "cd web && npm ci", buildCommand "sh deploy/vercel-build.sh", output web/dist
+# Vercel build: the same site steps as .github/workflows/pages.yml, on Vercel's
+# build image (which has Node but no Rust), plus the leaderboard function.
+# Emits the Build Output API layout (.vercel/output): static site + one Node
+# function at /api/leaderboard (docs/ROADMAP.md §7).
+#   vercel.json: installCommand "cd web && npm ci", buildCommand "sh deploy/vercel-build.sh"
 set -eu
 cd "$(dirname "$0")/.."
 export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
@@ -18,5 +19,22 @@ if ! command -v wasm-pack >/dev/null 2>&1; then
 fi
 
 (cd engine && wasm-pack build --release --target web --out-dir pkg)
-(cd web && npm run build -- --minify)
-echo "built web/dist:" && ls web/dist
+(cd web && npm run build -- --minify && node scripts/build-api.mjs)
+
+out=.vercel/output
+rm -rf "$out"
+mkdir -p "$out/functions/api"
+cp -R web/dist "$out/static"
+cp -R web/dist-api/api/leaderboard.func "$out/functions/api/leaderboard.func"
+cat > "$out/config.json" <<'JSON'
+{
+  "version": 3,
+  "routes": [
+    {"src": "^/api/leaderboard/?$", "dest": "/api/leaderboard"},
+    {"src": "^/data/(.*)$", "headers": {"cache-control": "public, max-age=3600"}, "continue": true},
+    {"src": "^/(.*)\\.wasm$", "headers": {"content-type": "application/wasm"}, "continue": true},
+    {"handle": "filesystem"}
+  ]
+}
+JSON
+echo "build output:" && find "$out" -maxdepth 3 -not -path '*/static/*' | sort && ls "$out/static"

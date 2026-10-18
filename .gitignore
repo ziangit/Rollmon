@@ -11,6 +11,7 @@ __pycache__/
 # Node / web
 node_modules/
 web/dist/
+web/dist-api/
 
 # Rust / wasm
 target/
