@@ -31,7 +31,7 @@ Kept as the behavioral spec until each module is ported. `make test` runs ruff +
 | Module | Python | TypeScript |
 |---|---|---|
 | Engine wasm build | — | **done** (`engine/`, pinned poke-engine git rev, gen9 no-Tera; ~200 KB gzipped) |
-| Referee + driver worker | — | spike only (sim battle proven) |
+| Referee + driver worker | — | **done** (`web/battle/`: mapper, driver, runner, worker; 60-battle sweep clean) |
 | Legality matrix / draft | reference | not started |
 | Loadout / set selection | reference | not started |
 | Pool / campaign | reference | not started |
@@ -54,6 +54,14 @@ Gotchas: the crates.io release lacks wasm support (pin the git rev);
 `rand 0.9`/`getrandom 0.3` need the `wasm_js` backend (feature + `--cfg` in
 `engine/.cargo/config.toml`); warm the module up once before timing (V8
 tier-up costs the first ~100 ms).
+
+## Battle worker (2026-10-17, `web/battle/`)
+- **Mapper** (`engine-state.ts`): sim `Battle` → poke-engine state string, both sides omniscient. The side's six Pokémon are emitted in the sim's *current* `side.pokemon` order (the sim moves the active to the front on every switch), so engine indices map 1:1 to `move N` / `switch N`. Names are Showdown ids upper-cased, which is poke-engine's spelling for species, moves, items, abilities.
+- **Engine ↔ sim legality gaps the driver covers** (each found by `scripts/sweep.ts`): the request's move list is not in slot order while locked into a move (Outrage, charge turn, Recharge, Struggle) — map by id via `side.pokemon[active].moves`; Recharge/Struggle are the engine's `none`; a fainted active must *not* be flagged `force_switch` (the engine infers it from hp and only then handles a double KO) nor `force_trapped` (the sim's `trapped` is stale outside move requests); a Mega Stone the sim no longer honours (teammate already Mega'd) is mapped to no item.
+- **Choice rule**: among engine choices the sim allows, keep those with ≥ 75 % of the top visit count, sample proportionally to visits; random legal choice if nothing matches (counted as a *fallback* and reported as a problem).
+- **Engine outputs are structured** (`{kind, index, mega}`), never parsed from move names.
+- **Known inaccuracies**: Team Preview keeps file order (no lead search); seven items in the data are unknown to the engine and searched as "no item" (Terrain Extender, Heat/Damp Rock, Scope Lens, Quick Claw, Eject Pack, Eject Button — `node scripts/check-names.ts`); engine durations for Encore/Taunt/Yawn/locked moves are approximated from the sim's remaining turns; the engine's Mega legality is per Pokémon, not per team.
+- **Cost**: ~3.5–4.5 s per battle at 100 ms (p1) / 25 ms (p2) per decision; the `@pkmn/sim` + engine worker bundle is 9.7 MB unminified, **1.04 MB minified+gzipped** (plus 203 KB wasm) — all generations' data are included, tree-shaking gen9 is future work.
 
 ## Carried over from v1 (still true)
 - **Tera must be compiled out of the engine.** A Tera-enabled engine returns `-tera` choices the referee rejects.
