@@ -179,6 +179,8 @@
         <p class="eyebrow">Step 4 — The arena</p>
         <h1>Battle</h1>
         <p class="lead" id="battle-lead">Each matchup plays out in the live Showdown engine.</p>
+        <p class="cpu-note">Both AIs think on <em>your</em> device (about 4 s of one CPU core per battle, nothing is sent to a server).
+          <label class="toggle"><input type="checkbox" id="low-power" onchange="setLowPower(this.checked)"> Low power: half the think time, slightly weaker play</label></p>
       </div>
       <button class="btn btn-ghost btn-sm" id="to-results" onclick="go('results')" disabled>View run summary →</button>
     </div>

@@ -28,8 +28,20 @@ interface State {
 const state: State = {ctx: null, bossBook: null, session: null, view: null, bosses: [], teamExport: '', gauntletRunning: false, matrix: null};
 
 const params = new URLSearchParams(location.search);
-// Dev knobs: ?seed=N makes the run reproducible; ?p1ms=&p2ms= set the search budgets.
-const budgetMs = {p1: Number(params.get('p1ms')) || DEFAULT_BUDGET_MS.p1, p2: Number(params.get('p2ms')) || DEFAULT_BUDGET_MS.p2};
+// Dev knobs: ?seed=N makes the run reproducible; ?p1ms=&p2ms= set the search
+// budgets and override the player's low-power switch (docs/ROADMAP.md §2).
+const LOW_POWER_KEY = 'rollmons-low-power';
+let lowPower = false;
+try { lowPower = localStorage.getItem(LOW_POWER_KEY) === '1'; } catch { /* private mode */ }
+function setLowPower(on: boolean): void {
+  lowPower = on;
+  try { localStorage.setItem(LOW_POWER_KEY, on ? '1' : '0'); } catch { /* private mode */ }
+}
+/** Search budget for the next battle: halved in low-power mode, unless the dev knobs are set. */
+function budgetMs(): {p1: number; p2: number} {
+  const scale = lowPower ? 0.5 : 1;
+  return {p1: Number(params.get('p1ms')) || Math.round(DEFAULT_BUDGET_MS.p1 * scale), p2: Number(params.get('p2ms')) || Math.round(DEFAULT_BUDGET_MS.p2 * scale)};
+}
 const battles = new BattleClient(new Worker(new URL('./worker.js', import.meta.url), {type: 'module'}));
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -453,7 +465,7 @@ async function runNext(): Promise<void> {
     if (!spec) { finishRun(); return; }
     renderRail(session.gauntletView());
     const outcome = await battles.run({
-      p1: {name: 'Player', team: spec.playerTeam}, p2: {name: spec.bossName, team: spec.bossTeam}, seed: spec.seed, budgetMs,
+      p1: {name: 'Player', team: spec.playerTeam}, p2: {name: spec.bossName, team: spec.bossTeam}, seed: spec.seed, budgetMs: budgetMs(),
       onTurn: (e) => { if (state.session === session) $('battle-lead').textContent = `Now battling ${spec.bossName} — turn ${e.turn}.`; },
     });
     if (state.session !== session) return; // a new run started meanwhile
@@ -482,7 +494,7 @@ async function battleOne(): Promise<void> {
   $('theater').innerHTML = '';
   try {
     const spec = session.singleBattleSpec(id);
-    const outcome = await battles.run({p1: {name: 'Player', team: spec.playerTeam}, p2: {name: spec.bossName, team: spec.bossTeam}, seed: spec.seed, budgetMs});
+    const outcome = await battles.run({p1: {name: 'Player', team: spec.playerTeam}, p2: {name: spec.bossName, team: spec.bossTeam}, seed: spec.seed, budgetMs: budgetMs()});
     if (state.session !== session) return;
     session.recordSingleBattle(spec, outcome);
     renderRun(refreshView());
@@ -606,7 +618,7 @@ function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, thinReroll, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, thinReroll, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
@@ -614,6 +626,7 @@ $('boss-form').addEventListener('submit', saveBoss);
 async function boot(): Promise<void> {
   go('title');
   initRoller();
+  $<HTMLInputElement>('low-power').checked = lowPower;
   $('title-foot').textContent = 'Loading game data…';
   try {
     const res = await fetch(new URL('./data/game-data.json', import.meta.url));
