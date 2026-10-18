@@ -17,4 +17,6 @@ export interface GameData {
   pool: Pool;
   /** rollmons/bosses/<stem>.txt */
   bosses: Bosses;
+  /** data/tiers.json: species id -> Showdown tier (scripts/tiers.ts) */
+  tiers: Record<string, string>;
 }

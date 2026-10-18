@@ -31,5 +31,6 @@ export function loadGameData(root = REPO_ROOT): GameData {
     overrides: textFilesByStem(`${root}rollmons/sets`),
     pool,
     bosses: textFilesByStem(`${root}rollmons/bosses`),
+    tiers: readJson(`${root}data/tiers.json`),
   };
 }
