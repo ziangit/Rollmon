@@ -13,5 +13,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["battle", "scripts", "engine-pkg.d.ts"]
+  "include": ["battle", "replay", "dev", "scripts"]
 }

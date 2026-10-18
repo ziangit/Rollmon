@@ -10,7 +10,7 @@ mkdirSync(`${web}dist`, {recursive: true});
 copyFileSync(`${repo}engine/pkg/rollmons_engine_bg.wasm`, `${web}dist/rollmons_engine_bg.wasm`);
 
 const options = {
-  entryPoints: [`${web}battle/worker.ts`, `${web}dev/sim-teams.ts`],
+  entryPoints: [`${web}battle/worker.ts`, `${web}dev/battle-page.ts`],
   outdir: `${web}dist`,
   entryNames: '[name]',
   bundle: true,

@@ -1,7 +1,7 @@
 # web
 
-The browser app. Today: the **battle worker** (milestone 2). Draft/loadout UI
-comes later (milestone 4).
+The browser app. Today: the **battle worker**, the replay embed, and the damage
+summary (milestones 2–3). Draft/loadout UI comes with milestone 4.
 
 ```
 npm install
@@ -22,5 +22,12 @@ Needs `engine/pkg` first: `cd engine && wasm-pack build --release --target web -
 - `driver.ts` — sim request → legal choices; MCTS result → one choice (75 %-of-best visit rule, visit-weighted sample; random legal fallback).
 - `runner.ts` — the synchronous battle loop (`runBattle`), format constant, outcome + omniscient protocol log.
 - `worker.ts` — Web Worker entry: `{type:'battle', p1, p2, seed, budgetMs}` → `turn` events → `done`.
+- `summary.ts` — damage summary from the protocol log (MVP, per-Pokémon %, gauntlet sentence); port of the Python reference.
+
+## replay/
+- `embed.ts` — hosted Showdown replay player in a srcdoc iframe (boss avatar rewrite, lazy load, sizing), carried over from v1.
+
+## dev/
+- `battle.html` + `battle-page.ts` — run a battle in the worker, then show the summary and the replay.
 
 TypeScript runs directly under Node 24 (type stripping); esbuild bundles for the browser.
