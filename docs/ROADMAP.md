@@ -7,12 +7,12 @@ findings, and the designs for the items that are decided. Items marked
 | # | Item | Priority | Status |
 |---|---|---|---|
 | 1 | Pool and draft redesign (rarity, legendaries, thin cells) | P0 | **discuss**, see §1 |
-| 2 | CPU hint on the battle screen, low-power toggle | P0 | building |
+| 2 | CPU hint on the battle screen, low-power toggle | P0 | done |
 | 3 | Opponent band playability review | P1 | after §1 |
-| 4 | Watch the battle live | P1 | building |
-| 5 | Favicon | P1 | building |
+| 4 | Watch the battle live | P1 | done |
+| 5 | Favicon | P1 | done |
 | 6 | Draft pool coverage audit | done | §6, `web/scripts/coverage.ts` |
-| 7 | Leaderboard | P1 design, P2 build | design in §7 |
+| 7 | Leaderboard | P1 | built; needs the Neon database connected, §7 |
 | 8 | UI rework | P2 | after §1 and §9 |
 | 9 | i18n (zh / en / ja) | P2 | UI strings and species names first, §9 |
 | 10 | Weather-core game modes | P3 | parked, §10 |
@@ -104,23 +104,26 @@ Which groups to add is a §1 decision.
 
 ## 7. Leaderboard
 
-### Architecture (decided)
-- **Storage: Postgres** (Neon or Supabase free tier) behind a Vercel serverless
-  function at `api/`. No Redis: the scale is tiny and the hard problem is trust,
-  not read throughput; a table with an index on `score` serves top-N and keeps
-  the run proof. The GitHub Pages mirror calls the same API cross-origin.
+### Architecture (built 2026-10-18; `docs/ARCHITECTURE.md` has the code map)
+- **Storage: Neon Postgres** behind one Vercel function (`web/api/`). No Redis:
+  the scale is tiny and the hard problem is trust, not read throughput; a
+  table with an index on `score` serves top-N and keeps the run proof. The
+  GitHub Pages mirror calls the same API cross-origin.
+- **Setup still needed:** connect a Neon database to the Vercel project
+  (Storage → Neon; sets `DATABASE_URL`) and redeploy. Until then the API
+  answers 503 and the page hides the board (README, "Leaderboard setup").
 - **Trust.** Battles run on the player's machine, so a score is just a number
   unless the server can check it. The client submits, per battle, the sim seed
   and the full choice sequence of both sides (`runner.ts` already seeds the
   sim deterministically). The server replays each battle with `@pkmn/sim`
   only, no search (~30 ms per battle), confirms the winner and turn count, and
-  recomputes the score itself. Forged scores are rejected. Seed-fishing (reroll
-  the draft until a good team appears) is mitigated by a **daily seed**:
-  the board ranks runs played on the day's seed; free-seed runs are shown
-  separately or not at all.
+  recomputes the score itself. Forged scores are rejected. **Not built yet:**
+  a daily seed to blunt seed-fishing (restart until a good draft appears); the
+  handicap is the only counterweight today. Also open: rate limiting beyond
+  one submission per (seed, browser token), and a name filter.
 - **Identity.** A chosen display name plus a random client token; no accounts.
 
-### Score (decided, numbers are playtest knobs)
+### Score (built; numbers are playtest knobs in `web/game/score.ts`)
 ```
 score = Σ over won battles of  bandPoints × speedBonus  ×  teamHandicap
 bandPoints : Cakewalk 1, Meme 2, Red 3, Middle 5 each, Advanced 8 each, Air 15   (max 60)

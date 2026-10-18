@@ -16,7 +16,8 @@ A single-player Pokémon draft/autobattler. Draft six Pokémon through a slot ma
 ## Status
 - The whole game runs in the browser: poke-engine (WebAssembly) searches moves, `@pkmn/sim` referees, both in a Web Worker; the draft, loadout, campaign, and results logic is TypeScript under `web/`. Every push to `main` redeploys the site via GitHub Pages.
 - The Python layer under `rollmons/` remains the reference implementation and test oracle for the pure game logic (`make test`).
-- Next: playtesting and difficulty tuning. See `session-handoff.md`. How the AI works and how strong it is: `docs/BATTLE_AI.md`.
+- Battles play live in the replay theater; completed campaign runs can be submitted to a leaderboard, where the server replays the run with the simulator before accepting the score.
+- Next: the draft pool redesign and difficulty tuning (`docs/ROADMAP.md`, `session-handoff.md`). How the AI works and how strong it is: `docs/BATTLE_AI.md`.
 
 ## Quick start
 
@@ -27,6 +28,9 @@ cd web && npm install && npm run typecheck && npm test && npm run dev   # game a
 ```
 
 See `web/README.md` for the scripts (headless-Chrome full-run check, battle sweeps, name checks).
+
+## Leaderboard setup (Vercel)
+The API is one Vercel function (`web/api/`) backed by Neon Postgres. It needs a `DATABASE_URL`: in the Vercel dashboard open the project, **Storage → Create Database → Neon** (free tier), connect it to the project (this sets `DATABASE_URL`), then redeploy. The table is created on first use (`deploy/leaderboard.sql` documents it). Until then the API answers 503 and the game hides the leaderboard.
 
 ## Contributing data
 Boss teams (`rollmons/bosses/*.txt`, `rollmons/pool/<tier>/*.txt`) and per-species set overrides (`rollmons/sets/*.txt`) are plain Showdown export text. Validate with:
