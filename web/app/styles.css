@@ -280,6 +280,8 @@ details.raw pre{margin:.4rem 0 0;font-size:.78rem;line-height:1.45;white-space:p
   font-size:.92rem;font-weight:600;box-shadow:0 0 0 2px var(--edge), inset 0 0 0 2px var(--edge), 3px 3px 0 rgba(8,6,18,.4);border-width:2px}
 .rail li .dot{width:12px;height:12px;border-radius:0;background:var(--surface-2);flex:0 0 12px;box-shadow:0 0 0 2px var(--edge)}
 .rail li.current{border-color:var(--gold)}
+.rail li.clickable{cursor:pointer;transition:transform .06s steps(2),filter .1s}
+.rail li.clickable:hover{filter:brightness(1.18);transform:translateX(2px)}
 .rail li.current .dot{background:var(--gold);animation:pulse 1s steps(2) infinite}
 .rail li.win .dot{background:var(--good)}
 .rail li.loss .dot{background:var(--bad)}

@@ -362,7 +362,9 @@ function renderRail(gauntlet: GauntletView): void {
     let cls = '', label = 'Waiting';
     if (r) { cls = r.winner === 'player' ? 'win' : r.winner === 'boss' ? 'loss' : 'tie'; label = `${r.turns}t`; }
     else if (b.current) { cls = 'current'; label = 'Now'; }
-    return `<li class="${cls}"><span class="dot"></span><span>${i + 1}. ${esc(b.name)}</span><small>${label}</small></li>`;
+    // A finished battle's rail entry scrolls its replay card into view.
+    const attrs = r ? ` class="${cls} clickable" onclick="jumpToReplay('${r.battleId}')" title="Watch this battle" role="button" tabindex="0"` : ` class="${cls}"`;
+    return `<li${attrs}><span class="dot"></span><span>${i + 1}. ${esc(b.name)}</span><small>${label}</small></li>`;
   }).join('');
 }
 function renderTheater(results: BattleResult[]): void {

@@ -79,7 +79,17 @@ try {
     const d = f && f.contentDocument;
     return !!d && d.querySelectorAll('.battle *').length > 0 && (d.querySelector('.battle-log')?.textContent ?? '').length > 0;
   }, {timeout: 60_000});
-  console.log(`[${elapsed()}] replay cards:`, await page.$$eval('#theater .replay-card', (c) => c.length), '| first frame painted');
+  const replay = await page.evaluate(() => {
+    const d = document.querySelector('#theater iframe.replay-frame').contentDocument;
+    const log = d.querySelector('.battle-log');
+    return {infobox: !!log.querySelector('.infobox'), literalMarkup: /<div class/.test(log.textContent), controls: d.querySelectorAll('.replay-controls button').length};
+  });
+  console.log(`[${elapsed()}] replay cards:`, await page.$$eval('#theater .replay-card', (c) => c.length), '| first frame painted |', JSON.stringify(replay));
+  if (!replay.infobox || replay.literalMarkup) { console.error('replay rendered |raw| html as text'); process.exitCode = 1; }
+  // rail entries of finished battles jump to their replay card
+  await click('#rail li.clickable');
+  await page.waitForFunction(() => window.__rollmons.screen() === 'battle');
+  console.log('  rail click ->', await page.$$eval('#rail li.clickable', (l) => l.length), 'clickable entries');
   if (view.results.some((r) => r[4] > 0)) { console.error('battle problems reported'); process.exitCode = 1; }
 } finally {
   await browser.close();
