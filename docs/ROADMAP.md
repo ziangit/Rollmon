@@ -78,6 +78,13 @@ waits on the engine. The theater card for the current battle is created when
 the battle starts rather than when it ends. Risk: one more dependency on the
 hosted client's internal API, already listed in the handoff.
 
+Playtest feedback (2026-10-18), done: battles are watched one at a time (the
+next one starts only after the previous replay has reached its end), the
+rail hides the names of campaign bosses not yet reached and shows a result
+only once that battle has been watched, the summary unlocks (in-page button
+plus a fixed top-right button) only after the final battle has been watched
+instead of auto-navigating, and the battle music is muted in the player.
+
 ## 5. Favicon
 
 Original pixel art, not a Pokémon sprite (asset rule and trademark). A 16×16
