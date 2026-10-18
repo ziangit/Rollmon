@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs --serve",
-    "test": "node --test battle/*.test.ts replay/*.test.ts game/*.test.ts",
+    "test": "node --test app/*.test.ts battle/*.test.ts replay/*.test.ts game/*.test.ts",
     "typecheck": "tsc --noEmit",
     "battle": "node scripts/battle.ts"
   },
