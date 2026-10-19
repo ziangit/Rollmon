@@ -129,8 +129,34 @@ button:disabled{cursor:not-allowed;opacity:.42}
 }
 .lead{color:var(--muted);font-size:1.02rem;margin:.5rem 0 0}
 .summary-fab{position:fixed;top:72px;right:18px;z-index:45;box-shadow:0 0 0 3px var(--edge),0 6px 0 var(--edge)}
-.lang{font:inherit;font-size:.8rem;padding:.35rem .5rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);margin-right:.6rem;cursor:pointer}
-.lang-title{margin:.2rem 0 0;font-size:.72rem}
+.lang{font:inherit;font-size:.8rem;padding:.35rem .5rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);cursor:pointer}
+/* ---- tools strip (leaderboard · language · account), fixed corner on the title screen ---- */
+.tools{display:flex;align-items:center;gap:.6rem;margin-right:.4rem}
+.corner{position:fixed;top:14px;right:18px;z-index:45}
+.corner .tools{flex-wrap:wrap;justify-content:flex-end;margin:0}
+@media(max-width:560px){.corner{top:8px;right:8px}.corner .tools{gap:.4rem}#screen-title .title-inner{padding-top:4.4rem}}
+.account{display:flex;align-items:center;gap:.5rem}
+.account:empty{display:none}
+.account .who{font-family:var(--font-pixel);font-size:.55rem;color:var(--gold);text-shadow:1px 1px 0 var(--edge);max-width:9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ---- leaderboard drawer ---- */
+.drawer-backdrop{position:fixed;inset:0;z-index:59;background:rgba(8,6,18,.45)}
+.drawer{position:fixed;top:0;right:0;bottom:0;z-index:60;width:min(440px,100vw);overflow-y:auto;padding:1.1rem 1.2rem;
+  background:var(--surface);border-left:4px solid var(--frame);box-shadow:-4px 0 0 var(--edge);animation:slide .2s steps(4)}
+@keyframes slide{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+.drawer .panel-head{margin-bottom:.8rem}
+/* ---- account dialog ---- */
+.auth-dialog{width:min(22rem,calc(100vw - 2rem));padding:1.1rem 1.2rem;color:var(--ink);background:var(--surface);
+  border:3px solid var(--frame);border-radius:var(--r-sm);box-shadow:0 0 0 3px var(--edge),inset 0 0 0 3px var(--edge),5px 6px 0 rgba(8,6,18,.5)}
+.auth-dialog::backdrop{background:rgba(8,6,18,.55)}
+.auth-tabs{display:flex;gap:.4rem;margin-bottom:.9rem}
+.auth-tab{font:inherit;font-weight:700;font-size:.85rem;padding:.4rem .7rem;border:2px solid transparent;border-radius:var(--r-sm);background:none;color:var(--muted);cursor:pointer}
+.auth-tab.active{color:#fff;background:var(--frame);border-color:var(--edge)}
+.auth-dialog label{display:block;margin:0 0 .7rem;font-size:.82rem;color:var(--muted)}
+.auth-dialog input{display:block;width:100%;margin-top:.25rem;padding:.5rem .6rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font:inherit}
+.auth-dialog input:focus{outline:3px solid var(--gold);outline-offset:0}
+.auth-note{margin:0 0 .5rem;font-size:.76rem;color:var(--faint);line-height:1.5}
+.auth-error{margin:0 0 .6rem;font-size:.8rem;color:var(--bad);min-height:1.2em}
+.auth-actions{display:flex;justify-content:flex-end;gap:.5rem}
 .cpu-note{color:var(--faint);font-size:.8rem;line-height:1.6;margin:.55rem 0 0;max-width:62ch}
 .cpu-note em{color:var(--muted);font-style:normal}
 .cpu-note .toggle{display:block;margin-top:.25rem;cursor:pointer;color:var(--muted)}
@@ -438,11 +464,8 @@ details.raw pre{margin:.4rem 0 0;font-size:.78rem;line-height:1.45;white-space:p
 .score-rows li{display:flex;justify-content:space-between;gap:.6rem}
 .score-rows b{color:var(--ink)}
 .score-submit{display:flex;gap:.5rem;margin-top:.9rem;align-items:center;flex-wrap:wrap}
-.score-submit input{flex:1 1 9rem;min-width:0;padding:.5rem .6rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font:inherit}
-.score-submit input:focus{outline:3px solid var(--gold);outline-offset:0}
 .score-status{margin:.5rem 0 0;font-size:.82rem;color:var(--muted);min-height:1.2em}
-.board-card{margin:1.4rem auto 0;padding:1rem 1.2rem;max-width:34rem;text-align:left}
-.board-card .panel-head{margin-bottom:.6rem}
+.board-card{text-align:left}
 .board-list{list-style:none;margin:0;padding:0;display:grid;gap:.3rem}
 .board-list li{display:grid;grid-template-columns:2rem 1fr auto;gap:.6rem;align-items:baseline;font-size:.9rem}
 .board-list .rank{font-family:var(--font-pixel);font-size:.55rem;color:var(--faint)}

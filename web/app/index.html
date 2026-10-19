@@ -26,10 +26,41 @@
     <span class="step" data-step="results" data-i18n="Results">Results</span>
   </nav>
   <span class="spacer"></span>
-  <select class="lang" data-lang-select onchange="setLanguage(this.value)" aria-label="Language"><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select>
+  <div class="tools" id="tools">
+    <button class="btn btn-ghost btn-sm hidden" id="board-btn" onclick="toggleBoard()" data-i18n="🏆 Leaderboard">🏆 Leaderboard</button>
+    <select class="lang" data-lang-select onchange="setLanguage(this.value)" aria-label="Language"><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select>
+    <span class="account" id="account"></span>
+  </div>
   <button class="btn btn-ghost btn-sm" id="pokedex-btn" onclick="togglePool()">Pokédex</button>
 </header>
+<!-- On the title screen (no topbar) the tools strip is moved into this fixed corner. -->
+<div class="corner" id="corner"></div>
 <button class="btn btn-primary summary-fab hidden" id="summary-fab" onclick="go('results')" data-i18n="View run summary →">View run summary →</button>
+
+<!-- Leaderboard drawer (docs/ROADMAP.md §7): opened from the tools strip. -->
+<div class="drawer-backdrop hidden" id="board-backdrop" onclick="toggleBoard()"></div>
+<aside class="drawer hidden" id="board-drawer" aria-label="Leaderboard">
+  <div class="panel-head"><h3 data-i18n="Leaderboard">Leaderboard</h3><button class="btn btn-ghost btn-sm" onclick="toggleBoard()" aria-label="Close">✕</button></div>
+  <div class="board-card" id="board-card"></div>
+</aside>
+
+<!-- Account dialog: Showdown-style name + password, no email. -->
+<dialog class="auth-dialog" id="auth-dialog">
+  <div class="auth-tabs" role="tablist">
+    <button type="button" class="auth-tab active" data-mode="login" onclick="authMode('login')" data-i18n="Log in">Log in</button>
+    <button type="button" class="auth-tab" data-mode="register" onclick="authMode('register')" data-i18n="Register">Register</button>
+  </div>
+  <form id="auth-form" onsubmit="submitAuth(event)">
+    <label><span data-i18n="Name">Name</span><input id="auth-name" maxlength="18" autocomplete="username" required></label>
+    <label><span data-i18n="Password">Password</span><input id="auth-password" type="password" minlength="8" maxlength="128" autocomplete="current-password" required></label>
+    <p class="auth-note hidden" id="auth-note" data-i18n="No email and no password reset: a lost password is a lost account. Up to 5 accounts per network per day.">No email and no password reset: a lost password is a lost account. Up to 5 accounts per network per day.</p>
+    <p class="auth-error" id="auth-error"></p>
+    <div class="auth-actions">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="closeAuth()" data-i18n="Cancel">Cancel</button>
+      <button class="btn btn-primary btn-sm" type="submit" id="auth-submit" data-i18n="Log in">Log in</button>
+    </div>
+  </form>
+</dialog>
 
 <!-- ============ TITLE ============ -->
 <section class="screen" id="screen-title">
@@ -45,9 +76,7 @@
         <button class="btn btn-ghost btn-lg" onclick="go('pool')" data-i18n="Browse the pool">Browse the pool</button>
       </div>
       <p class="title-foot" id="title-foot">Lv 100 · Gen 9 · engine-enforced dedupe</p>
-      <select class="lang lang-title" data-lang-select onchange="setLanguage(this.value)" aria-label="Language"><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select>
     </div>
-    <div class="card board-card hidden" id="board-card"></div>
   </div>
   <div class="roller" id="roller">
     <p class="roller-head" data-i18n="◓ Gen × Type Slot Roller">◓ Gen × Type Slot Roller</p>

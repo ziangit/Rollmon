@@ -31,19 +31,14 @@ const state: State = {ctx: null, bossBook: null, session: null, view: null, boss
 const params = new URLSearchParams(location.search);
 // Dev knobs: ?seed=N makes the run reproducible; ?p1ms=&p2ms= set the search
 // budgets and override the player's low-power switch (docs/ROADMAP.md §2).
-/* Leaderboard API (docs/ROADMAP.md §7): the Vercel function; the GitHub
-   Pages mirror calls the Vercel deployment cross-origin. ?api=<origin> overrides. */
+/* Leaderboard API (docs/ROADMAP.md §7): the Vercel function on the same
+   origin. A local build reads the board from the deployment cross-origin
+   (?api=<origin> overrides) but cannot sign in: the session cookie is
+   same-origin only, so accounts are enabled only on the hosted site. */
 // ?gate=0 lets the next battle start before the previous replay has been watched (scripts only).
 const GATE = params.get('gate') !== '0';
 const API_BASE = params.get('api') ?? (/\.vercel\.app$/.test(location.hostname) ? '' : 'https://rollmon.vercel.app');
-const TOKEN_KEY = 'rollmons-token', NAME_KEY = 'rollmons-name';
-function clientToken(): string | null {
-  try {
-    let t = localStorage.getItem(TOKEN_KEY);
-    if (!t) { t = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem(TOKEN_KEY, t); }
-    return t;
-  } catch { return null; }
-}
+const AUTH_ENABLED = API_BASE === '';
 const LOW_POWER_KEY = 'rollmons-low-power';
 let lowPower = false;
 try { lowPower = localStorage.getItem(LOW_POWER_KEY) === '1'; } catch { /* private mode */ }
@@ -72,6 +67,7 @@ function rerenderAll(): void {
   $('pokedex-btn').textContent = currentScreen === 'pool' ? t('← Back') : t('Pokédex');
   if (state.matrix) renderMatrix();
   renderBoard();
+  renderAccount();
   if (state.bossBook) renderBosses(state.bosses);
   const view = state.view;
   if (!view) return;
@@ -93,6 +89,10 @@ function go(name: Screen): void {
   currentScreen = name;
   SCREENS.forEach((s) => $('screen-' + s).classList.toggle('active', s === name));
   $('topbar').classList.toggle('hidden', name === 'title');
+  // The tools strip has one instance: in the topbar, or in the fixed corner on the title screen.
+  if (name === 'title') $('corner').append($('tools')); else $('topbar').insertBefore($('tools'), $('pokedex-btn'));
+  $('corner').classList.toggle('hidden', name !== 'title');
+  if (!$('board-drawer').classList.contains('hidden')) toggleBoard();
   if (name === 'loadout') renderLoadout();
   // On the pool screen keep the step rail reflecting where Back will return to.
   updateSteps(name === 'pool' ? poolReturn : name);
@@ -749,36 +749,36 @@ function renderScore(g: GauntletView): void {
   const proof = state.session?.runProof() ?? null;
   const runKey = g.results.at(-1)?.battleId ?? null;
   const already = runKey !== null && submittedFor === runKey;
-  let name = '';
-  try { name = localStorage.getItem(NAME_KEY) ?? ''; } catch { /* private mode */ }
+  const post = !proof || already ? `<p class="score-status">${already ? t('Submitted.') : t('Only fresh campaign runs can be submitted.')}</p>`
+    : !AUTH_ENABLED ? `<p class="score-status">${t('Scores can only be posted on the hosted site.')}</p>`
+    : account ? `<p class="score-submit"><button class="btn btn-primary btn-sm" id="score-post" onclick="submitScore()">${t('Post as {name}', {name: esc(account.name)})}</button></p>`
+    : `<p class="score-submit"><button class="btn btn-primary btn-sm" id="score-signin" onclick="openAuth('login')">${t('Sign in to post')}</button></p>`;
   card.innerHTML = `<p class="eyebrow">${t('Score')}</p>
     <div class="score-total"><span class="v" id="score-total">${score.total}</span><span class="k">${t('points')}</span></div>
     <ul class="score-rows">${rows || `<li><span>${t('No wins')}</span><b>0</b></li>`}
       <li><span>${t('Base (wins × speed)')}</span><b>${score.base.toFixed(1)}</b></li>
       <li><span>${t('Team handicap')} <small>${t('(by tier)')}</small></span><b>× ${score.handicap.toFixed(2)}</b></li></ul>
-    ${proof && !already ? `<form class="score-submit" onsubmit="submitScore(event)"><input id="score-name" maxlength="24" placeholder="${t('Your name')}" value="${esc(name)}" required><button class="btn btn-primary btn-sm" type="submit">${t('Submit to leaderboard')}</button></form>`
-      : `<p class="score-status">${already ? t('Submitted.') : t('Only fresh campaign runs can be submitted.')}</p>`}
+    ${post}
     <p class="score-status" id="score-status"></p>`;
 }
-async function submitScore(ev: Event): Promise<void> {
-  ev.preventDefault();
+async function submitScore(): Promise<void> {
   const session = state.session;
   const proof = session?.runProof();
   const status = $('score-status');
   if (!session || !proof) { status.textContent = t('This run cannot be submitted.'); return; }
-  const name = $<HTMLInputElement>('score-name').value.trim();
-  if (!name) { status.textContent = t('Enter a name first.'); return; }
-  try { localStorage.setItem(NAME_KEY, name); } catch { /* private mode */ }
-  const btn = document.querySelector<HTMLButtonElement>('#score-card button');
+  const btn = document.querySelector<HTMLButtonElement>('#score-post');
   if (btn) btn.disabled = true;
   status.textContent = t('Verifying your run…');
   try {
-    const res = await fetch(`${API_BASE}/api/leaderboard`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, proof, token: clientToken()})});
-    const body = await res.json().catch(() => ({})) as {rank?: number; error?: string};
+    const res = await fetch(`${API_BASE}/api/leaderboard`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({proof})});
+    const body = await res.json().catch(() => ({})) as {rank?: number; score?: number; best?: number; error?: string};
+    if (res.status === 401) { account = null; renderAccount(); openAuth('login'); throw new Error(body.error || 'sign in first'); }
     if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
     submittedFor = session.gauntletView().results.at(-1)?.battleId ?? null;
-    status.textContent = t('Verified! You are #{rank} on the leaderboard.', {rank: body.rank ?? '?'});
-    document.querySelector('#score-card form')?.remove();
+    status.textContent = body.best !== undefined && body.score !== undefined && body.best > body.score
+      ? t('Verified! Your best is still {best} points (#{rank}).', {best: body.best, rank: body.rank ?? '?'})
+      : t('Verified! You are #{rank} on the leaderboard.', {rank: body.rank ?? '?'});
+    btn?.parentElement?.remove();
     void loadBoard();
   } catch (e) {
     status.textContent = t('Could not submit: {error}', {error: errorMessage(e)});
@@ -788,23 +788,89 @@ async function submitScore(ev: Event): Promise<void> {
 interface BoardEntry { name: string; score: number; wins: number; battles: number; team: string[]; createdAt: string }
 let boardEntries: BoardEntry[] | null = null;
 function renderBoard(): void {
-  const card = $('board-card');
   const entries = boardEntries;
-  if (!entries) { card.classList.add('hidden'); return; }
-  card.innerHTML = `<div class="panel-head"><h3>${t('Leaderboard')}</h3><span class="panel-note">${t('top {n} · verified runs', {n: entries.length})}</span></div>
+  $('board-btn').classList.toggle('hidden', !entries);
+  if (!entries) return;
+  $('board-card').innerHTML = `<p class="panel-note">${t('top {n} · best run per player', {n: entries.length})}</p>
     <ol class="board-list">${entries.map((e, i) => `<li><span class="rank">#${i + 1}</span><span>${esc(e.name)}<small>${t('{w}/{b} wins', {w: e.wins, b: e.battles})} · ${e.team.map((id) => monName({id, name: id})).join(', ')}</small></span><span class="score">${e.score}</span></li>`).join('') || `<li><span></span><span>${t('No runs yet. Be the first!')}</span><span></span></li>`}</ol>`;
-  card.classList.remove('hidden');
 }
 async function loadBoard(): Promise<void> {
-  const card = $('board-card');
   try {
     const res = await fetch(`${API_BASE}/api/leaderboard?limit=10`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     boardEntries = (await res.json() as {entries: BoardEntry[]}).entries;
-    renderBoard();
   } catch {
-    card.classList.add('hidden'); // no API here (local build, or the function is not configured)
+    boardEntries = null; // no API here (local build, or the function is not configured)
   }
+  renderBoard();
+}
+function toggleBoard(): void {
+  const open = $('board-drawer').classList.contains('hidden');
+  $('board-drawer').classList.toggle('hidden', !open);
+  $('board-backdrop').classList.toggle('hidden', !open);
+  if (open) void loadBoard();
+}
+
+/* ---- accounts (Showdown-style name + password; the session is a same-origin cookie) */
+let account: {name: string} | null = null;
+let authModeNow: 'login' | 'register' = 'login';
+function renderAccount(): void {
+  const el = $('account');
+  if (!AUTH_ENABLED) { el.innerHTML = ''; return; }
+  el.innerHTML = account
+    ? `<span class="who" title="${esc(account.name)}">${esc(account.name)}</span><button class="btn btn-ghost btn-sm" id="signout-btn" onclick="logout()">${t('Sign out')}</button>`
+    : `<button class="btn btn-ghost btn-sm" id="signin-btn" onclick="openAuth('login')">${t('Sign in')}</button>`;
+}
+async function loadAccount(): Promise<void> {
+  if (!AUTH_ENABLED) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/me`);
+    if (res.ok) account = (await res.json() as {user: {name: string} | null}).user;
+  } catch { /* offline */ }
+  renderAccount();
+}
+function openAuth(mode: 'login' | 'register'): void {
+  authMode(mode);
+  $('auth-error').textContent = '';
+  $<HTMLInputElement>('auth-password').value = '';
+  $<HTMLDialogElement>('auth-dialog').showModal();
+  $('auth-name').focus();
+}
+function authMode(mode: 'login' | 'register'): void {
+  authModeNow = mode;
+  document.querySelectorAll<HTMLElement>('.auth-tab').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
+  $('auth-submit').textContent = mode === 'register' ? t('Create account') : t('Log in');
+  $('auth-note').classList.toggle('hidden', mode !== 'register');
+  $<HTMLInputElement>('auth-password').autocomplete = mode === 'register' ? 'new-password' : 'current-password';
+}
+function closeAuth(): void { $<HTMLDialogElement>('auth-dialog').close(); }
+async function submitAuth(ev: Event): Promise<void> {
+  ev.preventDefault();
+  const name = $<HTMLInputElement>('auth-name').value.trim();
+  const password = $<HTMLInputElement>('auth-password').value;
+  const btn = $<HTMLButtonElement>('auth-submit'), err = $('auth-error');
+  btn.disabled = true;
+  err.textContent = t('Signing in…');
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/${authModeNow}`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, password})});
+    const body = await res.json().catch(() => ({})) as {user?: {name: string}; error?: string};
+    if (!res.ok || !body.user) throw new Error(body.error || `HTTP ${res.status}`);
+    account = body.user;
+    err.textContent = '';
+    closeAuth();
+    renderAccount();
+    if (state.view) renderScore(state.view.gauntlet);
+  } catch (e) {
+    err.textContent = errorMessage(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+async function logout(): Promise<void> {
+  try { await fetch(`${API_BASE}/api/auth/logout`, {method: 'POST'}); } catch { /* offline */ }
+  account = null;
+  renderAccount();
+  if (state.view) renderScore(state.view.gauntlet);
 }
 
 /* =====================================================================
@@ -846,7 +912,7 @@ function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, thinReroll, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, thinReroll, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
@@ -869,6 +935,7 @@ async function boot(): Promise<void> {
     renderBosses(state.bossBook.list());
     $('title-foot').textContent = t('Lv 100 · Gen 9 · engine-enforced dedupe');
     void loadBoard();
+    void loadAccount();
   } catch (e) {
     $('matrix-summary').textContent = errorMessage(e);
     $('title-foot').textContent = t('Could not load game data: {error}', {error: errorMessage(e)});
