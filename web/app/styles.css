@@ -132,6 +132,11 @@ button:disabled{cursor:not-allowed;opacity:.42}
 .lang{font:inherit;font-size:.8rem;padding:.35rem .5rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);cursor:pointer}
 /* ---- tools strip (leaderboard · language · account), fixed corner on the title screen ---- */
 .tools{display:flex;align-items:center;gap:.6rem;margin-right:.4rem}
+/* Same sizes in every language. */
+.tools .btn,.tools .lang{min-height:2.2rem;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center}
+.tools #board-btn{width:9rem}
+.tools .lang{width:6.8rem}
+.tools #signin-btn,.tools #signout-btn{width:5.6rem}
 .corner{position:fixed;top:14px;right:18px;z-index:45}
 .corner .tools{flex-wrap:wrap;justify-content:flex-end;margin:0}
 @media(max-width:560px){.corner{top:8px;right:8px}.corner .tools{gap:.4rem}#screen-title .title-inner{padding-top:4.4rem}}
@@ -197,10 +202,13 @@ button:disabled{cursor:not-allowed;opacity:.42}
   text-transform:uppercase;color:#26407e;margin-top:1.5rem;font-weight:400;text-shadow:2px 2px 0 rgba(255,255,255,.5)}
 .title-sub{max-width:33rem;margin:1.6rem auto 0;color:#1d2c54;font-size:1.05rem;line-height:1.6;font-weight:600;
   text-shadow:1px 1px 0 rgba(255,255,255,.4)}
+/* Fixed footprint so the box does not resize with the language: the pixel font and the CJK fallback differ in width. */
 .title-panel{margin:1.7rem auto 0;display:inline-flex;flex-direction:column;gap:1rem;align-items:center;
-  padding:1.4rem 1.6rem;background:var(--surface);border:4px solid var(--frame);border-radius:18px;
+  width:min(44rem,calc(100vw - 2rem));box-sizing:border-box;padding:1.4rem 1.6rem;background:var(--surface);border:4px solid var(--frame);border-radius:18px;
   box-shadow:0 0 0 4px var(--edge), inset 0 0 0 4px var(--edge), 6px 8px 0 rgba(8,6,18,.5)}
 .title-actions{display:flex;gap:.9rem;justify-content:center;flex-wrap:wrap}
+.title-actions .btn{width:16rem;max-width:100%;min-height:3.6rem;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.title-foot{min-height:1.7em}
 .title-foot{margin:0;font-family:var(--font-pixel);font-size:.54rem;color:var(--muted);line-height:1.7}
 /* .title-team removed — slot-machine Gen × Type animation will replace it */
 
