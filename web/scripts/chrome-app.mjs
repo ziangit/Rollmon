@@ -39,7 +39,7 @@ try {
   if (tools.board) {
     await click('#board-btn');
     await page.waitForFunction(() => !document.getElementById('board-drawer').classList.contains('hidden') && document.querySelector('#board-card .board-list li'));
-    tools.rows = await page.$eval('#board-card .board-list li', (r) => r.length);
+    tools.rows = await page.$$eval('#board-card .board-list li', (r) => r.length);
     await click('#board-backdrop');
   }
   console.log(`[${elapsed()}] title tools:`, JSON.stringify(tools));
