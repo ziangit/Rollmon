@@ -1,6 +1,6 @@
 # Roadmap after milestone 5
 
-Written 2026-10-18 from the author's plan and a code/data audit. Priorities,
+Written 2026-10-18 from the author's plan and a code/data audit. The author's tick-off view of the same items is the "Rollmons progress tracker" Claude Doc (link in `session-handoff.md`); keep both in step. Priorities,
 findings, and the designs for the items that are decided. Items marked
 **discuss** are not to be built until the author has chosen.
 
@@ -12,9 +12,9 @@ findings, and the designs for the items that are decided. Items marked
 | 4 | Watch the battle live | P1 | done |
 | 5 | Favicon | P1 | done |
 | 6 | Draft pool coverage audit | done | §6, `web/scripts/coverage.ts` |
-| 7 | Leaderboard | P1 | built; needs the Neon database connected, §7 |
+| 7 | Leaderboard | P1 | done (Neon connected 2026-10-18, accounts 2026-10-19); follow-ups in §7 |
 | 8 | UI rework | P2 | after §1 and §9 |
-| 9 | i18n (zh / en / ja) | P2 | easy part done (UI strings, species names), §9 |
+| 9 | i18n (zh / en / ja) | P2 | easy part done (UI strings, species names); CJK font and reel labels open, §9 |
 | 10 | Weather-core game modes | P3 | parked, §10 |
 
 ## 1. Pool and draft redesign (discuss)
