@@ -1,8 +1,8 @@
 #!/bin/sh
-# Vercel build: the same site steps as .github/workflows/pages.yml, on Vercel's
-# build image (which has Node but no Rust), plus the leaderboard function.
-# Emits the Build Output API layout (.vercel/output): static site + one Node
-# function at /api/leaderboard (docs/ROADMAP.md §7).
+# Vercel build on Vercel's build image (which has Node but no Rust): engine
+# wasm, the site, and the leaderboard/accounts function. Emits the Build Output
+# API layout (.vercel/output): static site + one Node function serving
+# /api/leaderboard and /api/auth/<op> (docs/ROADMAP.md §7).
 #   vercel.json: installCommand "cd web && npm ci", buildCommand "sh deploy/vercel-build.sh"
 set -eu
 cd "$(dirname "$0")/.."
@@ -31,6 +31,7 @@ cat > "$out/config.json" <<'JSON'
   "version": 3,
   "routes": [
     {"src": "^/api/leaderboard/?$", "dest": "/api/leaderboard"},
+    {"src": "^/api/auth/([a-z]+)/?$", "dest": "/api/leaderboard?auth=$1"},
     {"src": "^/data/(.*)$", "headers": {"cache-control": "public, max-age=3600"}, "continue": true},
     {"src": "^/(.*)\\.wasm$", "headers": {"content-type": "application/wasm"}, "continue": true},
     {"handle": "filesystem"}
