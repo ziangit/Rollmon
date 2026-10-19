@@ -114,11 +114,12 @@ Which groups to add is a §1 decision.
 ### Architecture (built 2026-10-18; `docs/ARCHITECTURE.md` has the code map)
 - **Storage: Neon Postgres** behind one Vercel function (`web/api/`). No Redis:
   the scale is tiny and the hard problem is trust, not read throughput; a
-  table with an index on `score` serves top-N and keeps the run proof. The
-  GitHub Pages mirror calls the same API cross-origin.
-- **Setup still needed:** connect a Neon database to the Vercel project
-  (Storage → Neon; sets `DATABASE_URL`) and redeploy. Until then the API
-  answers 503 and the page hides the board (README, "Leaderboard setup").
+  table with an index on `score` serves top-N and keeps the run proof. Same
+  origin only (the GitHub Pages mirror was dropped on 2026-10-19 because the
+  session cookie cannot cross origins).
+- **Setup:** `DATABASE_URL` from the Neon integration and `SESSION_SECRET`
+  (README, "Leaderboard setup"). Without the first the API answers 503 and
+  the page hides the board; without the second accounts are off.
 - **Trust.** Battles run on the player's machine, so a score is just a number
   unless the server can check it. The client submits, per battle, the sim seed
   and the full choice sequence of both sides (`runner.ts` already seeds the
@@ -126,9 +127,20 @@ Which groups to add is a §1 decision.
   only, no search (~30 ms per battle), confirms the winner and turn count, and
   recomputes the score itself. Forged scores are rejected. **Not built yet:**
   a daily seed to blunt seed-fishing (restart until a good draft appears); the
-  handicap is the only counterweight today. Also open: rate limiting beyond
-  one submission per (seed, browser token), and a name filter.
-- **Identity.** A chosen display name plus a random client token; no accounts.
+  handicap is the only counterweight today. Also open: throttling failed
+  logins (brute force), and a name filter beyond the reserved list.
+- **Identity (built 2026-10-19).** Showdown-style accounts: a name (1–18
+  characters; identity is the lowercased letters-and-digits form, so "Red"
+  and "R.e.d" are the same account, and CJK names work) and a password
+  (8–128 characters, scrypt-hashed), no email and therefore no reset. The
+  session is a signed HttpOnly cookie (30 days). Anyone can play and read
+  the board; posting needs a session, and the name on the board is the
+  account's. At most 5 accounts per network per rolling day (keyed hash of
+  the address). The board lists each player's best run; every run is kept.
+- **Placement (2026-10-19).** The board, the language select, and the account
+  chip sit in a tools strip: a fixed top-right corner on the title screen,
+  the right end of the topbar elsewhere. The board opens as a drawer, so the
+  title screen keeps only the logo and the Start panel.
 
 ### Score (built; numbers are playtest knobs in `web/game/score.ts`)
 ```

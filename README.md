@@ -2,7 +2,7 @@
 
 A single-player Pokémon draft/autobattler. Draft six Pokémon through a slot machine, pick each one's set, then watch an AI-piloted ten-battle boss gauntlet.
 
-**Play it:** https://rollmon.vercel.app (mirror: https://ziangit.github.io/Rollmon/) — everything runs in your browser (no account, no server).
+**Play it:** https://rollmon.vercel.app — everything runs in your browser; no account needed to play (one is needed only to post a score to the leaderboard).
 
 **v2 goal:** run the whole game in the browser. The battle AI ([poke-engine](https://github.com/pmariglia/poke-engine), Rust) compiles to WebAssembly and [`@pkmn/sim`](https://github.com/pkmn/ps/tree/main/sim) referees in a Web Worker, so there is no battle server and the game hosts as a static site. v1, which ran [foul-play](https://github.com/pmariglia/foul-play) against a local Pokémon Showdown server and shipped as a macOS app, is archived at [ziangit/rollmons](https://github.com/ziangit/rollmons).
 
@@ -16,7 +16,7 @@ A single-player Pokémon draft/autobattler. Draft six Pokémon through a slot ma
 ## Status
 - The whole game runs in the browser: poke-engine (WebAssembly) searches moves, `@pkmn/sim` referees, both in a Web Worker; the draft, loadout, campaign, and results logic is TypeScript under `web/`. Every push to `main` redeploys the site via GitHub Pages.
 - The Python layer under `rollmons/` remains the reference implementation and test oracle for the pure game logic (`make test`).
-- Battles play live in the replay theater; completed campaign runs can be submitted to a leaderboard, where the server replays the run with the simulator before accepting the score.
+- Battles play live in the replay theater; completed campaign runs can be posted to a leaderboard by signed-in players (name + password, Showdown-style, no email), where the server replays the run with the simulator before accepting the score. The board shows each player's best run.
 - Next: the draft pool redesign and difficulty tuning (`docs/ROADMAP.md`, `session-handoff.md`). How the AI works and how strong it is: `docs/BATTLE_AI.md`.
 
 ## Quick start
@@ -30,7 +30,7 @@ cd web && npm install && npm run typecheck && npm test && npm run dev   # game a
 See `web/README.md` for the scripts (headless-Chrome full-run check, battle sweeps, name checks).
 
 ## Leaderboard setup (Vercel)
-The API is one Vercel function (`web/api/`) backed by Neon Postgres. It needs a `DATABASE_URL`: in the Vercel dashboard open the project, **Storage → Create Database → Neon** (free tier), connect it to the project (this sets `DATABASE_URL`), then redeploy. The table is created on first use (`deploy/leaderboard.sql` documents it). Until then the API answers 503 and the game hides the leaderboard.
+The API is one Vercel function (`web/api/`) backed by Neon Postgres. It needs two environment variables: `DATABASE_URL` (in the Vercel dashboard open the project, **Storage → Create Database → Neon**, free tier, connect it to the project) and `SESSION_SECRET` (any long random string; it signs the account cookies and keys the sign-up address hashes: `openssl rand -base64 48 | vercel env add SESSION_SECRET production`). Then redeploy. The tables are created and migrated on first use (`deploy/leaderboard.sql` documents them). Without the database the API answers 503 and the game hides the board; without the secret accounts are off and scores cannot be posted. Accounts have no email and no password reset; at most 5 can be created per network per day.
 
 ## Contributing data
 Boss teams (`rollmons/bosses/*.txt`, `rollmons/pool/<tier>/*.txt`) and per-species set overrides (`rollmons/sets/*.txt`) are plain Showdown export text. Validate with:
