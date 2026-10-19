@@ -240,13 +240,16 @@ export async function neonStore(url: string): Promise<Store> {
   };
 }
 
-/* ---- Node http adapter (Vercel Node runtime). Same-origin only: no CORS, and
-   a POST whose Origin does not match the host is refused (CSRF). */
+/* ---- Node http adapter (Vercel Node runtime). Reads (GET) are open to any
+   origin so a local build can show the board; writes are same-origin only:
+   no CORS on POST, and a POST whose Origin does not match the host is
+   refused (CSRF). The session cookie never travels cross-origin. */
 
 export function nodeHandler(api: (req: ApiRequest) => Promise<ApiResponse>): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   return async (req, res) => {
     const send = (out: ApiResponse) => {
       const headers: Record<string, string> = {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store'};
+      if (req.method === 'GET') headers['Access-Control-Allow-Origin'] = '*';
       if (out.setCookie) headers['Set-Cookie'] = out.setCookie;
       res.writeHead(out.status, headers);
       res.end(out.status === 204 ? undefined : JSON.stringify(out.body));
