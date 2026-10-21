@@ -255,9 +255,15 @@ button:disabled{cursor:not-allowed;opacity:.42}
 }
 .chip.legend{background:#caa23a;color:#1a1430}
 .mon-body{padding:.5rem .9rem 1rem;display:flex;flex-direction:column;gap:.6rem;flex:1}
-.prob{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--muted)}
-.prob .bar{flex:1;height:10px;border-radius:0;background:var(--surface-2);overflow:hidden;box-shadow:0 0 0 2px var(--edge)}
-.prob .bar i{display:block;height:100%;border-radius:0;background:var(--gold)}
+.rarity{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--muted)}
+.rarity .stars{letter-spacing:.08em;font-size:.95rem;color:var(--muted);filter:drop-shadow(1px 1px 0 var(--edge))}
+.rarity.r1 .stars{color:#9fd36a}
+.rarity.r2 .stars{color:#7ab9e0}
+.rarity.r3 .stars{color:var(--gold)}
+.rarity .mono{margin-left:auto}
+.chip.visitor{background:var(--surface-2);color:var(--ink);border-style:dashed;text-transform:none}
+.mon.visitor{border-style:dashed}
+.encounter .odds-note{color:var(--muted);font-size:.78rem;margin:.3rem 0 0}
 .setbox{background:var(--surface-2);border:2px solid var(--edge);border-radius:var(--r-sm);padding:.6rem .7rem;font-size:.82rem}
 .setbox .row{color:var(--muted);font-family:var(--font-body);font-size:.82rem;line-height:1.5;overflow-wrap:anywhere}
 .setbox .row b{color:var(--ink);font-weight:700}

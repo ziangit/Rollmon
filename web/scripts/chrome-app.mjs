@@ -52,7 +52,10 @@ try {
     const label = await page.$eval('#round-label', (e) => e.textContent);
     const cell = await page.$eval('#encounter .cell-name', (e) => e.textContent.replace(/\s+/g, ' ').trim());
     const names = await page.$$eval('#candidates .mon-name', (ns) => ns.map((n) => n.textContent));
-    console.log(`  ${label}: ${cell} -> ${names.join(', ')}`);
+    const rarities = await page.$$eval('#candidates .rarity .stars', (ns) => ns.map((n) => n.textContent));
+    if (rarities.length !== names.length) throw new Error(`round ${round}: ${names.length} candidates but ${rarities.length} rarity rows`);
+    const visitors = await page.$$eval('#candidates .mon.visitor', (ns) => ns.length);
+    console.log(`  ${label}: ${cell} -> ${names.map((n, i) => `${n} ${rarities[i]}`).join(', ')}${visitors ? ` (${visitors} visitor${visitors > 1 ? 's' : ''})` : ''}`);
     await click('#candidates .pick');
     await page.waitForFunction((r) => document.querySelectorAll('#party .slot:not(.empty)').length === r, {}, round);
   }

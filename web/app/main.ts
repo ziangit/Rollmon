@@ -128,9 +128,17 @@ function monName(p: {id?: string; name: unknown}): string {
   return localSpeciesName(titleCase(p.name), state.ctx?.data.pokedex[id], state.ctx?.data.speciesNames);
 }
 const typeName = (x: string) => t(titleCase(x));
-function typeChips(p: {types: string[]; legendary?: boolean}): string {
+function typeChips(p: {types: string[]; legendary?: boolean; visitor?: boolean; debutGeneration?: number}): string {
   const chips = p.types.map((x) => `<span class="chip t-${x.toLowerCase()}">${typeName(x)}</span>`).join('');
-  return chips + (p.legendary ? `<span class="chip legend">${t('Legendary')}</span>` : '');
+  return chips + (p.legendary ? `<span class="chip legend">${t('Legendary')}</span>` : '')
+    + (p.visitor ? `<span class="chip visitor">${t('Visitor · Gen {n}', {n: p.debutGeneration ?? '?'})}</span>` : '');
+}
+const RARITY_LABELS: Record<string, string> = {common: 'Common', uncommon: 'Uncommon', rare: 'Rare', legendary: 'Legendary'};
+/** "★★★☆ Rare" row; the tier is shown when Showdown has one. */
+function rarityRow(p: SpeciesView): string {
+  const stars = '★'.repeat(p.rarity + 1) + '☆'.repeat(3 - p.rarity);
+  const tier = p.tier ? ` <span class="mono">${esc(p.tier)}</span>` : '';
+  return `<div class="rarity r${p.rarity}" title="${t('Rarity')}"><span class="stars">${stars}</span><span>${t(RARITY_LABELS[p.rarityName])}</span>${tier}</div>`;
 }
 const TYPE_COLORS: Record<string, string> = {
   bug: '#92bc2c', dark: '#595761', dragon: '#0c69c8', electric: '#eab911', fairy: '#ee90e6', fighting: '#d3425f', fire: '#fba54c',
@@ -192,7 +200,8 @@ function renderEncounter(draft: SessionView): void {
     <div>
       <p class="eyebrow" style="margin:0 0 .25rem">${t('Wild cell')}</p>
       <div class="cell-name"><span style="color:${typeColor(o.cell.type)}">${typeName(o.cell.type)}</span> · ${t('Gen {n}', {n: o.cell.generation})}</div>
-      ${o.thinRerollAvailable ? `<p class="thin-note">${t('Thin cell — fewer than {n} choices left, this re-spin is free.', {n: o.thinCellThreshold})}</p>` : ''}
+      <p class="odds-note">${t('Slot odds — common {c}% · uncommon {u}% · rare {r}% · legendary {l}%', {c: o.rarityOdds[0], u: o.rarityOdds[1], r: o.rarityOdds[2], l: o.rarityOdds[3]})}</p>
+      ${o.thinRerollAvailable ? `<p class="thin-note">${t('Thin cell — fewer than {n} natives; Pokémon from nearby generations fill in, and this re-spin is free.', {n: o.thinCellThreshold})}</p>` : ''}
     </div>
     <div class="encounter-actions">
       ${thin}
@@ -223,9 +232,8 @@ function setSummary(p: SpeciesView): string {
 function renderCandidates(offer: OfferView): void {
   const root = $('candidates');
   root.innerHTML = offer.candidates.map((p) => {
-    const prob = p.selectionProbability * 100;
     return `
-    <article class="mon">
+    <article class="mon${p.visitor ? ' visitor' : ''}">
       <div class="mon-top">
         <span class="mon-badge">${t('Gen {g} · BST {b}', {g: p.debutGeneration, b: p.baseStatTotal})}</span>
         <div class="sprite-frame">${sprite(p)}</div>
@@ -233,11 +241,7 @@ function renderCandidates(offer: OfferView): void {
         <div class="chips">${typeChips(p)}</div>
       </div>
       <div class="mon-body">
-        <div class="prob" title="${t('Draft odds')}">
-          <span>${t('Odds')}</span>
-          <span class="bar"><i style="width:${Math.min(100, prob)}%"></i></span>
-          <span class="mono">${prob.toFixed(1)}%</span>
-        </div>
+        ${rarityRow(p)}
         ${setSummary(p)}
       </div>
       <button class="btn btn-primary pick" onclick="pick('${p.id}')">${t('Pick {name}', {name: monName(p)})}</button>
@@ -903,6 +907,7 @@ function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
   const list = cell.pokemon.length
     ? `<ul class="dlist">${cell.pokemon.map((p) => `<li><span class="mini">${sprite(p)}</span>
          <span><strong>${monName(p)}</strong><div class="meta">${t('Gen {g} · BST {b}', {g: p.debutGeneration, b: p.baseStatTotal})}</div>
+         ${rarityRow(p)}
          <div class="chips" style="justify-content:flex-start;margin-top:.2rem">${typeChips(p)}</div></span></li>`).join('')}</ul>`
     : `<p style="color:var(--muted)">${t('No active-source Pokémon occupy this cell.')}</p>`;
   d.innerHTML = `<h3>${typeName(cell.type)} · ${t('Gen {n}', {n: cell.generation})}</h3>
