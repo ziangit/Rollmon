@@ -11,7 +11,7 @@ findings, and the designs for the items that are decided. Items marked
 | 3 | Opponent band playability review | P1 | after §1 |
 | 4 | Watch the battle live | P1 | done |
 | 5 | Favicon | P1 | done |
-| 6 | Draft pool coverage audit | done | §6, `web/scripts/coverage.ts` |
+| 6 | Draft pool coverage audit, Smogon set scrape | done | §6; 652 draftable species since 2026-10-21 (was 437) |
 | 7 | Leaderboard | P1 | done (Neon connected 2026-10-18, accounts 2026-10-19); follow-ups in §7 |
 | 8 | UI rework | P2 | after §1 and §9 |
 | 9 | i18n (zh / en / ja) | P2 | easy part done (UI strings, species names); CJK font and reel labels open, §9 |
@@ -19,24 +19,25 @@ findings, and the designs for the items that are decided. Items marked
 
 ## 1. Pool and draft redesign (discuss)
 
-Facts from the current data (`web/scripts/coverage.ts`):
+Facts from the current data (`web/scripts/coverage.ts`), after the Smogon set
+scrape of 2026-10-21 (§6); the pre-scrape numbers are in brackets:
 
 | Fact | Count |
 |---|---|
-| Draftable species (atoms) | 437 |
-| Cells in the 18×9 matrix | 155 |
-| Cells with ≤5 species | 107 |
-| Legendary species (BST > 600, `LEGENDARY_BST_EXCLUSIONS` aside) | 45 |
-| Cells where a legendary is guaranteed in the offer | 17 |
+| Draftable species (atoms) | 652 (437) |
+| Cells in the 18×9 matrix | 159 (155) |
+| Cells with ≤5 species | 67 (107) |
+| Cells with <3 species (thin, free reroll) | 15 (37) |
+| Legendary species (BST > 600, `LEGENDARY_BST_EXCLUSIONS` aside) | 72 (45) |
+| Cells where a legendary is guaranteed in the offer | 8 (17) |
 
 How the legendary weight actually works: `legendaryWeight` (0.10) is used in
 `offerCandidates` only when a cell has more than `candidateCap` (5) species, to
 pick which five are shown. In a cell with five or fewer species everything is
-shown, and the player picks freely. So the weight never applies in 107 of 155
-cells, and in 17 cells (Ho-Oh, Groudon, Zacian-Crowned, Calyrex-Ice,
-Necrozma-Dusk-Mane, Lunala, Kyurem, Hoopa-Unbound, five Arceus formes, …) a
-legendary is on offer every time. The weight also drives the "suggested" pick
-and the displayed probabilities, which is cosmetic.
+shown, and the player picks freely. So the weight never applies in 67 of 159
+cells, and in 8 cells (Yveltal, Hoopa-Unbound, Ho-Oh, Zacian-Crowned, three
+Arceus formes) a legendary is on offer every time. The weight also drives the
+"suggested" pick and the displayed probabilities, which is cosmetic.
 
 Options on the table:
 - **Rarity tiers** per species (common / uncommon / rare / legendary) with
@@ -91,23 +92,36 @@ Original pixel art, not a Pokémon sprite (asset rule and trademark). A 16×16
 grid drawn as inline SVG `<rect>`s in `index.html`: a Poké-Ball-shaped
 slot-reel window. No asset file.
 
-## 6. Draft pool coverage (done)
+## 6. Draft pool coverage (done; sets scraped 2026-10-21)
 
-Of ~692 fully evolved, non-battle-only species in `data/pokedex.json`, 260 are
-not draftable (`node scripts/coverage.ts` in `web/`):
+A species is draftable when it has a usable Smogon set or a checked-in
+override (`rollmons/sets/`). The first Smogon dump (472 species) had been
+scraped from the SV pages only, so 214 fully evolved species were missing:
+165 absent from Scarlet/Violet with nothing scraped at all (Togekiss,
+Nidoking, the Tapus, the Ultra Beasts, …), 36 whose only scraped sets were
+side formats the ingester rightly drops (1v1, Godly Gift, BSS: Volcarona,
+Roaring Moon, Flutter Mane, Mewtwo, …), and 13 never scraped.
 
-- **155 weak species (BST ≤ 500) with no usable Smogon set**: Raticate, Arbok,
-  Butterfree, Ledian, … Fine to omit, or to add as cheap picks once §7 rewards
-  them (randbats has sets for most).
-- **86 mid species (501–600)** absent from Scarlet/Violet, so no gen9 Smogon
-  set: Nidoking, Alakazam, Machamp, Starmie, Crobat, Baxcalibur(!),
-  Archaludon(!). The format allows them (`+Past`); adding them needs sets from
-  earlier gens or randbats.
-- **19 box legendaries (> 600)**: Mewtwo, Lugia, Rayquaza, Dialga, Palkia,
-  Giratina, Reshiram, Zekrom, Xerneas, Yveltal, Solgaleo, Zacian, … absent while
-  Arceus formes and Calyrex-Ice are present. The legendary set is arbitrary.
+`web/scripts/smogon-scrape.ts` fills the gaps from Smogon's dex: for each
+species it walks SV, SS, SM, XY, BW, DP, RS and keeps up to four sets from the
+first generation that has a standard singles tier (OU, Ubers, UU, RU, NU, PU,
+ZU, AG and their National Dex versions), never a side format. Z-Crystal sets
+are skipped and Hidden Power is dropped (the gen 9 data has no typed Hidden
+Power and the battle driver cannot map a plain one). `node scripts/
+check-names.ts` now also runs the usable Smogon sets past the engine. Result:
+645 species with sets, 652 draftable species; `node scripts/coverage.ts`
+lists what is left:
 
-Which groups to add is a §1 decision.
+- 12 Scarlet/Violet species with no analysis in any generation (Wyrdeer,
+  Tauros-Paldea-Combat, Oinkologne, Dachsbun, Rabsca, Meowstic, Klawf,
+  Wugtrio, Squawkabilly, Spidops, Raticate-Alola, Pikachu-Alola) plus Unown,
+  whose only set is Hidden Power. `rollmons/data/gen9randombattle.json` has
+  sets for most of them; a randbats fallback for species without a Smogon
+  set would cover them.
+- Five older entries still carry a plain Hidden Power (Luvdisc, Meowstic-F,
+  Minun, Plusle, Zebstrika); that move is a fallback decision in battle.
+- Which groups belong in the pool is still a §1 decision; §1's numbers are
+  the post-scrape ones.
 
 ## 7. Leaderboard
 

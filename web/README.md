@@ -10,7 +10,9 @@ npm run typecheck          # tsc, no emit
 npm test                   # node:test suites in battle/, replay/, game/
 npm run battle -- pool/advanced/Cynthia.txt bosses/leon.txt 1   # one traced battle in Node
 node scripts/sweep.ts 40 10          # many quick battles, reports problems
-node scripts/check-names.ts          # every species/move/item/ability in rollmons/ known to the engine
+node scripts/check-names.ts          # every species/move/item/ability in rollmons/ and the usable Smogon sets known to the engine
+node scripts/coverage.ts [--list]    # fully evolved species that are not draftable; legendary odds per cell
+node scripts/smogon-scrape.ts [id…]  # fill rollmons/data/smogon_sets.json from Smogon's dex (SV → SS → SM → … fallback, standard tiers only)
 npm run build              # dist/: index.html, styles.css, app.js, worker.js, wasm, data/game-data.json (+ dev battle-page.js)
 npm run build -- --minify  # same, minified, no sourcemaps (what deploy/vercel-build.sh deploys)
 npm run dev                # watch + serve: game at /dist/index.html, worker page at /dev/battle.html (:8975)
