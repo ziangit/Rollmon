@@ -15,6 +15,13 @@ export {mulberry32};
 export const RULES = ['Species Clause', '+Past', 'Dynamax Clause', 'Terastal Clause', '!! Max Move Count = 4', 'Adjust Level = 100'];
 export const FORMAT = `gen9customgame@@@${RULES.join(',')}`;
 
+/** The omniscient channel of the sim's log. Custom Game is a debug format in
+ *  Showdown, so the sim also writes `|debug|` notes ("natural status immunity",
+ *  "weather immunity"); the replay player prints those, so they are dropped. */
+function omniscientLines(raw: string[]): string[] {
+  return extractChannelMessages(raw.join('\n'), [-1])[-1].filter((l) => !l.startsWith('|debug|'));
+}
+
 /** Default think time per decision (docs/DIFFICULTY.md knobs). */
 export const DEFAULT_BUDGET_MS = {p1: 100, p2: 25};
 
@@ -102,7 +109,7 @@ function play(cfg: LoopConfig): Outcome {
     const raw = battle.log.slice(logIndex);
     logIndex = battle.log.length;
     // the sim appends a |split| block in one call, so a slice never cuts one in half
-    const lines = extractChannelMessages(raw.join('\n'), [-1])[-1].filter((l) => l !== '');
+    const lines = omniscientLines(raw).filter((l) => l !== '');
     if (lines.length) cfg.onLog(lines);
   };
 
@@ -145,7 +152,7 @@ function play(cfg: LoopConfig): Outcome {
 
   function finish(): Outcome {
     flushLog();
-    const log = extractChannelMessages(battle.log.join('\n'), [-1])[-1];
+    const log = omniscientLines(battle.log);
     return {
       winner: battle.winner ?? '(none)',
       turns: battle.turn,

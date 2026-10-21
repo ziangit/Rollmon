@@ -19,6 +19,7 @@ test('streamed log chunks concatenate to the outcome log, in order', () => {
   assert.ok(chunks.length > outcome.turns / 2, 'lines arrive as the battle progresses, not in one piece at the end');
   assert.ok(chunks.every((c) => c.length > 0));
   assert.ok(outcome.log.some((l) => l.startsWith('|win|') || l === '|tie'));
+  assert.ok(!outcome.log.some((l) => l.startsWith('|debug|')), 'the sim\'s debug notes (Custom Game is a debug format) are not shown in replays');
   assert.equal(outcome.fallbacks, outcome.problems.filter((p) => p.startsWith('engine error')).length);
 });
 
