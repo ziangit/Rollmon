@@ -6,7 +6,7 @@ findings, and the designs for the items that are decided. Items marked
 
 | # | Item | Priority | Status |
 |---|---|---|---|
-| 1 | Pool and draft redesign (rarity, legendaries, thin cells) | P0 | **discuss**, see §1 |
+| 1 | Pool and draft redesign (rarity, legendaries, thin cells) | P0 | built 2026-10-21, playtesting; design and knobs in §1 |
 | 2 | CPU hint on the battle screen, low-power toggle | P0 | done |
 | 3 | Opponent band playability review | P1 | after §1 |
 | 4 | Watch the battle live | P1 | done |
@@ -17,40 +17,72 @@ findings, and the designs for the items that are decided. Items marked
 | 9 | i18n (zh / en / ja) | P2 | easy part done (UI strings, species names); CJK font and reel labels open, §9 |
 | 10 | Weather-core game modes | P3 | parked, §10 |
 
-## 1. Pool and draft redesign (discuss)
+## 1. Pool and draft redesign (decided 2026-10-21, built the same day)
 
-Facts from the current data (`web/scripts/coverage.ts`), after the Smogon set
-scrape of 2026-10-21 (§6); the pre-scrape numbers are in brackets:
+The author and the assistant discussed the two complaints (a legendary was
+guaranteed in some cells; thin cells hurt even with a free reroll) and chose
+the design below. The pre-decision write-up with the alternatives (cell
+weighting, eras instead of generations, a scheduled legendary round, level
+handicaps à la random battles) is in the chat history of 2026-10-21; the
+simulation scripts are not in the repo.
 
-| Fact | Count |
-|---|---|
-| Draftable species (atoms) | 652 (437) |
-| Cells in the 18×9 matrix | 159 (155) |
-| Cells with ≤5 species | 67 (107) |
-| Cells with <3 species (thin, free reroll) | 15 (37) |
-| Legendary species (BST > 600, `LEGENDARY_BST_EXCLUSIONS` aside) | 72 (45) |
-| Cells where a legendary is guaranteed in the offer | 8 (17) |
+### What was wrong
 
-How the legendary weight actually works: `legendaryWeight` (0.10) is used in
-`offerCandidates` only when a cell has more than `candidateCap` (5) species, to
-pick which five are shown. In a cell with five or fewer species everything is
-shown, and the player picks freely. So the weight never applies in 67 of 159
-cells, and in 8 cells (Yveltal, Hoopa-Unbound, Ho-Oh, Zacian-Crowned, three
-Arceus formes) a legendary is on offer every time. The weight also drives the
-"suggested" pick and the displayed probabilities, which is cosmetic.
+Three separate causes, only one of which the set scrape (§6) could touch:
 
-Options on the table:
-- **Rarity tiers** per species (common / uncommon / rare / legendary) with
-  per-tier odds applied before the cell is chosen, gacha-style, instead of a
-  single BST flag applied after.
-- **Always offer five.** Backfill thin cells from adjacent generations or the
-  second type so weighting always bites and thin-cell rerolls become rare.
-- **Hard cap**, e.g. at most one legendary per run, shown as a rule.
-- **Score handicap** (§7): legendaries stay draftable but a six-legendary team
-  cannot top the leaderboard.
+- The cell roll was uniform over the 159 cells, so a one-species cell
+  (Togekiss in fairy/gen4) came up as often as a 15-species one: 45% of runs
+  met a thin cell.
+- The legendary down-weight (0.10) only decided which five of a bigger cell
+  were shown. In the 67 cells with five or fewer species everything was
+  shown, so the weight was a no-op in 42% of rounds and eight cells put a
+  legendary in the offer every time.
+- The grid itself has structural holes: Fairy was added in gen 6, gens 1
+  and 2 have one Dragon line each, gen 6 has one Bug line. No data fixes
+  those 15 thin cells.
 
-Recommendation to open the discussion: rarity tiers + always-five offers +
-score handicap, no hard cap. Not built.
+### The design (`web/game/draft.ts`, `draft-config.ts`, `legality-matrix.ts`)
+
+- **Rarity per species** = the higher of its Showdown tier rank and its
+  base-stat rank. Tier: Uber/AG legendary, OU/UUBL rare, UU/RUBL/RU/NUBL
+  uncommon, everything else common. Base stats: over 600 legendary, 570–600
+  rare, 500–569 uncommon. Slaking and Regigigas rank by tier only (Truant /
+  Slow Start). Arceus formes are separate species. Buckets over the 652
+  draftable species: common 244, uncommon 206, rare 125, legendary 77. The
+  union was chosen so that a player who knows only one scale is not
+  surprised: Hoopa-Unbound (680, UUBL) and Zamazenta (660, OU) read as
+  legendary by stats; Flutter Mane, Volcarona and Palafin by tier. The 30
+  tier-only legendaries with ordinary stats are shown as four stars plus
+  their tier; the author may relabel them later.
+- **Visitors.** A rolled cell keeps all its natives and is filled from the
+  nearest generations of the same type (distance 1, then 2, …) until it has
+  at least `backfillMin` = 6 candidates and `backfillMinNonLegendary` = 5
+  non-legendary ones. Visitors are tagged in the offer ("Visitor · Gen 3").
+  67 of 159 cells need visitors; about a third of offers show one or two.
+- **Slot roll.** Each of the five offer slots rolls a rarity from
+  `rarityOdds` = 50 / 28 / 12 / 10 (common / uncommon / rare / legendary),
+  **falls down** to the next lower rarity the pool still has when the rolled
+  one is absent (never up), then draws a species uniformly within that
+  rarity, without replacement. Falling down rather than renormalising, and
+  the non-legendary floor, are what stop a legendary-heavy cell (dragon/gen4
+  has five among six natives) from forcing one into the offer.
+- **Thin reroll stays**, judged on natives (fewer than 3), so the player can
+  still take Dragonite from the gen 1 Dragon cell or spin again for free.
+- **No pity counter** (author's choice: simpler to explain; the score
+  handicap in §7 already punishes a legendary-heavy team on the board).
+- The cell roll stays uniform and the 18×9 grid keeps its identity.
+
+Expected numbers from a 30,000-run simulation of the final rules (player
+takes every legendary offered): a legendary in the offer in 21% of rounds,
+in at least one round of 76% of runs, 1.3 legendaries per team; the most
+legendary-prone cell offers one 43% of the time, and no cell is above 50%.
+`node scripts/coverage.ts` prints the buckets, the short cells, and the 15
+legendary-heavy cells whose visitors keep the offer open.
+
+Knobs to playtest (`DEFAULT_DRAFT_CONFIG`): `rarityOdds`, `backfillMin`,
+`backfillMinNonLegendary`, `thinCellThreshold`. The Python reference
+(`rollmons/draft.py`) still implements the pre-§1 weighting and is no longer
+the oracle for the draft; its tests cover the Python code only.
 
 ## 2. CPU hint and low-power mode
 

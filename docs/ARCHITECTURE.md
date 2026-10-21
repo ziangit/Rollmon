@@ -19,7 +19,7 @@
 ## Reference implementation (Python, `rollmons/`)
 Kept as the behavioral spec until each module is ported. `make test` runs ruff + 71 tests, no Rust/Node needed.
 - `legality_matrix.py` — 18×9 type-by-debut-generation matrix; atoms = configured source ∪ species with a set override; rejects mega/gmax *forme* atoms.
-- `draft.py` / `draft_config.py` — six-round draft state machine; weighted sampling only when a cell exceeds `candidate_cap` (5); thin-cell rerolls; two skips.
+- `draft.py` / `draft_config.py` — six-round draft state machine; weighted sampling only when a cell exceeds `candidate_cap` (5); thin-cell rerolls; two skips. **Pre-§1 behaviour:** the TypeScript draft replaced it with rarity slots and visitors on 2026-10-21 (`docs/ROADMAP.md` §1); the Python draft is no longer the oracle.
 - `team_assembly.py` — `selectable_sets()` (override blocks + Smogon or randbats fallback), `assemble_loadout()`, `_normalize_override_export` (strip nickname label and Tera, force `Level: 100`).
 - `smogon_sets.py` — Smogon JSON ingestion, format exclusions, Tera stripping.
 - `pool_loader.py` — `CAMPAIGN_STRUCTURE` = `1 + 1 + 1 + 3 + 3 + 1`; seedable 10-battle campaign.
@@ -32,7 +32,7 @@ Kept as the behavioral spec until each module is ported. `make test` runs ruff +
 |---|---|---|
 | Engine wasm build | — | **done** (`engine/`, pinned poke-engine git rev, gen9 no-Tera; ~200 KB gzipped) |
 | Referee + driver worker | — | **done** (`web/battle/`: mapper, driver, runner, worker; 60-battle sweep clean) |
-| Legality matrix / draft | reference | **done** (`web/game/legality-matrix.ts`, `draft.ts`, `draft-config.ts`; reference tests ported) |
+| Legality matrix / draft | reference (pre-§1) | **done**, then redesigned (`web/game/legality-matrix.ts`, `draft.ts`, `draft-config.ts`; rarity + visitors per `docs/ROADMAP.md` §1, TypeScript only) |
 | Loadout / set selection | reference | **done** (`web/game/team-assembly.ts`, `smogon-sets.ts`; reference tests ported) |
 | Pool / campaign | reference | **done** (`web/game/pool.ts`, `bosses.ts`, `submissions.ts`, `showdown-export.ts`) |
 | Results / damage summary | reference | **done** (`web/battle/summary.ts`, reference tests ported) |
