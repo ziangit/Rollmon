@@ -20,15 +20,29 @@ DEFAULT_SMOGON_SETS_PATH = REPO_ROOT / "rollmons" / "data" / "smogon_sets.json"
 EXCLUDED_FORMAT_ALIASES = {
     "1v1",
     "1v 1",
+    "2v2",
     "aaa",
     "almost any ability",
     "battle stadium singles",
+    "battle spot singles",
     "bss",
     "doubles",
     "godly gift",
     "mix and mega",
     "monotype",
     "vgc",
+    "bh",
+    "balanced hackmons",
+    "pure hackmons",
+    "stabmons",
+    "cap",
+    "inheritance",
+    "camomons",
+    "partners in crime",
+    "draft",
+    "free for all",
+    "ffa",
+    "triples",
 }
 
 
@@ -90,7 +104,10 @@ def is_format_excluded(format_name: str) -> bool:
     return (
         normalized in EXCLUDED_FORMAT_ALIASES
         or normalized.startswith("bss ")
+        or normalized.startswith("vgc")
         or "monotype" in normalized
+        or "hackmons" in normalized
+        or "doubles" in normalized
     )
 
 

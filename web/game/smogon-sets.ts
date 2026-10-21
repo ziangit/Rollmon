@@ -2,8 +2,9 @@
 import {parseShowdownExport, SubmissionError, type EntityData} from './submissions.ts';
 
 export const EXCLUDED_FORMAT_ALIASES = new Set([
-  '1v1', '1v 1', 'aaa', 'almost any ability', 'battle stadium singles', 'bss', 'doubles', 'godly gift',
-  'mix and mega', 'monotype', 'vgc',
+  '1v1', '1v 1', '2v2', 'aaa', 'almost any ability', 'battle stadium singles', 'battle spot singles', 'bss', 'doubles', 'godly gift',
+  'mix and mega', 'monotype', 'vgc', 'bh', 'balanced hackmons', 'pure hackmons', 'stabmons', 'cap', 'inheritance', 'camomons',
+  'partners in crime', 'draft', 'free for all', 'ffa', 'triples',
 ]);
 
 export interface SmogonRawSet { label?: string; generation?: string; format?: string; name?: string; export?: string; source_url?: string }
@@ -44,7 +45,7 @@ export function normalizedFormat(formatName: string): string {
 
 export function isFormatExcluded(formatName: string): boolean {
   const n = normalizedFormat(formatName);
-  return EXCLUDED_FORMAT_ALIASES.has(n) || n.startsWith('bss ') || n.includes('monotype');
+  return EXCLUDED_FORMAT_ALIASES.has(n) || n.startsWith('bss ') || n.startsWith('vgc') || n.includes('monotype') || n.includes('hackmons') || n.includes('doubles');
 }
 
 /** Remove Tera-only metadata so exports are inert in the no-Tera format. */

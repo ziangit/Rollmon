@@ -1,9 +1,12 @@
-// Every species/move/item/ability in the repo's team files must be known to
-// the engine; unknown names parse silently to a default and corrupt the search.
+// Every species/move/item/ability in the repo's team files and in the usable
+// Smogon sets must be known to the engine; unknown names parse silently to a
+// default and corrupt the search.
 //   node scripts/check-names.ts
 import {readdirSync, readFileSync, statSync} from 'node:fs';
 import {join} from 'node:path';
 import {Teams, toID} from '@pkmn/sim';
+import {loadUsableSmogonSets} from '../game/smogon-sets.ts';
+import {loadGameData} from './game-data.ts';
 import {loadEngine, REPO_ROOT} from './load-engine.ts';
 
 function* txtFiles(dir: string): Generator<string> {
@@ -30,6 +33,18 @@ for (const dir of ['bosses', 'pool', 'sets']) {
     }
   }
 }
+const data = loadGameData();
+let smogonSets = 0;
+for (const [id, sets] of Object.entries(loadUsableSmogonSets(data.smogon, {pokedex: data.pokedex, moves: data.moves}))) {
+  for (const set of sets) {
+    smogonSets++;
+    const where = `rollmons/data/smogon_sets.json (${set.label})`;
+    seen.species.set(id.toUpperCase(), where);
+    if (set.item) seen.item.set(toID(set.item).toUpperCase(), where);
+    if (set.ability) seen.ability.set(toID(set.ability).toUpperCase(), where);
+    for (const m of set.moves) seen.move.set(toID(m).toUpperCase(), where);
+  }
+}
 let bad = 0;
 for (const kind of ['species', 'move', 'item', 'ability'] as const) {
   const names = [...seen[kind].keys()];
@@ -39,5 +54,5 @@ for (const kind of ['species', 'move', 'item', 'ability'] as const) {
   // item); unknown species/moves/abilities corrupt the state, so they fail.
   for (const u of unknown) { if (kind !== 'item') bad++; console.log(`  ${kind === 'item' ? 'warn' : 'FAIL'} ${u}  (${seen[kind].get(u)?.replace(REPO_ROOT, '')})`); }
 }
-console.log(`${files} team files checked`);
+console.log(`${files} team files and ${smogonSets} Smogon sets checked`);
 if (bad) process.exitCode = 1;
