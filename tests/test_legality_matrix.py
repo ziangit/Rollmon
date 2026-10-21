@@ -41,7 +41,7 @@ def metadata(species_id, types, generation, *, legendary=False, bst=500):
 
 def test_atom_count_matches_gen9_randbats_source(legality_data):
     source = load_usable_smogon_sets()
-    assert len(source) == 424
+    assert len(source) == 639
     assert len(legality_data.atoms) == len(source)
     assert set(legality_data.atoms) == set(source)
 

@@ -20,8 +20,8 @@ const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) < eps;
 
 test('atom count matches the usable Smogon source', () => {
   const source = loadUsableSmogonSets(data.smogon, data);
-  assert.equal(Object.keys(source).length, 424);
-  assert.equal(legality.atoms.length, 424);
+  assert.equal(Object.keys(source).length, 639);
+  assert.equal(legality.atoms.length, 639);
   assert.deepEqual(new Set(legality.atoms), new Set(Object.keys(source)));
 });
 

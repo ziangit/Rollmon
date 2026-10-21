@@ -158,22 +158,22 @@ test('tera type lines are stripped from Smogon exports', () => {
 
 test('checked-in Smogon ingestion counts and validation report', () => {
   const [sets, report] = ingestSmogonSets(data.smogon, data);
-  assert.equal(Object.keys(sets).length, 424);
-  assert.equal(report.inputSetCount, 720);
-  assert.equal(report.usableSetCount, 650);
-  assert.equal(report.formatExcludedSetCount, 70);
-  assert.deepEqual(report.matchedFormatStrings, [
-    '1v1', 'Almost Any Ability', 'BSS Series 2', 'Battle Stadium Singles', 'Doubles', 'Godly Gift', 'Mix and Mega',
-    'Monotype', 'National Dex Monotype', 'VGC',
-  ]);
+  assert.equal(Object.keys(sets).length, 639);
+  assert.equal(report.inputSetCount, 1115);
+  assert.equal(report.usableSetCount, 1109);
+  assert.equal(report.formatExcludedSetCount, 6);
+  assert.deepEqual(report.matchedFormatStrings, ['Almost Any Ability', 'Godly Gift']);
   assert.deepEqual(report.validationIssues, []);
-  assert.deepEqual(report.allSetsExcludedOrFailedSpecies.slice(0, 3), ['annihilape', 'arceusghost', 'arceuspoison']);
+  // formes whose only scraped sets are side-format ones (scripts/smogon-scrape.ts skips cosmetic and item-locked formes)
+  assert.deepEqual(report.allSetsExcludedOrFailedSpecies, ['arceusghost', 'arceuspoison', 'dialgaorigin', 'greninjabond', 'ogerponhearthflame', 'zamazentacrowned']);
   assert.ok(Object.values(sets).flat().every((s) => !s.export.includes('Tera Type:')));
 });
 
 test('checked-in Smogon ingestion excludes OM and doubles sets', () => {
   const [sets] = ingestSmogonSets(data.smogon, data);
-  for (const id of ['polteageist', 'regieleki', 'gougingfire', 'jumpluff']) assert.ok(!(id in sets), id);
-  const banned = new Set(['Almost Any Ability', 'Mix and Mega', 'Doubles', 'VGC']);
+  for (const id of ['greninjabond', 'ogerponhearthflame']) assert.ok(!(id in sets), id);
+  // scripts/smogon-scrape.ts replaced the side-format-only entries these used to have
+  for (const id of ['polteageist', 'regieleki', 'gougingfire', 'jumpluff']) assert.ok(id in sets, id);
+  const banned = new Set(['Almost Any Ability', 'Mix and Mega', 'Doubles', 'VGC', 'Godly Gift', '1v1', 'BH']);
   assert.ok(Object.values(sets).flat().every((s) => !banned.has(s.format)));
 });

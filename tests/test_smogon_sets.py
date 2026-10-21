@@ -19,6 +19,11 @@ def test_format_exclusion_matches_requested_aliases():
     assert is_format_excluded("Mix and Mega")
     assert is_format_excluded("Doubles")
     assert is_format_excluded("VGC")
+    assert is_format_excluded("VGC24 Regulation G")
+    assert is_format_excluded("BH")
+    assert is_format_excluded("STABmons")
+    assert is_format_excluded("Doubles OU")
+    assert not is_format_excluded("National Dex AG (DLC1)")
     assert not is_format_excluded("OU")
 
 
@@ -39,27 +44,20 @@ Level: 100
 def test_checked_in_smogon_ingestion_counts_and_validation_report():
     sets, report = ingest_smogon_sets()
 
-    assert len(sets) == 424
-    assert report.input_set_count == 720
-    assert report.usable_set_count == 650
-    assert report.format_excluded_set_count == 70
-    assert report.matched_format_strings == (
-        "1v1",
-        "Almost Any Ability",
-        "BSS Series 2",
-        "Battle Stadium Singles",
-        "Doubles",
-        "Godly Gift",
-        "Mix and Mega",
-        "Monotype",
-        "National Dex Monotype",
-        "VGC",
-    )
+    assert len(sets) == 639
+    assert report.input_set_count == 1115
+    assert report.usable_set_count == 1109
+    assert report.format_excluded_set_count == 6
+    assert report.matched_format_strings == ("Almost Any Ability", "Godly Gift")
     assert report.validation_issues == ()
-    assert report.all_sets_excluded_or_failed_species[:3] == (
-        "annihilape",
+    # formes whose only scraped sets are side-format ones
+    assert report.all_sets_excluded_or_failed_species == (
         "arceusghost",
         "arceuspoison",
+        "dialgaorigin",
+        "greninjabond",
+        "ogerponhearthflame",
+        "zamazentacrowned",
     )
     assert all("Tera Type:" not in set_.export for entries in sets.values() for set_ in entries)
 
@@ -78,10 +76,11 @@ def test_checked_in_smogon_json_contains_no_bh_sets():
 def test_checked_in_smogon_ingestion_excludes_om_and_doubles_sets():
     sets, _report = ingest_smogon_sets()
 
-    assert "polteageist" not in sets
-    assert "regieleki" not in sets
-    assert "gougingfire" not in sets
-    assert "jumpluff" not in sets
+    assert "greninjabond" not in sets
+    assert "ogerponhearthflame" not in sets
+    # web/scripts/smogon-scrape.ts replaced the side-format-only entries these used to have
+    assert "polteageist" in sets
+    assert "regieleki" in sets
     assert all(
         set_.format
         not in {"Almost Any Ability", "Mix and Mega", "Doubles", "VGC"}

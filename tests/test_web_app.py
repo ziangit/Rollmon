@@ -273,20 +273,19 @@ async def test_matrix_endpoint_exposes_all_cells_and_known_placements(client):
     assert response.status_code == 200
     matrix = response.json()
     assert matrix["set_source"] == "smogon"
-    # 424 source atoms + 13 Mega-Stone override-only atoms = 437; the megas fill
-    # existing cells (155 included, 7 excluded unchanged) and promote 5 thin
-    # cells to normal.
-    assert matrix["atom_count"] == 437
-    assert matrix["included_cell_count"] == 155
+    # 639 source atoms + 13 Mega-Stone override-only atoms = 652; the megas fill
+    # existing cells.
+    assert matrix["atom_count"] == 652
+    assert matrix["included_cell_count"] == 159
     assert len(matrix["cells"]) == 18 * 9
-    assert sum(cell["included"] for cell in matrix["cells"]) == 155
-    assert sum(cell["state"] == "normal" for cell in matrix["cells"]) == 118
-    assert sum(cell["state"] == "thin" for cell in matrix["cells"]) == 37
-    assert sum(cell["state"] == "excluded" for cell in matrix["cells"]) == 7
+    assert sum(cell["included"] for cell in matrix["cells"]) == 159
+    assert sum(cell["state"] == "normal" for cell in matrix["cells"]) == 144
+    assert sum(cell["state"] == "thin" for cell in matrix["cells"]) == 15
+    assert sum(cell["state"] == "excluded" for cell in matrix["cells"]) == 3
 
     fairy_gen1 = find_cell(matrix, "fairy", 1)
     assert fairy_gen1["included"]
-    assert fairy_gen1["state"] == "thin"
+    assert fairy_gen1["state"] == "normal"
     clefable = next(
         pokemon for pokemon in fairy_gen1["pokemon"] if pokemon["id"] == "clefable"
     )
