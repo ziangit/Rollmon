@@ -2,11 +2,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CellMap, FORME_DEBUT_GENERATION_OVERRIDES, LEGENDARY_BST_EXCLUSIONS, LEGENDARY_BST_THRESHOLD, MIN_CELL_SIZE,
-  buildLegalityData, buildMatrix, cellsForSpecies, selectSpecies, selectionProbabilities, type Cell, type SpeciesMetadata,
+  COMMON, FORME_DEBUT_GENERATION_OVERRIDES, LEGENDARY, MIN_CELL_SIZE, RARE, TIER_ONLY_SPECIES, UNCOMMON,
+  buildLegalityData, buildMatrix, bstRank, cellsForSpecies, rarityOf, type SpeciesMetadata,
 } from './legality-matrix.ts';
 import {loadUsableSmogonSets} from './smogon-sets.ts';
-import {seededRng} from './rng.ts';
 import {loadGameData} from '../scripts/game-data.ts';
 
 const data = loadGameData();
@@ -15,8 +14,7 @@ const data = loadGameData();
 const legality = buildLegalityData({...data, overrides: {}});
 
 const metadata = (id: string, types: string[], generation: number, opts: {legendary?: boolean; bst?: number} = {}): SpeciesMetadata =>
-  ({speciesId: id, name: id, types, debutGeneration: generation, baseStatTotal: opts.bst ?? 500, legendary: opts.legendary ?? false});
-const approx = (a: number, b: number, eps = 1e-9) => Math.abs(a - b) < eps;
+  ({speciesId: id, name: id, types, debutGeneration: generation, baseStatTotal: opts.bst ?? 500, rarity: opts.legendary ? LEGENDARY : COMMON, legendary: opts.legendary ?? false});
 
 test('atom count matches the usable Smogon source', () => {
   const source = loadUsableSmogonSets(data.smogon, data);
@@ -71,71 +69,39 @@ test('modern type and debut generation placements', () => {
   assert.ok(legality.matrix.get(['psychic', 7])!.includes('raichualola'));
 });
 
-test('legendary is strictly BST above 600, with the two ability exclusions', () => {
-  assert.equal(LEGENDARY_BST_THRESHOLD, 600);
-  assert.deepEqual(LEGENDARY_BST_EXCLUSIONS, new Set(['slaking', 'regigigas']));
-  assert.equal(legality.species.slaking.baseStatTotal, 670);
-  assert.ok(!legality.species.slaking.legendary);
-  assert.equal(legality.species.regigigas.baseStatTotal, 670);
-  assert.ok(!legality.species.regigigas.legendary);
-  assert.equal(legality.species.arceusfairy.baseStatTotal, 720);
-  assert.ok(legality.species.arceusfairy.legendary);
-  assert.equal(legality.species.dragonite.baseStatTotal, 600);
-  assert.ok(!legality.species.dragonite.legendary);
-  assert.ok(!legality.species.mew.legendary);
-  assert.equal(legality.species.articuno.baseStatTotal, 580);
-  for (const m of Object.values(legality.species)) {
-    assert.equal(m.legendary, m.baseStatTotal > 600 && !LEGENDARY_BST_EXCLUSIONS.has(m.speciesId));
-  }
+test('rarity is the higher of the Showdown tier rank and the base-stat rank', () => {
+  assert.equal(bstRank(601), LEGENDARY); assert.equal(bstRank(600), RARE); assert.equal(bstRank(570), RARE);
+  assert.equal(bstRank(569), UNCOMMON); assert.equal(bstRank(500), UNCOMMON); assert.equal(bstRank(499), COMMON);
+  assert.equal(rarityOf('x', 'Uber', 450), LEGENDARY); // banned tier, ordinary stats (Palafin)
+  assert.equal(rarityOf('x', 'UUBL', 680), LEGENDARY); // 600+ stats, not Uber (Hoopa-Unbound)
+  assert.equal(rarityOf('x', 'OU', 545), RARE); assert.equal(rarityOf('x', 'NU', 580), RARE);
+  assert.equal(rarityOf('x', 'RU', 545), UNCOMMON); assert.equal(rarityOf('x', 'ZU', 330), COMMON);
+  assert.equal(rarityOf('x', undefined, 720), LEGENDARY); assert.equal(rarityOf('x', undefined, 330), COMMON);
+  // Truant / Slow Start: tier only, so the 670 stat-ball is not a prize
+  assert.deepEqual(TIER_ONLY_SPECIES, new Set(['slaking', 'regigigas']));
+  assert.equal(rarityOf('slaking', 'ZU', 670), COMMON);
+  assert.equal(rarityOf('regigigas', 'ZU', 670), COMMON);
 });
 
-test('selector probabilities use the same positive legendary weight', () => {
-  const cell: Cell = ['normal', 3];
-  const species = {ordinary: metadata('ordinary', ['normal'], 3), slaking: metadata('slaking', ['normal'], 3, {bst: 670, legendary: true})};
-  const p = selectionProbabilities(cell, new CellMap([[cell, Object.keys(species)]]), species, {legendaryWeight: 0.25});
-  assert.ok(approx(p.get('ordinary')!, 0.8));
-  assert.ok(approx(p.get('slaking')!, 0.2));
+test('real species land in the expected rarity buckets', () => {
+  const r = (id: string) => legality.species[id].rarity;
+  assert.equal(r('slaking'), COMMON); assert.equal(r('regigigas'), COMMON); assert.equal(r('delibird'), COMMON);
+  assert.equal(r('togekiss'), UNCOMMON);
+  assert.equal(r('articuno'), RARE); assert.equal(r('garchomp'), RARE); assert.equal(r('dragonite'), RARE); assert.equal(r('mew'), RARE);
+  assert.equal(r('tapukoko'), RARE); assert.equal(r('metagross'), RARE);
+  assert.equal(r('hoopaunbound'), LEGENDARY); assert.equal(r('zamazenta'), LEGENDARY); assert.equal(r('kyurem'), LEGENDARY);
+  assert.equal(r('fluttermane'), LEGENDARY); assert.equal(r('palafin'), LEGENDARY); assert.equal(r('arceusfairy'), LEGENDARY);
+  for (const m of Object.values(legality.species)) assert.equal(m.legendary, m.rarity === LEGENDARY);
+  const counts = [0, 0, 0, 0];
+  for (const m of Object.values(legality.species)) counts[m.rarity]++;
+  assert.deepEqual(counts, [237, 200, 125, 77]);
 });
 
-test('arceus probability uses the arceus-specific weight', () => {
-  const cell: Cell = ['fire', 4];
-  const species = {
-    ordinary: metadata('ordinary', ['fire'], 4), legend: metadata('legend', ['fire'], 4, {legendary: true}),
-    arceusfire: metadata('arceusfire', ['fire'], 4, {legendary: true}),
-  };
-  const p = selectionProbabilities(cell, new CellMap([[cell, Object.keys(species)]]), species, {legendaryWeight: 0.10, arceusWeight: 0.05});
-  assert.ok(approx(p.get('ordinary')!, 1 / 1.15));
-  assert.ok(approx(p.get('legend')!, 0.10 / 1.15));
-  assert.ok(approx(p.get('arceusfire')!, 0.05 / 1.15));
-});
-
-test('legendary selection is down-weighted deterministically', () => {
-  const cell: Cell = ['psychic', 1];
-  const species = {normal: metadata('normal', ['psychic'], 1), legend: metadata('legend', ['psychic'], 1, {legendary: true})};
-  const matrix = new CellMap([[cell, ['normal', 'legend']]]);
-  const rng = seededRng(24601);
-  const picks = Array.from({length: 2000}, () => selectSpecies(cell, matrix, species, {rng, legendaryWeight: 0.25}));
-  const legends = picks.filter((p) => p === 'legend').length;
-  assert.ok(legends > 0 && legends < picks.length - legends);
-});
-
-test('a three-of-four legendary cell never soft-locks', () => {
-  const cell: Cell = ['dragon', 9];
-  const species: Record<string, SpeciesMetadata> = {ordinary: metadata('ordinary', ['dragon'], 9)};
-  for (let i = 0; i < 3; i++) species[`legend${i}`] = metadata(`legend${i}`, ['dragon'], 9, {legendary: true});
-  const matrix = new CellMap([[cell, Object.keys(species)]]);
-  const rng = seededRng(7);
-  const picks = Array.from({length: 1000}, () => selectSpecies(cell, matrix, species, {rng, legendaryWeight: 0.01}));
-  assert.ok(picks.every((p) => p in species));
-  assert.ok(picks.some((p) => p.startsWith('legend')));
-});
-
-test('every included real cell can return a pick', () => {
-  const rng = seededRng(99);
-  for (const [cell, eligible] of legality.matrix.entries()) {
-    assert.ok(eligible.length >= 1);
-    assert.ok(eligible.includes(selectSpecies(cell, legality.matrix, legality.species, {rng})));
-  }
+test('without tier data rarity falls back to base stats', () => {
+  const untiered = buildLegalityData({...data, overrides: {}, tiers: undefined});
+  assert.equal(untiered.species.palafin.rarity, COMMON);
+  assert.equal(untiered.species.hoopaunbound.rarity, LEGENDARY);
+  assert.equal(untiered.species.slaking.rarity, COMMON);
 });
 
 test('megas, gigantamax, and battle formes do not leak', () => {

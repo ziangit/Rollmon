@@ -9,8 +9,8 @@ import type {GameData} from '../game/data.ts';
 import {Draft, DraftError, type DraftOffer} from '../game/draft.ts';
 import {DEFAULT_DRAFT_CONFIG, draftConfig, type DraftConfig} from '../game/draft-config.ts';
 import {
-  DEFAULT_SET_SOURCE, GENERATIONS, TYPES, buildAllCells, buildLegalityData,
-  type Cell, type CellMap, type LegalityData, type SetSource, type SpeciesMetadata,
+  DEFAULT_SET_SOURCE, GENERATIONS, RARITY_NAMES, TYPES, buildAllCells, buildLegalityData,
+  type Cell, type CellMap, type LegalityData, type Rarity, type SetSource, type SpeciesMetadata,
 } from '../game/legality-matrix.ts';
 import {buildCampaign, PoolError} from '../game/pool.ts';
 import {seededRng, type Rng} from '../game/rng.ts';
@@ -28,6 +28,12 @@ export const BOSS_ORDER_MIN = 1;
 export const BOSS_ORDER_MAX = 10;
 
 export class SessionError extends Error {}
+
+/** Per-slot rarity odds as percentages (common, uncommon, rare, legendary). */
+export function rarityOddsPercent(odds: readonly number[]): number[] {
+  const total = odds.reduce((a, b) => a + b, 0);
+  return odds.map((o) => Math.round((o / total) * 1000) / 10);
+}
 
 // ---------------------------------------------------------------- context
 
@@ -73,13 +79,17 @@ export interface SpeciesView {
   types: string[];
   debutGeneration: number;
   baseStatTotal: number;
+  tier: string | null;
+  rarity: Rarity;
+  rarityName: string;
   legendary: boolean;
   spriteUrl: string;
   set: SetView;
   assemblySpread: {level: number; nature: string; evs: Record<string, number>; ivs: Record<string, number>};
 }
 
-export interface CandidateView extends SpeciesView { selectionProbability: number }
+/** `visitor`: offered from a neighbouring generation because the cell is short of natives. */
+export interface CandidateView extends SpeciesView { visitor: boolean }
 
 export interface OfferView {
   roundNumber: number;
@@ -90,6 +100,8 @@ export interface OfferView {
   thinRerollAvailable: boolean;
   candidateCap: number;
   thinCellThreshold: number;
+  /** per-slot rarity odds, as percentages of their total */
+  rarityOdds: number[];
 }
 
 export interface LoadoutEntry {
@@ -207,7 +219,8 @@ export function speciesView(ctx: GameContext, speciesId: string): SpeciesView {
   }
   const view: SpeciesView = {
     id: speciesId, name: metadata.name, types: [...metadata.types], debutGeneration: metadata.debutGeneration,
-    baseStatTotal: metadata.baseStatTotal, legendary: metadata.legendary,
+    baseStatTotal: metadata.baseStatTotal, tier: metadata.tier ?? null, rarity: metadata.rarity, rarityName: RARITY_NAMES[metadata.rarity],
+    legendary: metadata.legendary,
     spriteUrl: spriteUrl(metadata, ctx.data.pokedex[speciesId]), set,
     assemblySpread: {
       level: FIXED_LEVEL, nature: NEUTRAL_NATURE,
@@ -507,9 +520,10 @@ export class GameSession {
     if (!offer) return null;
     return {
       roundNumber: offer.roundNumber, cell: {type: offer.cell[0], generation: offer.cell[1]},
-      candidates: offer.candidates.map((id) => ({...speciesView(this.ctx, id), selectionProbability: offer.selectionProbabilities.get(id) ?? 0})),
+      candidates: offer.candidates.map((id) => ({...speciesView(this.ctx, id), visitor: offer.visitors.includes(id)})),
       suggestedSpecies: offer.suggestedSpecies, skipsRemaining: offer.skipsRemaining, thinRerollAvailable: offer.thinRerollAvailable,
       candidateCap: this.ctx.config.candidateCap, thinCellThreshold: this.ctx.config.thinCellThreshold,
+      rarityOdds: rarityOddsPercent(this.ctx.config.rarityOdds),
     };
   }
 

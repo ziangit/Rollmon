@@ -1,8 +1,6 @@
 // The 18×9 type-by-debut-generation draft legality matrix. Port of
 // rollmons/legality_matrix.py; data comes in as objects (see data.ts).
-import {DEFAULT_DRAFT_CONFIG} from './draft-config.ts';
 import {loadUsableSmogonSets, type SmogonJson} from './smogon-sets.ts';
-import {defaultRng, type WeightedRng} from './rng.ts';
 
 export type Cell = readonly [type: string, generation: number];
 export type SetSource = 'smogon' | 'randbats';
@@ -12,14 +10,35 @@ export const TYPES = [
   'ice', 'normal', 'poison', 'psychic', 'rock', 'steel', 'water',
 ] as const;
 export const GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
-export const DEFAULT_LEGENDARY_WEIGHT = DEFAULT_DRAFT_CONFIG.legendaryWeight;
-export const DEFAULT_ARCEUS_WEIGHT = DEFAULT_DRAFT_CONFIG.arceusWeight;
-export const LEGENDARY_BST_THRESHOLD = 600;
-export const LEGENDARY_BST_EXCLUSIONS = new Set([
-  'slaking', // Truant suppresses the stat-ball; raw BST overstates competitive power.
-  'regigigas', // Slow Start suppresses the stat-ball; raw BST overstates competitive power.
-]);
+
+// Rarity (docs/ROADMAP.md §1): the higher of the species' Showdown tier rank
+// and its base-stat-total rank, so a banned-tier Pokémon and a 600+ BST one
+// both read as legendary to a player who knows only one of the two scales.
+export type Rarity = 0 | 1 | 2 | 3;
+export const COMMON: Rarity = 0, UNCOMMON: Rarity = 1, RARE: Rarity = 2, LEGENDARY: Rarity = 3;
+export const RARITY_NAMES = ['common', 'uncommon', 'rare', 'legendary'] as const;
+/** Showdown tier → rank; every other tier (NU and below, NFE, LC, …) is common. */
+export const TIER_RANK: Readonly<Record<string, Rarity>> = Object.freeze({
+  AG: LEGENDARY, Uber: LEGENDARY, OU: RARE, UUBL: RARE, UU: UNCOMMON, RUBL: UNCOMMON, RU: UNCOMMON, NUBL: UNCOMMON,
+});
+/** base stat total → rank: over 600 legendary, 570–600 rare, 500–569 uncommon */
+export const BST_RANK_BOUNDS = Object.freeze({legendary: 601, rare: 570, uncommon: 500});
+/** Ranked by tier alone: Truant and Slow Start make the stat-ball a trap, not a prize. */
+export const TIER_ONLY_SPECIES = new Set(['slaking', 'regigigas']);
 export const MIN_CELL_SIZE = 1;
+
+export function bstRank(baseStatTotal: number): Rarity {
+  if (baseStatTotal >= BST_RANK_BOUNDS.legendary) return LEGENDARY;
+  if (baseStatTotal >= BST_RANK_BOUNDS.rare) return RARE;
+  if (baseStatTotal >= BST_RANK_BOUNDS.uncommon) return UNCOMMON;
+  return COMMON;
+}
+
+export function rarityOf(speciesId: string, tier: string | undefined, baseStatTotal: number): Rarity {
+  const byTier: Rarity = (tier ? TIER_RANK[tier] : undefined) ?? COMMON;
+  if (TIER_ONLY_SPECIES.has(speciesId)) return byTier;
+  return Math.max(byTier, bstRank(baseStatTotal)) as Rarity;
+}
 export const DEFAULT_SET_SOURCE: SetSource = 'smogon';
 
 // Formes whose Showdown debut generation differs from the generation implied
@@ -52,6 +71,10 @@ export interface SpeciesMetadata {
   types: string[];
   debutGeneration: number;
   baseStatTotal: number;
+  /** Showdown tier at the time of `scripts/tiers.ts`, if any */
+  tier?: string;
+  rarity: Rarity;
+  /** rarity === LEGENDARY; kept as a flag for views */
   legendary: boolean;
 }
 
@@ -130,18 +153,11 @@ export function cellsForSpecies(metadata: SpeciesMetadata): Cell[] {
   return metadata.types.map((type) => [type, metadata.debutGeneration] as const);
 }
 
-export interface WeightOptions { legendaryWeight?: number; arceusWeight?: number }
-
-/** The configured relative draft weight for one atom. */
-export function selectionWeight(metadata: SpeciesMetadata, opts: WeightOptions = {}): number {
-  if (metadata.speciesId.startsWith('arceus')) return opts.arceusWeight ?? DEFAULT_ARCEUS_WEIGHT;
-  if (metadata.legendary) return opts.legendaryWeight ?? DEFAULT_LEGENDARY_WEIGHT;
-  return 1;
-}
-
 export interface LegalityInputs {
   pokedex: Pokedex;
   randbats: Record<string, unknown>;
+  /** data/tiers.json: species id → Showdown tier (rarity falls back to base stats without it) */
+  tiers?: Record<string, string>;
   /** Smogon JSON (ingested here) or already-ingested usable sets. */
   /** Raw Smogon dump (rollmons/data/smogon_sets.json); ingested here. */
   smogon?: SmogonJson;
@@ -178,39 +194,18 @@ export function buildLegalityData(inputs: LegalityInputs): LegalityData {
     validateNoBattleOnlyMechanics(speciesId, entry);
     if (!Array.isArray(entry.types) || !entry.types.length) throw new LegalityDataError(`${speciesId} has no current type data`);
     const bst = baseStatTotal(speciesId, entry);
+    const tier = inputs.tiers?.[speciesId];
+    const rarity = rarityOf(speciesId, tier, bst);
     species[speciesId] = {
       speciesId,
       name: String(entry.name ?? speciesId),
       types: entry.types.map((t) => String(t).toLowerCase()),
       debutGeneration: debutGeneration(speciesId, entry),
       baseStatTotal: bst,
-      // "Legendary" is deliberately a competitive-power category, not Pokedex
-      // lore: exactly-600 mythicals and pseudo-legendaries are normal atoms.
-      legendary: bst > LEGENDARY_BST_THRESHOLD && !LEGENDARY_BST_EXCLUSIONS.has(speciesId),
+      tier,
+      rarity,
+      legendary: rarity === LEGENDARY,
     };
   }
   return {atoms, species, matrix: buildMatrix(species)};
-}
-
-/** The selector's normalized probability for every eligible atom. */
-export function selectionProbabilities(cell: Cell, matrix: CellMap, species: Record<string, SpeciesMetadata>, opts: WeightOptions = {}): Map<string, number> {
-  const legendaryWeight = opts.legendaryWeight ?? DEFAULT_LEGENDARY_WEIGHT;
-  const arceusWeight = opts.arceusWeight ?? DEFAULT_ARCEUS_WEIGHT;
-  if (!(legendaryWeight > 0)) throw new RangeError('legendaryWeight must be greater than zero');
-  if (!(arceusWeight > 0)) throw new RangeError('arceusWeight must be greater than zero');
-  const eligible = matrix.get(cell) ?? [];
-  if (!eligible.length) throw new Error(`cell is not eligible: ${cellKey(cell)}`);
-  const weights = eligible.map((id) => {
-    const metadata = species[id];
-    if (!metadata) throw new LegalityDataError(`cell ${cellKey(cell)} references unknown species ${id}`);
-    return selectionWeight(metadata, {legendaryWeight, arceusWeight});
-  });
-  const total = weights.reduce((a, b) => a + b, 0);
-  return new Map(eligible.map((id, i) => [id, weights[i] / total]));
-}
-
-/** Select one eligible atom, down-weighting but never banning legendaries. */
-export function selectSpecies(cell: Cell, matrix: CellMap, species: Record<string, SpeciesMetadata>, opts: WeightOptions & {rng?: WeightedRng} = {}): string {
-  const probabilities = selectionProbabilities(cell, matrix, species, opts);
-  return (opts.rng ?? defaultRng).weightedChoice([...probabilities.keys()], [...probabilities.values()]);
 }
