@@ -34,8 +34,8 @@ try {
   // title screen: the tools strip (leaderboard · language · account) sits in the fixed corner;
   // the board opens as a drawer. A local build reads the board cross-origin and has no accounts.
   const hosted = /^https:/.test(base);
-  await page.waitForFunction(() => !document.getElementById('board-btn').classList.contains('hidden'), {timeout: 20_000}).catch(() => {});
-  const tools = await page.evaluate(() => ({corner: !!document.querySelector('#corner #tools'), board: !document.getElementById('board-btn').classList.contains('hidden'), signin: !!document.getElementById('signin-btn')}));
+  await page.waitForFunction(() => document.getElementById('board-btn').dataset.state !== 'loading', {timeout: 20_000}).catch(() => {});
+  const tools = await page.evaluate(() => ({corner: !!document.querySelector('#corner #tools'), board: document.getElementById('board-btn').dataset.state === 'ready', signin: !!document.getElementById('signin-btn')}));
   if (tools.board) {
     await click('#board-btn');
     await page.waitForFunction(() => !document.getElementById('board-drawer').classList.contains('hidden') && document.querySelector('#board-card .board-list li'));

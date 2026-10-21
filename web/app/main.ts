@@ -786,11 +786,15 @@ async function submitScore(): Promise<void> {
   }
 }
 interface BoardEntry { name: string; score: number; wins: number; battles: number; team: string[]; createdAt: string }
-let boardEntries: BoardEntry[] | null = null;
+// undefined = not fetched yet (the button is shown from the first paint so the
+// strip does not reflow), null = no board here (hidden).
+let boardEntries: BoardEntry[] | null | undefined;
 function renderBoard(): void {
   const entries = boardEntries;
-  $('board-btn').classList.toggle('hidden', !entries);
-  if (!entries) return;
+  const btn = $('board-btn');
+  btn.classList.toggle('hidden', entries === null);
+  btn.dataset.state = entries === undefined ? 'loading' : entries ? 'ready' : 'off';
+  if (!entries) { $('board-card').innerHTML = `<p class="panel-note">${t('Loading…')}</p>`; return; }
   $('board-card').innerHTML = `<p class="panel-note">${t('top {n} · best run per player', {n: entries.length})}</p>
     <ol class="board-list">${entries.map((e, i) => `<li><span class="rank">#${i + 1}</span><span>${esc(e.name)}<small>${t('{w}/{b} wins', {w: e.wins, b: e.battles})} · ${e.team.map((id) => monName({id, name: id})).join(', ')}</small></span><span class="score">${e.score}</span></li>`).join('') || `<li><span></span><span>${t('No runs yet. Be the first!')}</span><span></span></li>`}</ol>`;
 }
@@ -808,7 +812,7 @@ function toggleBoard(): void {
   const open = $('board-drawer').classList.contains('hidden');
   $('board-drawer').classList.toggle('hidden', !open);
   $('board-backdrop').classList.toggle('hidden', !open);
-  if (open) void loadBoard();
+  if (open && boardEntries !== null) void loadBoard();
 }
 
 /* ---- accounts (Showdown-style name + password; the session is a same-origin cookie) */
@@ -922,6 +926,12 @@ async function boot(): Promise<void> {
   applyStatic(document);
   go('title');
   initRoller();
+  // The tools strip is painted in its final shape right away ("Sign in" plus the
+  // board button) and the two API calls run alongside the game-data load.
+  renderBoard();
+  renderAccount();
+  void loadBoard();
+  void loadAccount();
   $<HTMLInputElement>('low-power').checked = lowPower;
   $('title-foot').textContent = t('Loading game data…');
   try {
@@ -934,8 +944,6 @@ async function boot(): Promise<void> {
     renderMatrix();
     renderBosses(state.bossBook.list());
     $('title-foot').textContent = t('Lv 100 · Gen 9 · engine-enforced dedupe');
-    void loadBoard();
-    void loadAccount();
   } catch (e) {
     $('matrix-summary').textContent = errorMessage(e);
     $('title-foot').textContent = t('Could not load game data: {error}', {error: errorMessage(e)});
