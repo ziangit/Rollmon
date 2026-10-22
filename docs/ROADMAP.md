@@ -241,24 +241,27 @@ style, a CJK-capable pixel face (DotGothic16 now; Fusion Pixel or Ark Pixel
 if zh needs more), whole-pixel sizes, nothing under 12 px, colour as a role
 (frame / gold heading / type colour) rather than decoration.
 
-**Done: pool screen (2026-10-21).** The pool page is rebuilt as a
-PokéRogue starter-select layout under the `.pr` CSS scope (the first screen
-on the new system; the rest keep the old styles until they are redone).
-It lands on the 18×9 Type × Gen matrix of v1 (author's choice: the matrix
-is the coverage view; native count per cell, thin cells dimmed, a star
-where a Master Ball native lives, counts follow the Rarity filter, a cell
-click drills into that cell's sprite grid) with a Matrix / Grid switch;
-a left detail panel (dex number, Showdown `gen5` pixel sprite, types,
-rarity stars + ball name, tier, BST, the cells the species occupies, and its
-first set with real move names), a filter bar (Gen / Type / Rarity / Sort
-tabs), and a sprite grid of every draftable species with the rarity number
-in the corner, as PokéRogue draws starter cost. Filtering to one Gen × Type
-shows the cell with its native count and a thin note. The title roller now
+**Done: pool screen (2026-10-21, simplified 2026-10-22).** The pool page
+is rebuilt as a PokéRogue starter-select layout under the `.pr` CSS scope
+(the first screen on the new system; the rest keep the old styles until
+they are redone). The 18×9 Type × Gen matrix of v1 is the whole
+navigation (author's choice: a first build had Gen/Type/Rarity/Sort filter
+rows, a grid of all 652 sprites and a Matrix/Grid switch, which the author
+found too much to operate): native count per cell, thin cells dimmed, a
+star where a Master Ball native lives, Rarity tabs above it change the
+counts. A cell click lists the cell's natives in the left panel as a sprite
+strip (best ball first, rarity number in the corner as PokéRogue draws
+starter cost; other balls dimmed under a Rarity tab), and a sprite click
+shows the species: Showdown `gen5` pixel sprite, dex number, types, rarity
+stars + ball name, tier, BST, its cells (the other one is a link), and its
+first set with real move, item and ability names (override sets carry ids;
+`displayName` reads the names off the Smogon exports and the pokedex) and
+moves coloured by type. The landing cell is a random full one so the panel
+is never empty; on a phone the matrix comes first and a cell click scrolls
+to the panel. The title roller now
 rolls a real cell of this pool and shows one of its natives (`roller.ts`,
 animated sprite with a pixel fallback) instead of v1's fixed decorative
-list. Known nit: items and abilities of override sets are shown from their
-ids (`Airballoon`), as there is no item-name table in the data bundle.
-
+list. 
 **Next screens, in order:** draft (the cards and the reel), loadout, battle
 (the replay frame and live cards), results and the leaderboard drawer, then
 the topbar strip (phone overflow). The title page stays as it is.
