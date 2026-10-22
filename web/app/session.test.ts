@@ -2,7 +2,7 @@
 // route-level expectations in tests/test_web_app.py that do not need a server.
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {BossBook, GameSession, SessionError, createGameContext, matrixView, speciesView, type BattleSpec} from './session.ts';
+import {BossBook, GameSession, SessionError, createGameContext, matrixView, poolSpecies, speciesView, type BattleSpec} from './session.ts';
 import {showdownSpriteId} from './sprites.ts';
 import {NoSkipsRemainingError} from '../game/draft.ts';
 import {loadGameData} from '../scripts/game-data.ts';
@@ -45,6 +45,12 @@ test('species and matrix views carry sprite urls, sets, and cell states', () => 
   const fairy1 = m.cells.find((c) => c.type === 'fairy' && c.generation === 1)!;
   assert.ok(fairy1.pokemon.some((p) => p.id === 'clefable'));
   assert.equal(fairy1.eligibleCount, fairy1.pokemon.length);
+
+  const pool = poolSpecies(ctx);
+  assert.equal(pool.length, ctx.legality.atoms.length);
+  assert.ok(pool.every((p, i) => i === 0 || pool[i - 1].dexNumber <= p.dexNumber), 'dex order');
+  assert.equal(pool.find((p) => p.id === 'raichualola')!.dexNumber, 26);
+  assert.equal(pool.find((p) => p.id === 'raichualola')!.pixelSpriteUrl, 'https://play.pokemonshowdown.com/sprites/gen5/raichu-alola.png');
 });
 
 test('a seeded run drafts six, builds a non-Mega default loadout, and is reproducible', () => {

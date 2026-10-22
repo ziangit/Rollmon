@@ -19,3 +19,9 @@ export function showdownSpriteId(metadata: SpeciesMetadata, entry: PokedexEntry 
 
 export const spriteUrl = (metadata: SpeciesMetadata, entry: PokedexEntry | undefined) =>
   `${SHOWDOWN_ASSET_ROOT}/home-centered/${showdownSpriteId(metadata, entry)}.png`;
+/** BW-style 96px pixel sprite; Showdown draws one for every species, so the pool grid stays pixel art. */
+export const pixelSpriteUrl = (metadata: SpeciesMetadata, entry: PokedexEntry | undefined) =>
+  `${SHOWDOWN_ASSET_ROOT}/gen5/${showdownSpriteId(metadata, entry)}.png`;
+/** Animated sprite for the title roller; not drawn for every gen 9 species, so callers fall back to the pixel sprite. */
+export const animatedSpriteUrl = (metadata: SpeciesMetadata, entry: PokedexEntry | undefined) =>
+  `${SHOWDOWN_ASSET_ROOT}/ani/${showdownSpriteId(metadata, entry)}.gif`;

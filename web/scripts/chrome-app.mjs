@@ -27,9 +27,9 @@ try {
   await page.goto(`${base}/index.html?seed=${seed}&p1ms=${p1ms}&p2ms=${p2ms}`);
 
   // boot: data loaded, matrix rendered, worker ready
-  await page.waitForFunction(() => /draftable/.test(document.getElementById('matrix-summary').textContent), {timeout: 60_000});
-  console.log(`[${elapsed()}] boot:`, await page.$eval('#matrix-summary', (e) => e.textContent), '| engine', await page.evaluate(() => window.__rollmons.ready));
-  console.log('  matrix cells:', await page.$$eval('#matrix .mcell', (c) => c.length), '| bosses:', await page.$$eval('#ladder .boss', (b) => b.length));
+  await page.waitForFunction(() => /draftable/.test(document.getElementById('pool-summary').textContent), {timeout: 60_000});
+  console.log(`[${elapsed()}] boot:`, await page.$eval('#pool-summary', (e) => e.textContent), '| engine', await page.evaluate(() => window.__rollmons.ready));
+  console.log('  pool sprites:', await page.$$eval('#pool-grid .pmon', (c) => c.length), '| bosses:', await page.$$eval('#ladder .boss', (b) => b.length));
 
   // title screen: the tools strip (leaderboard · language · account) sits in the fixed corner;
   // the board opens as a drawer. A local build reads the board cross-origin and has no accounts.

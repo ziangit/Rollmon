@@ -6,11 +6,12 @@ import {DEFAULT_BUDGET_MS} from '../battle/runner.ts';
 import type {GameData} from '../game/data.ts';
 import {esc, mountLiveReplay, mountReplay, type LiveReplay} from '../replay/embed.ts';
 import {
-  BOSS_ORDER_MAX, BOSS_ORDER_MIN, BossBook, DraftError, GameSession, PLAYER_NAME, SessionError, createGameContext, matrixView,
-  type BattleResult, type BattleSpec, type BossInfo, type GameContext, type GauntletView, type MatrixCellView, type MatrixView, type OfferView,
+  BOSS_ORDER_MAX, BOSS_ORDER_MIN, BossBook, DraftError, GameSession, PLAYER_NAME, SessionError, createGameContext, matrixView, poolSpecies,
+  type BattleResult, type BattleSpec, type BossInfo, type GameContext, type GauntletView, type MatrixView, type OfferView,
   type SessionView, type SpeciesView,
 } from './session.ts';
-import {initRoller, rollMon} from './roller.js';
+import {RARITY_NAMES} from '../game/legality-matrix.ts';
+import {initRoller, rollMon, setRollerPool} from './roller.ts';
 import {applyStatic, initLang, localSpeciesName, setLang, t, type Lang} from './i18n.ts';
 
 /* =====================================================================
@@ -25,8 +26,9 @@ interface State {
   teamExport: string;
   gauntletRunning: boolean;
   matrix: MatrixView | null;
+  pool: SpeciesView[] | null;
 }
-const state: State = {ctx: null, bossBook: null, session: null, view: null, bosses: [], teamExport: '', gauntletRunning: false, matrix: null};
+const state: State = {ctx: null, bossBook: null, session: null, view: null, bosses: [], teamExport: '', gauntletRunning: false, matrix: null, pool: null};
 
 const params = new URLSearchParams(location.search);
 // Dev knobs: ?seed=N makes the run reproducible; ?p1ms=&p2ms= set the search
@@ -65,7 +67,9 @@ function setLanguage(l: string): void {
 }
 function rerenderAll(): void {
   $('pokedex-btn').textContent = currentScreen === 'pool' ? t('← Back') : t('Pokédex');
-  if (state.matrix) renderMatrix();
+  initRoller(typeName);
+  feedRoller();
+  renderPool();
   renderBoard();
   renderAccount();
   if (state.bossBook) renderBosses(state.bosses);
@@ -879,38 +883,89 @@ async function logout(): Promise<void> {
 }
 
 /* =====================================================================
-   POOL / POKÉDEX MATRIX
+   POOL — PokéRogue-style starter select (docs/ROADMAP.md §8)
    ===================================================================== */
-function renderMatrix(): void {
-  const m = state.matrix!; const grid = $('matrix');
-  grid.innerHTML = `<div class="mhead">${t('Type')}</div>` + m.generations.map((g) => `<div class="mhead">G${g}</div>`).join('');
-  for (const type of m.types) {
-    grid.insertAdjacentHTML('beforeend', `<div class="mhead type t-${type.toLowerCase()}">${typeName(type)}</div>`);
-    for (const gen of m.generations) {
-      const cell = m.cells.find((c) => c.type === type && c.generation === gen)!;
-      const btn = document.createElement('button');
-      btn.className = `mcell ${cell.state}`;
-      btn.innerHTML = `${cell.eligibleCount}<small>${cell.state === 'normal' ? '' : t(cell.state)}</small>`;
-      btn.onclick = () => renderCell(cell, btn);
-      grid.appendChild(btn);
-    }
-  }
-  $('matrix-summary').textContent = t('{n} included cells · {m} draftable Pokémon', {n: m.includedCellCount, m: m.atomCount});
+type PoolSort = 'dex' | 'bst' | 'name';
+const poolUi: {gen: number; type: string; rarity: number; sort: PoolSort; selected: string} = {gen: 0, type: '', rarity: -1, sort: 'dex', selected: ''};
+const POOL_TYPES = ['normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
+
+function poolFilter(kind: 'gen' | 'type' | 'rarity' | 'sort', value: string | number): void {
+  if (kind === 'gen') poolUi.gen = Number(value);
+  else if (kind === 'type') poolUi.type = String(value);
+  else if (kind === 'rarity') poolUi.rarity = Number(value);
+  else poolUi.sort = value as PoolSort;
+  renderPool();
 }
-function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
-  document.querySelectorAll('.mcell').forEach((c) => c.classList.remove('selected'));
-  btn.classList.add('selected');
-  const d = $('detail');
-  const list = cell.pokemon.length
-    ? `<ul class="dlist">${cell.pokemon.map((p) => `<li><span class="mini">${sprite(p)}</span>
-         <span><strong>${monName(p)}</strong><div class="meta">${t('Gen {g} · BST {b}', {g: p.debutGeneration, b: p.baseStatTotal})}</div>
-         ${rarityRow(p)}
-         <div class="chips" style="justify-content:flex-start;margin-top:.2rem">${typeChips(p)}</div></span></li>`).join('')}</ul>`
-    : `<p style="color:var(--muted)">${t('No active-source Pokémon occupy this cell.')}</p>`;
-  d.innerHTML = `<h3>${typeName(cell.type)} · ${t('Gen {n}', {n: cell.generation})}</h3>
-    <p style="color:var(--muted);font-size:.88rem">${t('{n} eligible', {n: `<b style="color:var(--ink)">${cell.eligibleCount}</b>`})} · ${
-      cell.state === 'excluded' ? t('excluded from rolls') : cell.state === 'thin' ? t('thin — mostly visitors') : t('included')}</p>${list}`;
+function poolSelect(id: string): void { poolUi.selected = id; renderPool(); }
+
+function poolList(): SpeciesView[] {
+  const list = state.pool!.filter((p) => (!poolUi.gen || p.debutGeneration === poolUi.gen)
+    && (!poolUi.type || p.types.includes(poolUi.type)) && (poolUi.rarity < 0 || p.rarity === poolUi.rarity));
+  if (poolUi.sort === 'bst') list.sort((a, b) => b.baseStatTotal - a.baseStatTotal || a.dexNumber - b.dexNumber);
+  else if (poolUi.sort === 'name') list.sort((a, b) => monName(a).localeCompare(monName(b)));
+  return list;
+}
+
+function renderPool(): void {
+  if (!state.pool || !state.matrix) return;
+  const list = poolList();
+  if (!list.some((p) => p.id === poolUi.selected)) poolUi.selected = list[0]?.id ?? '';
+  const tab = (on: boolean, onclick: string, label: string) => `<button class="ftab${on ? ' on' : ''}" onclick="${onclick}">${label}</button>`;
+  $('pool-filters').innerHTML = `
+    <div class="frow"><span class="flabel">${t('Gen')}</span>${tab(!poolUi.gen, "poolFilter('gen',0)", t('All'))}${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((g) => tab(poolUi.gen === g, `poolFilter('gen',${g})`, String(g))).join('')}</div>
+    <div class="frow"><span class="flabel">${t('Type')}</span>${tab(!poolUi.type, "poolFilter('type','')", t('All'))}${POOL_TYPES.map((x) => tab(poolUi.type === x, `poolFilter('type','${x}')`, `<span class="dot" style="--tc:${typeColor(x)}"></span>${typeName(x)}`)).join('')}</div>
+    <div class="frow"><span class="flabel">${t('Rarity')}</span>${tab(poolUi.rarity < 0, "poolFilter('rarity',-1)", t('All'))}${RARITY_NAMES.map((name, r) => tab(poolUi.rarity === r, `poolFilter('rarity',${r})`, t(RARITY_LABELS[name]))).join('')}</div>
+    <div class="frow"><span class="flabel">${t('Sort')}</span>${(['dex', 'bst', 'name'] as const).map((k) => tab(poolUi.sort === k, `poolFilter('sort','${k}')`, t({dex: 'Dex', bst: 'BST', name: 'Name'}[k]))).join('')}</div>`;
+  // one cell chosen: say how many natives it has and whether it is thin
+  let cellNote = '';
+  if (poolUi.gen && poolUi.type) {
+    const cell = state.matrix.cells.find((c) => c.type === poolUi.type && c.generation === poolUi.gen);
+    if (cell) cellNote = ` · ${typeName(cell.type)} · ${t('Gen {n}', {n: cell.generation})}: ${t('{n} natives', {n: cell.eligibleCount})}${cell.state === 'thin' ? ` (${t('thin')})` : ''}`;
+  }
+  $('pool-summary').textContent = t('{n} of {m} draftable Pokémon', {n: list.length, m: state.pool.length}) + cellNote;
+  $('pool-grid').innerHTML = list.map((p) => `<button class="pmon${p.id === poolUi.selected ? ' sel' : ''}" title="${esc(monName(p))}" onclick="poolSelect('${p.id}')">
+    <img class="asset" src="${p.pixelSpriteUrl}" alt="" loading="lazy"><span class="cost r${p.rarity}">${p.rarity + 1}</span></button>`).join('');
+  renderPoolDetail(list.find((p) => p.id === poolUi.selected) ?? null);
+}
+
+function renderPoolDetail(p: SpeciesView | null): void {
+  const d = $('pool-detail');
+  if (!p) { d.innerHTML = `<p class="pool-empty">${t('No Pokémon match these filters.')}</p>`; return; }
+  const moveData = (move: string) => state.ctx!.data.moves[move.toLowerCase().replace(/[^a-z0-9]/g, '')] as {type?: string; name?: string} | undefined;
+  const moveType = (move: string) => String(moveData(move)?.type ?? 'normal').toLowerCase();
+  const moveName = (move: string) => moveData(move)?.name ?? titleCase(move);
+  const cells = p.types.map((x) => {
+    const cell = state.matrix!.cells.find((c) => c.type === x && c.generation === p.debutGeneration);
+    return `${typeName(x)} ${cell?.eligibleCount ?? 0}`;
+  }).join(' · ');
+  const stars = '★'.repeat(p.rarity + 1) + '☆'.repeat(3 - p.rarity);
+  d.innerHTML = `
+    <div class="pool-art">
+      <div class="pool-dex"><span>No ${String(p.dexNumber).padStart(4, '0')}</span><span>${t('Gen {n}', {n: p.debutGeneration})}</span></div>
+      <div class="pool-sprite"><img class="asset" src="${p.pixelSpriteUrl}" alt=""></div>
+    </div>
+    <div class="pool-info">
+      <h2 class="pool-name">${monName(p)}</h2>
+      <div class="pool-types">${p.types.map((x) => `<span class="ptype t-${x}">${typeName(x)}</span>`).join('')}</div>
+      <dl class="pool-rows">
+        <div><dt>${t('Rarity')}</dt><dd class="r${p.rarity}">${stars} ${t(RARITY_LABELS[p.rarityName])}</dd></div>
+        <div><dt>${t('Tier')}</dt><dd>${p.tier ? esc(p.tier) : '—'}</dd></div>
+        <div><dt>${t('BST')}</dt><dd>${p.baseStatTotal}</dd></div>
+        <div><dt>${t('Cells')}</dt><dd>${cells}</dd></div>
+      </dl>
+      <div class="pool-set">
+        <div class="pool-set-head">${esc(p.set.label)}</div>
+        <div class="pool-kv">${esc(p.set.item ? titleCase(p.set.item) : '—')} · ${esc(titleCase(p.set.ability))}</div>
+        <ul class="pool-moves">${p.set.moves.map((mv) => `<li class="pmove t-${moveType(mv)}">${esc(moveName(mv))}</li>`).join('')}</ul>
+      </div>
+    </div>`;
   fixImages(d);
+}
+
+/** Feed the title roller with the draft pool (names in the current language). */
+function feedRoller(): void {
+  if (!state.pool) return;
+  setRollerPool(state.pool.map((p) => ({name: monName(p), gen: p.debutGeneration, types: p.types, animatedSpriteUrl: p.animatedSpriteUrl, pixelSpriteUrl: p.pixelSpriteUrl})));
 }
 
 /* =====================================================================
@@ -918,7 +973,7 @@ function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, copyExport, poolFilter, poolSelect, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
@@ -927,7 +982,7 @@ async function boot(): Promise<void> {
   initLang(params.get('lang'));
   applyStatic(document);
   go('title');
-  initRoller();
+  initRoller(typeName);
   // The tools strip is painted in its final shape right away ("Sign in" plus the
   // board button) and the two API calls run alongside the game-data load.
   renderBoard();
@@ -943,11 +998,13 @@ async function boot(): Promise<void> {
     state.ctx = createGameContext(data);
     state.bossBook = new BossBook(state.ctx);
     state.matrix = matrixView(state.ctx);
-    renderMatrix();
+    state.pool = poolSpecies(state.ctx);
+    renderPool();
+    feedRoller();
     renderBosses(state.bossBook.list());
     $('title-foot').textContent = t('Lv 100 · Gen 9 · engine-enforced dedupe');
   } catch (e) {
-    $('matrix-summary').textContent = errorMessage(e);
+    $('pool-summary').textContent = errorMessage(e);
     $('title-foot').textContent = t('Could not load game data: {error}', {error: errorMessage(e)});
   }
 }

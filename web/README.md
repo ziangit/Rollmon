@@ -28,7 +28,7 @@ Needs `engine/pkg` first: `cd engine && wasm-pack build --release --target web -
 - `main.ts` — port of v1 `app.js`: router, renderers for draft / loadout / bosses / battle / results / pool; drives the worker through `BattleClient`. Dev knobs: `?seed=N`, `?p1ms=&p2ms=`; `window.__rollmons` exposes the session view for scripts.
 - `session.ts` — `GameSession` (one run: draft, loadout, gauntlet/campaign, results), `BossBook` (authored + pasted bosses), `createGameContext`, view builders. Replaces the v1 FastAPI session; tests in `session.test.ts`.
 - `sprites.ts` — Showdown sprite URLs (hotlinked, dev-only).
-- `roller.js` — the title-screen slot roller, verbatim from v1 (decorative).
+- `roller.ts` — the title-screen slot roller; rolls a real cell of the draft pool and shows one of its natives (decorative).
 
 ## battle/
 - `engine-state.ts` — omniscient mapper: `@pkmn/sim` `Battle` → poke-engine state string.

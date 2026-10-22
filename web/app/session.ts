@@ -21,7 +21,7 @@ import {
   DEFAULT_IVS, FIXED_LEVEL, NEUTRAL_EVS, NEUTRAL_NATURE, STATS, loadRandomBattleSets, loadSetOverride, normalizeOverrideExport,
   representativeRandomBattleSet, representativeSmogonSet, selectableSets, type RandomBattleSet, type SelectableSet,
 } from '../game/team-assembly.ts';
-import {spriteUrl} from './sprites.ts';
+import {animatedSpriteUrl, pixelSpriteUrl, spriteUrl} from './sprites.ts';
 
 export const PLAYER_NAME = 'Player';
 export const BOSS_ORDER_MIN = 1;
@@ -83,7 +83,11 @@ export interface SpeciesView {
   rarity: Rarity;
   rarityName: string;
   legendary: boolean;
+  /** National Dex number (formes share their base species' number) */
+  dexNumber: number;
   spriteUrl: string;
+  pixelSpriteUrl: string;
+  animatedSpriteUrl: string;
   set: SetView;
   assemblySpread: {level: number; nature: string; evs: Record<string, number>; ivs: Record<string, number>};
 }
@@ -222,7 +226,9 @@ export function speciesView(ctx: GameContext, speciesId: string): SpeciesView {
     id: speciesId, name: metadata.name, types: [...metadata.types], debutGeneration: metadata.debutGeneration,
     baseStatTotal: metadata.baseStatTotal, tier: metadata.tier ?? null, rarity: metadata.rarity, rarityName: RARITY_NAMES[metadata.rarity],
     legendary: metadata.legendary,
-    spriteUrl: spriteUrl(metadata, ctx.data.pokedex[speciesId]), set,
+    dexNumber: Number(ctx.data.pokedex[speciesId]?.num ?? 0),
+    spriteUrl: spriteUrl(metadata, ctx.data.pokedex[speciesId]), pixelSpriteUrl: pixelSpriteUrl(metadata, ctx.data.pokedex[speciesId]),
+    animatedSpriteUrl: animatedSpriteUrl(metadata, ctx.data.pokedex[speciesId]), set,
     assemblySpread: {
       level: FIXED_LEVEL, nature: NEUTRAL_NATURE,
       evs: Object.fromEntries(STATS.map((s) => [s, NEUTRAL_EVS])), ivs: Object.fromEntries(STATS.map((s) => [s, DEFAULT_IVS])),
@@ -249,6 +255,12 @@ export function matrixView(ctx: GameContext): MatrixView {
     types: [...TYPES], generations: [...GENERATIONS], includedCellCount: ctx.legality.matrix.size,
     atomCount: ctx.legality.atoms.length, setSource: ctx.setSource, cells,
   };
+}
+
+/** Every draftable species in National Dex order (formes after their base species), for the pool browser. */
+export function poolSpecies(ctx: GameContext): SpeciesView[] {
+  return ctx.legality.atoms.map((id) => speciesView(ctx, id))
+    .sort((a, b) => a.dexNumber - b.dexNumber || a.id.localeCompare(b.id));
 }
 
 export function speciesSetOptions(ctx: GameContext, speciesId: string): SelectableSet[] {
