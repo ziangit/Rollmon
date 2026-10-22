@@ -130,11 +130,11 @@ function monName(p: {id?: string; name: unknown}): string {
 const typeName = (x: string) => t(titleCase(x));
 function typeChips(p: {types: string[]; legendary?: boolean; visitor?: boolean; debutGeneration?: number}): string {
   const chips = p.types.map((x) => `<span class="chip t-${x.toLowerCase()}">${typeName(x)}</span>`).join('');
-  return chips + (p.legendary ? `<span class="chip legend">${t('Legendary')}</span>` : '')
-    + (p.visitor ? `<span class="chip visitor">${t('Visitor · Gen {n}', {n: p.debutGeneration ?? '?'})}</span>` : '');
+  return chips + (p.visitor ? `<span class="chip visitor">${t('Visitor · Gen {n}', {n: p.debutGeneration ?? '?'})}</span>` : '');
 }
-const RARITY_LABELS: Record<string, string> = {common: 'Common', uncommon: 'Uncommon', rare: 'Rare', legendary: 'Legendary'};
-/** "★★★☆ Rare" row; the tier is shown when Showdown has one. */
+/** The four ranks wear Poké Ball names on the page (gatcha-style rarity every Pokémon player can read). */
+const RARITY_LABELS: Record<string, string> = {common: 'Poké Ball', uncommon: 'Great Ball', rare: 'Ultra Ball', legendary: 'Master Ball'};
+/** "★★★☆ Ultra Ball" row; the tier is shown when Showdown has one. */
 function rarityRow(p: SpeciesView): string {
   const stars = '★'.repeat(p.rarity + 1) + '☆'.repeat(3 - p.rarity);
   const tier = p.tier ? ` <span class="mono">${esc(p.tier)}</span>` : '';
@@ -200,7 +200,7 @@ function renderEncounter(draft: SessionView): void {
     <div>
       <p class="eyebrow" style="margin:0 0 .25rem">${t('Wild cell')}</p>
       <div class="cell-name"><span style="color:${typeColor(o.cell.type)}">${typeName(o.cell.type)}</span> · ${t('Gen {n}', {n: o.cell.generation})}</div>
-      <p class="odds-note">${t('Slot odds — common {c}% · uncommon {u}% · rare {r}% · legendary {l}%', {c: o.rarityOdds[0], u: o.rarityOdds[1], r: o.rarityOdds[2], l: o.rarityOdds[3]})}</p>
+      <p class="odds-note">${t('Slot odds — Poké Ball {c}% · Great Ball {u}% · Ultra Ball {r}% · Master Ball {l}%', {c: o.rarityOdds[0], u: o.rarityOdds[1], r: o.rarityOdds[2], l: o.rarityOdds[3]})}</p>
       ${o.thinRerollAvailable ? `<p class="thin-note">${t('Thin cell — fewer than {n} natives; Pokémon from nearby generations fill in, and this re-spin is free.', {n: o.thinCellThreshold})}</p>` : ''}
     </div>
     <div class="encounter-actions">
