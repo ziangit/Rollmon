@@ -29,11 +29,10 @@ try {
   // boot: data loaded, matrix rendered, worker ready
   await page.waitForFunction(() => /draftable/.test(document.getElementById('pool-summary').textContent), {timeout: 60_000});
   console.log(`[${elapsed()}] boot:`, await page.$eval('#pool-summary', (e) => e.textContent), '| engine', await page.evaluate(() => window.__rollmons.ready));
-  // the pool lands on the Type × Gen matrix; a cell click opens that cell's sprite grid
+  // the pool is the Type × Gen matrix; a cell click lists that cell's natives in the panel
   const matrixCells = await page.$$eval('#pool-matrix .mcell:not(.none)', (c) => c.length);
   await page.evaluate(() => window.poolCell('fire', 4));
-  console.log('  pool matrix cells:', matrixCells, '| fire/gen4 sprites:', await page.$$eval('#pool-grid .pmon', (c) => c.length), '| bosses:', await page.$$eval('#ladder .boss', (b) => b.length));
-  await page.evaluate(() => { window.poolFilter('type', ''); window.poolFilter('gen', 0); window.poolFilter('view', 'matrix'); });
+  console.log('  pool matrix cells:', matrixCells, '| fire/gen4 natives:', await page.$$eval('#pool-detail .pmon', (c) => c.length), '| bosses:', await page.$$eval('#ladder .boss', (b) => b.length));
 
   // title screen: the tools strip (leaderboard · language · account) sits in the fixed corner;
   // the board opens as a drawer. A local build reads the board cross-origin and has no accounts.
