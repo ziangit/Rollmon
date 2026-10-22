@@ -64,11 +64,18 @@ Three separate causes, only one of which the set scrape (§6) could touch:
   internal names `common`, `uncommon`, `rare`, `legendary`.
 - **Visitors.** A rolled cell keeps all its natives and is filled from the
   nearest generations of the same type (distance 1, then 2, …) until it has
-  at least `backfillMin` = 6 candidates and `backfillMinNonLegendary` = 5
-  non-legendary ones. Visitors are tagged in the offer ("Visitor · Gen 3").
-  67 of 159 cells need visitors; about a third of offers show one or two.
+  at least `backfillMin` = 6 candidates, `backfillMinNonLegendary` = 5
+  non-legendary ones, and `backfillMinRare` = 1 rare (Ultra Ball). The rare
+  floor takes rare visitors only, never a legendary, so it leaves the
+  legendary odds alone; it exists because 90 of 159 cells have no OU-level
+  native (62 have neither an OU nor a legendary), and without it an Ultra Ball roll there fell down to Great Ball
+  however high the odds (added 2026-10-21 when the author asked for teams
+  of three to six OU-level Pokémon to be easy). Visitors are tagged in the
+  offer ("Visitor · Gen 3"). 67 cells are short and 90 lack a rare; offers
+  average 1.2 visitors.
 - **Slot roll.** Each of the five offer slots rolls a rarity from
-  `rarityOdds` = 50 / 28 / 12 / 10 (common / uncommon / rare / legendary),
+  `rarityOdds` = 40 / 30 / 20 / 10 (Poké / Great / Ultra / Master Ball;
+  50 / 28 / 12 / 10 until the rare floor was added),
   **falls down** to the next lower rarity the pool still has when the rolled
   one is absent (never up), then draws a species uniformly within that
   rarity, without replacement. Falling down rather than renormalising, and
@@ -81,14 +88,16 @@ Three separate causes, only one of which the set scrape (§6) could touch:
 - The cell roll stays uniform and the 18×9 grid keeps its identity.
 
 Expected numbers from a 30,000-run simulation of the final rules (player
-takes every legendary offered): a legendary in the offer in 21% of rounds,
-in at least one round of 76% of runs, 1.3 legendaries per team; the most
-legendary-prone cell offers one 43% of the time, and no cell is above 50%.
-`node scripts/coverage.ts` prints the buckets, the short cells, and the 15
-legendary-heavy cells whose visitors keep the offer open.
+always takes the best ball offered): an Ultra Ball or better in 85% of
+offers, 5.1 OU-level picks per team, three or more in 99% of runs, all six
+in 36%; a Master Ball in 21% of offers and 75% of runs, 1.3 per team; the
+most legendary-prone cell offers one 44% of the time, and no cell is above
+50%. `node scripts/coverage.ts` prints the buckets, the short cells, the
+cells without a rare, and the 15 legendary-heavy cells whose visitors keep
+the offer open.
 
 Knobs to playtest (`DEFAULT_DRAFT_CONFIG`): `rarityOdds`, `backfillMin`,
-`backfillMinNonLegendary`, `thinCellThreshold`. The Python reference
+`backfillMinNonLegendary`, `backfillMinRare`, `thinCellThreshold`. The Python reference
 (`rollmons/draft.py`) still implements the pre-§1 weighting and is no longer
 the oracle for the draft; its tests cover the Python code only.
 

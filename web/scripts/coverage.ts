@@ -3,14 +3,14 @@
 // legendaries (docs/ROADMAP.md §1, §6).
 //   node scripts/coverage.ts [--list]   (scripts/smogon-scrape.ts fills the gaps from Smogon)
 import {createGameContext} from '../app/session.ts';
-import {LEGENDARY, RARITY_NAMES} from '../game/legality-matrix.ts';
+import {LEGENDARY, RARE, RARITY_NAMES} from '../game/legality-matrix.ts';
 import {loadGameData} from './game-data.ts';
 import {missingSpecies} from './missing-species.ts';
 
 const data = loadGameData();
 const ctx = createGameContext(data);
 const atoms = new Set(ctx.legality.atoms);
-const {backfillMin, backfillMinNonLegendary, thinCellThreshold, rarityOdds} = ctx.config;
+const {backfillMin, backfillMinNonLegendary, backfillMinRare, thinCellThreshold, rarityOdds} = ctx.config;
 
 const missing = missingSpecies(data, ctx);
 const species = missing.filter((m) => !m.forme);
@@ -24,18 +24,20 @@ const buckets = [0, 0, 0, 0];
 for (const id of atoms) buckets[ctx.legality.species[id].rarity]++;
 console.log(`rarity buckets: ${RARITY_NAMES.map((n, i) => `${n} ${buckets[i]}`).join(', ')}; slot odds ${rarityOdds.join('/')}`);
 
-let thin = 0, short = 0, legendaryHeavy = 0, withLegendary = 0;
+let thin = 0, short = 0, legendaryHeavy = 0, withLegendary = 0, noRare = 0;
 const heavyNames: string[] = [];
 for (const [cell, ids] of ctx.legality.matrix.entries()) {
   const legends = ids.filter((i) => ctx.legality.species[i].rarity === LEGENDARY);
   if (legends.length) withLegendary++;
   if (ids.length < thinCellThreshold) thin++;
   if (ids.length < backfillMin) short++;
+  if (ids.filter((i) => ctx.legality.species[i].rarity === RARE).length < backfillMinRare) noRare++;
   if (ids.length - legends.length < backfillMinNonLegendary && legends.length) {
     legendaryHeavy++;
     heavyNames.push(`${cell[0]}/gen${cell[1]}: ${legends.map((i) => ctx.legality.species[i].name).join('+')} (${ids.length} natives)`);
   }
 }
 console.log(`cells: ${ctx.legality.matrix.size}; thin (<${thinCellThreshold} natives, free reroll): ${thin}; short (<${backfillMin} natives, visitors fill in): ${short}`);
+console.log(`cells with fewer than ${backfillMinRare} rare (Ultra Ball) natives, so a rare visitor joins: ${noRare}`);
 console.log(`legendaries: ${buckets[LEGENDARY]} in ${withLegendary} cells; cells with fewer than ${backfillMinNonLegendary} non-legendary natives (visitors keep the offer open): ${legendaryHeavy}`);
 for (const n of heavyNames) console.log('  ' + n);
