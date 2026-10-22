@@ -1,7 +1,7 @@
 // Ported from tests/test_draft.py.
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Draft, DraftCompleteError, NoSkipsRemainingError, TEAM_SIZE, ThinRerollUnavailableError, type DraftRng} from './draft.ts';
+import {Draft, DraftCompleteError, NoSkipsRemainingError, TEAM_SIZE, type DraftRng} from './draft.ts';
 import {CellMap, COMMON, LEGENDARY, RARE, buildLegalityData, type LegalityData, type Rarity, type SpeciesMetadata} from './legality-matrix.ts';
 import {seededRng} from './rng.ts';
 import {loadGameData} from '../scripts/game-data.ts';
@@ -84,20 +84,12 @@ const thinData = () => {
   return dataOf(species, [[['fire', 1], ['thin']], [['water', 1], ids.filter((i) => i !== 'thin')]]);
 };
 
-test('a thin landing offers a free reroll without consuming a skip', () => {
-  const draft = new Draft(thinData(), {rng: firstChoiceRng, config: {manualSkipCount: 2}});
-  assert.ok(draft.currentOffer!.thinRerollAvailable);
-  const replacement = draft.useThinReroll();
-  assert.deepEqual(replacement.cell, ['water', 1]);
-  assert.ok(!replacement.thinRerollAvailable);
-  assert.equal(draft.skipsRemaining, 2);
-  assert.throws(() => draft.useThinReroll(), ThinRerollUnavailableError);
-});
-
-test('a thin reroll does not accumulate skip currency', () => {
+test('a thin landing reports its native count and grants nothing extra: the skip is the only way out', () => {
   const draft = new Draft(thinData(), {rng: firstChoiceRng, config: {manualSkipCount: 0}});
-  assert.ok(draft.currentOffer!.thinRerollAvailable);
-  draft.useThinReroll();
+  const offer = draft.currentOffer!;
+  assert.deepEqual(offer.cell, ['fire', 1]);
+  assert.equal(offer.nativeCount, 1);
+  assert.equal(offer.candidates.length, 1, 'no same-type visitors exist in this fixture');
   assert.equal(draft.skipsRemaining, 0);
   assert.throws(() => draft.useSkip(), NoSkipsRemainingError);
 });
@@ -165,7 +157,7 @@ test('a short cell is filled with visitors from the nearest generations of its t
   assert.deepEqual(offer.visitors, offer.candidates.filter((id) => id !== 'native'));
   // distance 1 (gens 3 and 5) has six species, enough to reach the floor: no gen 2 or 6 visitors
   assert.ok(offer.visitors.every((id) => /^g[35]n/.test(id)), offer.visitors.join(','));
-  assert.ok(offer.thinRerollAvailable, 'thin is judged on natives, not on the filled pool');
+  assert.equal(offer.nativeCount, 1, 'the native count ignores the visitors that filled the pool');
 });
 
 test('legendary-heavy cells pull non-legendary visitors so a legendary is never forced into the offer', () => {
@@ -178,7 +170,7 @@ test('legendary-heavy cells pull non-legendary visitors so a legendary is never 
   for (let i = 0; i < 500; i++) {
     const offer = new Draft(ld, {rng, config: {rarityOdds: [50, 28, 12, 10], backfillMin: 6, backfillMinNonLegendary: 5}}).currentOffer!;
     assert.equal(offer.candidates.length, 5);
-    assert.ok(!offer.thinRerollAvailable);
+    assert.equal(offer.nativeCount, 6);
     if (offer.candidates.some((id) => id.startsWith('legend'))) withLegend++;
   }
   // five slots at 10% each: roughly 41% of offers, far from the 100% a six-species cell would force

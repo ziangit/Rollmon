@@ -12,7 +12,7 @@ export interface DraftConfig {
   /** … and this many non-legendary candidates, so a legendary is never forced into the offer */
   backfillMinNonLegendary: number;
   manualSkipCount: number;
-  /** a cell with fewer natives than this grants a free reroll */
+  /** a cell with fewer undrafted natives than this is called thin (informational: the offer is still full of visitors) */
   thinCellThreshold: number;
 }
 

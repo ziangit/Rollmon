@@ -4,7 +4,9 @@
 // pool has `backfillMin` candidates and `backfillMinNonLegendary` that are not
 // legendary; each of the `candidateCap` offer slots then rolls a rarity from
 // `rarityOdds` (falling down to the next lower rarity the pool still has) and
-// a species uniformly within it. The Python reference (rollmons/draft.py)
+// a species uniformly within it. The thin-cell free reroll of the Python
+// reference was dropped on 2026-10-21: visitors fill thin cells, so there is
+// nothing to reroll away from. The Python reference (rollmons/draft.py)
 // still implements the pre-§1 weighting.
 import {draftConfig, type DraftConfig} from './draft-config.ts';
 import {COMMON, LEGENDARY, sameCell, type Cell, type LegalityData, type Rarity} from './legality-matrix.ts';
@@ -17,7 +19,6 @@ export class DraftError extends Error {}
 export class DraftCompleteError extends DraftError {}
 export class InvalidPickError extends DraftError {}
 export class NoSkipsRemainingError extends DraftError {}
-export class ThinRerollUnavailableError extends DraftError {}
 export class DraftPoolExhaustedError extends DraftError {}
 
 export interface DraftOffer {
@@ -30,7 +31,8 @@ export interface DraftOffer {
   /** a uniformly drawn candidate, for automated play */
   suggestedSpecies: string;
   skipsRemaining: number;
-  thinRerollAvailable: boolean;
+  /** undrafted natives of the cell; below `thinCellThreshold` the cell is thin */
+  nativeCount: number;
 }
 
 export interface DraftOptions {
@@ -78,13 +80,6 @@ export class Draft {
     const previous = this.offer?.cell ?? null;
     this.skips -= 1;
     this.offer = this.rollOffer(previous);
-    return this.offer;
-  }
-
-  useThinReroll(): DraftOffer {
-    if (this.complete || !this.offer) throw new DraftCompleteError('draft is already complete');
-    if (!this.offer.thinRerollAvailable) throw new ThinRerollUnavailableError('thin-cell reroll requires an offer with 1-2 natives');
-    this.offer = this.rollOffer(this.offer.cell);
     return this.offer;
   }
 
@@ -149,7 +144,7 @@ export class Draft {
       visitors: offered.filter((id) => !natives.includes(id)),
       suggestedSpecies: this.rng.choice(offered),
       skipsRemaining: this.skips,
-      thinRerollAvailable: natives.length < this.config.thinCellThreshold,
+      nativeCount: natives.length,
     };
   }
 }
