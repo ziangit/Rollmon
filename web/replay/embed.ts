@@ -111,7 +111,17 @@ export function replayDoc(log: string[], bossName: string, playerName: string, o
   const scripts = PLAYER_SCRIPTS.map((p) => `<script src="${PLAYER_ROOT}/${p}"><\/script>`).join('\n');
   return `<!doctype html><meta charset="utf-8">
 ${styles}
-<style>html,body{margin:0;padding:0;font-family:Verdana,sans-serif;background:#f5f7fb}.wrapper{max-width:1180px;margin:0 auto}</style>
+<style>html,body{margin:0;padding:0;font-family:Verdana,sans-serif;background:#f5f7fb}.wrapper{max-width:1180px;margin:0 auto}
+/* Narrower than the 640px battle: the player scales the battle box (transform), but its
+   layout box stays 640x360 and the log sits at left:640px. Reserve only the scaled
+   height (360/640 of the width, plus the 9px top offset) and flow the controls and
+   the log underneath instead of the stylesheet's absolute desktop positions. */
+@media(max-width:639px){
+.replay-wrapper{display:flex;flex-direction:column;padding:calc(56.25vw + 12px) 5px 8px !important;box-sizing:border-box}
+.replay-controls,.replay-controls-2{position:static}
+.replay-controls{order:1}.replay-controls-2{order:2;margin-top:4px}
+.battle-log{position:static;order:3;height:200px;margin-top:8px}
+}</style>
 <div class="wrapper replay-wrapper"><div class="battle"></div><div class="battle-log"></div>
 <div class="replay-controls"></div><div class="replay-controls-2"></div>
 <script type="text/plain" class="battle-log-data">${protocol}<\/script></div>
@@ -127,7 +137,9 @@ export function fitReplayFrame(f: HTMLIFrameElement): void {
   try {
     const doc = f.contentDocument;
     if (!doc || !doc.body) return;
-    const h = Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight);
+    // body, not documentElement: the latter is never shorter than the frame's own
+    // viewport, so measuring it would keep the 620px fallback on short (phone) layouts.
+    const h = doc.body.scrollHeight;
     if (h > 0) f.style.height = `${h}px`;
   } catch { /* if ever cross-origin, keep the CSS fallback height */ }
 }
