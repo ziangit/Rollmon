@@ -41,6 +41,13 @@ const params = new URLSearchParams(location.search);
 const GATE = params.get('gate') !== '0';
 const API_BASE = params.get('api') ?? (/\.vercel\.app$/.test(location.hostname) ? '' : 'https://rollmon.vercel.app');
 const AUTH_ENABLED = API_BASE === '';
+// Vercel Web Analytics (page views, no cookies). The script is served by the
+// deployment only, so a local build does not request it.
+if (location.protocol === 'https:') {
+  const s = document.createElement('script');
+  s.defer = true; s.src = '/_vercel/insights/script.js';
+  document.head.append(s);
+}
 const LOW_POWER_KEY = 'rollmons-low-power';
 let lowPower = false;
 try { lowPower = localStorage.getItem(LOW_POWER_KEY) === '1'; } catch { /* private mode */ }
