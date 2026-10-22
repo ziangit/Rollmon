@@ -195,16 +195,14 @@ function renderPips(draft: SessionView): void {
 function renderEncounter(draft: SessionView): void {
   const o = draft.offer!;
   const totalSkips = draft.draftConfig.manualSkipCount;
-  const thin = o.thinRerollAvailable ? `<button class="btn btn-warn btn-sm" onclick="thinReroll()">${t('↻ Free re-spin')}</button>` : '';
   $('encounter').innerHTML = `
     <div>
       <p class="eyebrow" style="margin:0 0 .25rem">${t('Wild cell')}</p>
       <div class="cell-name"><span style="color:${typeColor(o.cell.type)}">${typeName(o.cell.type)}</span> · ${t('Gen {n}', {n: o.cell.generation})}</div>
       <p class="odds-note">${t('Slot odds — Poké Ball {c}% · Great Ball {u}% · Ultra Ball {r}% · Master Ball {l}%', {c: o.rarityOdds[0], u: o.rarityOdds[1], r: o.rarityOdds[2], l: o.rarityOdds[3]})}</p>
-      ${o.thinRerollAvailable ? `<p class="thin-note">${t('Thin cell — fewer than {n} natives; Pokémon from nearby generations fill in, and this re-spin is free.', {n: o.thinCellThreshold})}</p>` : ''}
+      ${o.nativeCount < o.thinCellThreshold ? `<p class="thin-note">${t('Thin cell — only {n} from this generation; the rest are visitors from nearby generations.', {n: o.nativeCount})}</p>` : ''}
     </div>
     <div class="encounter-actions">
-      ${thin}
       <button class="btn btn-ghost btn-sm" onclick="skip()" ${draft.skipsRemaining ? '' : 'disabled'}>
         ${t('Skip cell ({a}/{b})', {a: draft.skipsRemaining, b: totalSkips})}
       </button>
@@ -282,7 +280,6 @@ function draftAction(action: () => void): void {
 }
 function pick(id: string): void { draftAction(() => state.session!.pick(id)); }
 function skip(): void { draftAction(() => state.session!.skip()); }
-function thinReroll(): void { draftAction(() => state.session!.thinReroll()); }
 
 async function copyExport(): Promise<void> {
   if (!state.teamExport) return;
@@ -912,7 +909,7 @@ function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
     : `<p style="color:var(--muted)">${t('No active-source Pokémon occupy this cell.')}</p>`;
   d.innerHTML = `<h3>${typeName(cell.type)} · ${t('Gen {n}', {n: cell.generation})}</h3>
     <p style="color:var(--muted);font-size:.88rem">${t('{n} eligible', {n: `<b style="color:var(--ink)">${cell.eligibleCount}</b>`})} · ${
-      cell.state === 'excluded' ? t('excluded from rolls') : cell.state === 'thin' ? t('thin — free reroll') : t('included')}</p>${list}`;
+      cell.state === 'excluded' ? t('excluded from rolls') : cell.state === 'thin' ? t('thin — mostly visitors') : t('included')}</p>${list}`;
   fixImages(d);
 }
 
@@ -921,7 +918,7 @@ function renderCell(cell: MatrixCellView, btn: HTMLElement): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, thinReroll, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, copyExport, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);

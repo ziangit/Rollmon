@@ -97,7 +97,8 @@ export interface OfferView {
   candidates: CandidateView[];
   suggestedSpecies: string;
   skipsRemaining: number;
-  thinRerollAvailable: boolean;
+  /** undrafted natives of the cell; fewer than `thinCellThreshold` means most cards are visitors */
+  nativeCount: number;
   candidateCap: number;
   thinCellThreshold: number;
   /** per-slot rarity odds, as percentages of their total */
@@ -364,7 +365,6 @@ export class GameSession {
   }
 
   skip(): void { this.draft.useSkip(); this.actions.push('skip'); }
-  thinReroll(): void { this.draft.useThinReroll(); this.actions.push('reroll'); }
 
   // ---- loadout
 
@@ -521,7 +521,7 @@ export class GameSession {
     return {
       roundNumber: offer.roundNumber, cell: {type: offer.cell[0], generation: offer.cell[1]},
       candidates: offer.candidates.map((id) => ({...speciesView(this.ctx, id), visitor: offer.visitors.includes(id)})),
-      suggestedSpecies: offer.suggestedSpecies, skipsRemaining: offer.skipsRemaining, thinRerollAvailable: offer.thinRerollAvailable,
+      suggestedSpecies: offer.suggestedSpecies, skipsRemaining: offer.skipsRemaining, nativeCount: offer.nativeCount,
       candidateCap: this.ctx.config.candidateCap, thinCellThreshold: this.ctx.config.thinCellThreshold,
       rarityOdds: rarityOddsPercent(this.ctx.config.rarityOdds),
     };

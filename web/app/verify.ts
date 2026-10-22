@@ -45,7 +45,6 @@ export function verifyRun(ctx: GameContext, input: unknown): VerifiedRun {
       const [verb, a, b] = action.split(':');
       if (verb === 'pick') session.pick(a);
       else if (verb === 'skip') session.skip();
-      else if (verb === 'reroll') session.thinReroll();
       else if (verb === 'set') session.chooseSet(a, action.slice(verb.length + a.length + 2));
       else if (verb === 'campaign') session.startCampaign(a === '1');
       void b;

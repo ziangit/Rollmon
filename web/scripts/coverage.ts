@@ -36,6 +36,6 @@ for (const [cell, ids] of ctx.legality.matrix.entries()) {
     heavyNames.push(`${cell[0]}/gen${cell[1]}: ${legends.map((i) => ctx.legality.species[i].name).join('+')} (${ids.length} natives)`);
   }
 }
-console.log(`cells: ${ctx.legality.matrix.size}; thin (<${thinCellThreshold} natives, free reroll): ${thin}; short (<${backfillMin} natives, visitors fill in): ${short}`);
+console.log(`cells: ${ctx.legality.matrix.size}; thin (<${thinCellThreshold} natives, mostly visitors): ${thin}; short (<${backfillMin} natives, visitors fill in): ${short}`);
 console.log(`legendaries: ${buckets[LEGENDARY]} in ${withLegendary} cells; cells with fewer than ${backfillMinNonLegendary} non-legendary natives (visitors keep the offer open): ${legendaryHeavy}`);
 for (const n of heavyNames) console.log('  ' + n);
