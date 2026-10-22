@@ -43,17 +43,25 @@ Three separate causes, only one of which the set scrape (§6) could touch:
 
 ### The design (`web/game/draft.ts`, `draft-config.ts`, `legality-matrix.ts`)
 
-- **Rarity per species** = the higher of its Showdown tier rank and its
-  base-stat rank. Tier: Uber/AG legendary, OU/UUBL rare, UU/RUBL/RU/NUBL
-  uncommon, everything else common. Base stats: over 600 legendary, 570–600
-  rare, 500–569 uncommon. Slaking and Regigigas rank by tier only (Truant /
-  Slow Start). Arceus formes are separate species. Buckets over the 652
-  draftable species: common 244, uncommon 206, rare 125, legendary 77. The
-  union was chosen so that a player who knows only one scale is not
-  surprised: Hoopa-Unbound (680, UUBL) and Zamazenta (660, OU) read as
-  legendary by stats; Flutter Mane, Volcarona and Palafin by tier. The 30
-  tier-only legendaries with ordinary stats are shown as four stars plus
-  their tier; the author may relabel them later.
+- **Rarity per species** = its Showdown tier rank, lifted to legendary when
+  its base stat total is over 600. Tier: Uber/AG legendary, OU/UUBL rare,
+  UU/RUBL/RU/NUBL uncommon, everything else common. Slaking and Regigigas
+  rank by tier only (Truant / Slow Start). Arceus formes are separate
+  species. Buckets over the 652 draftable species: common 373, uncommon
+  133, rare 69, legendary 77. The single stat rule is there so that a player
+  who knows only one scale is not surprised: Hoopa-Unbound (680, UUBL),
+  Zamazenta and Kyurem (660, OU) read as legendary by stats; Flutter Mane,
+  Volcarona and Palafin by tier. A first build also lifted 570+ BST to rare
+  and 500+ to uncommon; that promoted 165 tier-weak stat balls (Carbink,
+  Shuckle, Regirock) and was dropped on 2026-10-21, so Articuno and the
+  Regis are common like their tiers. The 30 tier-only legendaries with
+  ordinary stats are shown as four stars plus their tier; the author may
+  relabel them later.
+- **Names on the page.** The four ranks are shown as Poké Ball / Great Ball
+  / Ultra Ball / Master Ball with one to four stars and the Showdown tier
+  (chosen 2026-10-21 over common/uncommon/rare/legendary, whose "legendary"
+  collides with the lore sense, and over N/R/SR/SSR). The code keeps the
+  internal names `common`, `uncommon`, `rare`, `legendary`.
 - **Visitors.** A rolled cell keeps all its natives and is filled from the
   nearest generations of the same type (distance 1, then 2, …) until it has
   at least `backfillMin` = 6 candidates and `backfillMinNonLegendary` = 5
