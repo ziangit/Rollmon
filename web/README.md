@@ -42,7 +42,7 @@ Needs `engine/pkg` first: `cd engine && wasm-pack build --release --target web -
 Port of the Python reference (`rollmons/*.py`), tests ported from `tests/test_*.py`. No I/O: every
 function takes its data as objects (`GameData`, see `data.ts`), RNG is injected (`rng.ts`, seedable).
 - `legality-matrix.ts` — 18×9 type × debut-generation matrix, species metadata, legendary weighting, `selectSpecies`.
-- `draft.ts` / `draft-config.ts` — six-round `Draft` state machine (offers, picks, skips, thin-cell rerolls, candidate cap).
+- `draft.ts` / `draft-config.ts` — six-round `Draft` state machine (offers, picks, skips, visitors, rarity slots, candidate cap).
 - `team-assembly.ts` — randbats/Smogon/override set selection, `selectableSets` (loadout options), `assembleTeam` / `assembleLoadout`.
 - `smogon-sets.ts` — Smogon JSON ingestion (format exclusions, Tera stripping, existence validation + report).
 - `pool.ts` / `bosses.ts` — tiered pool, seedable 10-battle campaign, boss discovery.

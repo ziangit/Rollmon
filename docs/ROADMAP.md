@@ -79,8 +79,11 @@ Three separate causes, only one of which the set scrape (§6) could touch:
   rarity, without replacement. Falling down rather than renormalising, and
   the non-legendary floor, are what stop a legendary-heavy cell (dragon/gen4
   has five among six natives) from forcing one into the offer.
-- **Thin reroll stays**, judged on natives (fewer than 3), so the player can
-  still take Dragonite from the gen 1 Dragon cell or spin again for free.
+- **No thin-cell free reroll** (removed 2026-10-21, author's call): visitors
+  make every offer five cards, so the reroll had nothing left to fix and the
+  two manual skips cover "not this cell". A thin cell (fewer than
+  `thinCellThreshold` = 3 undrafted natives) only shows a note saying the
+  rest are visitors; the pool inspector still marks it.
 - **No pity counter** (author's choice: simpler to explain; the score
   handicap in §7 already punishes a legendary-heavy team on the board).
 - The cell roll stays uniform and the 18×9 grid keeps its identity.
