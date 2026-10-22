@@ -11,9 +11,11 @@ export const TYPES = [
 ] as const;
 export const GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
-// Rarity (docs/ROADMAP.md §1): the higher of the species' Showdown tier rank
-// and its base-stat-total rank, so a banned-tier Pokémon and a 600+ BST one
-// both read as legendary to a player who knows only one of the two scales.
+// Rarity (docs/ROADMAP.md §1): the species' Showdown tier rank, lifted to
+// legendary when its base stat total is over 600, so a banned-tier Pokémon
+// and a 600+ BST one both read as top rank to a player who knows only one of
+// the two scales. The page shows the four ranks as Poké / Great / Ultra /
+// Master Ball; these are the internal names.
 export type Rarity = 0 | 1 | 2 | 3;
 export const COMMON: Rarity = 0, UNCOMMON: Rarity = 1, RARE: Rarity = 2, LEGENDARY: Rarity = 3;
 export const RARITY_NAMES = ['common', 'uncommon', 'rare', 'legendary'] as const;
@@ -21,17 +23,15 @@ export const RARITY_NAMES = ['common', 'uncommon', 'rare', 'legendary'] as const
 export const TIER_RANK: Readonly<Record<string, Rarity>> = Object.freeze({
   AG: LEGENDARY, Uber: LEGENDARY, OU: RARE, UUBL: RARE, UU: UNCOMMON, RUBL: UNCOMMON, RU: UNCOMMON, NUBL: UNCOMMON,
 });
-/** base stat total → rank: over 600 legendary, 570–600 rare, 500–569 uncommon */
-export const BST_RANK_BOUNDS = Object.freeze({legendary: 601, rare: 570, uncommon: 500});
+/** A base stat total above this is legendary whatever the tier (Hoopa-Unbound, Zamazenta, Kyurem). */
+export const LEGENDARY_BST_THRESHOLD = 600;
 /** Ranked by tier alone: Truant and Slow Start make the stat-ball a trap, not a prize. */
 export const TIER_ONLY_SPECIES = new Set(['slaking', 'regigigas']);
 export const MIN_CELL_SIZE = 1;
 
+/** Base stats alone say only one thing: over the threshold is legendary, everything else is common. */
 export function bstRank(baseStatTotal: number): Rarity {
-  if (baseStatTotal >= BST_RANK_BOUNDS.legendary) return LEGENDARY;
-  if (baseStatTotal >= BST_RANK_BOUNDS.rare) return RARE;
-  if (baseStatTotal >= BST_RANK_BOUNDS.uncommon) return UNCOMMON;
-  return COMMON;
+  return baseStatTotal > LEGENDARY_BST_THRESHOLD ? LEGENDARY : COMMON;
 }
 
 export function rarityOf(speciesId: string, tier: string | undefined, baseStatTotal: number): Rarity {
