@@ -626,3 +626,18 @@ details.raw pre{margin:.4rem 0 0;font-size:.78rem;line-height:1.45;white-space:p
   .flabel{width:100%;flex-basis:100%}
 }
 @media(min-width:901px){.pool-detail .pool-art,.pool-detail .pool-info{display:grid;gap:10px}}
+/* pool matrix: the Type × Gen table, the landing view of the pool */
+.pool-matrix{display:grid;grid-template-columns:72px repeat(9,minmax(36px,1fr));gap:3px;max-width:560px}
+.mhead{font-size:14px;color:var(--pr-muted);text-align:center;line-height:24px}
+.mhead.on{color:var(--pr-gold)}
+.mtype{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--pr-muted);white-space:nowrap;overflow:hidden}
+.mtype.on{color:var(--pr-gold)}
+.mtype .dot{width:10px;height:10px;flex:0 0 auto;background:var(--tc);box-shadow:inset 0 0 0 2px rgba(0,0,0,.35)}
+.mcell{position:relative;height:36px;font:inherit;font-size:15px;color:var(--pr-ink);background:var(--pr-fill-2);border:2px solid var(--pr-edge);padding:0;cursor:pointer}
+.mcell:hover{border-color:var(--pr-muted)}
+.mcell.thin{color:var(--pr-muted);background:transparent}
+.mcell.zero{color:var(--pr-edge)}
+.mcell.on{border-color:var(--pr-gold)}
+.mcell.none{color:var(--pr-edge);background:transparent;border-color:transparent;text-align:center;line-height:36px;cursor:default}
+.mstar{position:absolute;top:-2px;right:2px;font-size:11px;line-height:1;color:var(--pr-gold)}
+@media (max-width:600px){.pool-matrix{grid-template-columns:64px repeat(9,1fr);gap:2px}.mtype{font-size:12px}.mcell{height:30px;font-size:13px}.mcell.none{line-height:30px}}

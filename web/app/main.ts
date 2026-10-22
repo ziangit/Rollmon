@@ -10,7 +10,7 @@ import {
   type BattleResult, type BattleSpec, type BossInfo, type GameContext, type GauntletView, type MatrixView, type OfferView,
   type SessionView, type SpeciesView,
 } from './session.ts';
-import {RARITY_NAMES} from '../game/legality-matrix.ts';
+import {LEGENDARY, RARITY_NAMES} from '../game/legality-matrix.ts';
 import {initRoller, rollMon, setRollerPool} from './roller.ts';
 import {applyStatic, initLang, localSpeciesName, setLang, t, type Lang} from './i18n.ts';
 
@@ -886,17 +886,23 @@ async function logout(): Promise<void> {
    POOL — PokéRogue-style starter select (docs/ROADMAP.md §8)
    ===================================================================== */
 type PoolSort = 'dex' | 'bst' | 'name';
-const poolUi: {gen: number; type: string; rarity: number; sort: PoolSort; selected: string} = {gen: 0, type: '', rarity: -1, sort: 'dex', selected: ''};
+type PoolView = 'matrix' | 'grid';
+// The matrix (the 18×9 Type × Gen table, the pool inspector of v1) is the
+// landing view; a cell click drills into the sprite grid.
+const poolUi: {view: PoolView; gen: number; type: string; rarity: number; sort: PoolSort; selected: string} = {view: 'matrix', gen: 0, type: '', rarity: -1, sort: 'dex', selected: ''};
 const POOL_TYPES = ['normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
 
-function poolFilter(kind: 'gen' | 'type' | 'rarity' | 'sort', value: string | number): void {
-  if (kind === 'gen') poolUi.gen = Number(value);
+function poolFilter(kind: 'view' | 'gen' | 'type' | 'rarity' | 'sort', value: string | number): void {
+  if (kind === 'view') poolUi.view = value as PoolView;
+  else if (kind === 'gen') poolUi.gen = Number(value);
   else if (kind === 'type') poolUi.type = String(value);
   else if (kind === 'rarity') poolUi.rarity = Number(value);
   else poolUi.sort = value as PoolSort;
   renderPool();
 }
 function poolSelect(id: string): void { poolUi.selected = id; renderPool(); }
+/** A matrix cell click: filter to that cell and open the grid. */
+function poolCell(type: string, gen: number): void { poolUi.type = type; poolUi.gen = gen; poolUi.view = 'grid'; renderPool(); }
 
 function poolList(): SpeciesView[] {
   const list = state.pool!.filter((p) => (!poolUi.gen || p.debutGeneration === poolUi.gen)
@@ -912,6 +918,7 @@ function renderPool(): void {
   if (!list.some((p) => p.id === poolUi.selected)) poolUi.selected = list[0]?.id ?? '';
   const tab = (on: boolean, onclick: string, label: string) => `<button class="ftab${on ? ' on' : ''}" onclick="${onclick}">${label}</button>`;
   $('pool-filters').innerHTML = `
+    <div class="frow"><span class="flabel">${t('View')}</span>${tab(poolUi.view === 'matrix', "poolFilter('view','matrix')", t('Matrix'))}${tab(poolUi.view === 'grid', "poolFilter('view','grid')", t('Grid'))}</div>
     <div class="frow"><span class="flabel">${t('Gen')}</span>${tab(!poolUi.gen, "poolFilter('gen',0)", t('All'))}${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((g) => tab(poolUi.gen === g, `poolFilter('gen',${g})`, String(g))).join('')}</div>
     <div class="frow"><span class="flabel">${t('Type')}</span>${tab(!poolUi.type, "poolFilter('type','')", t('All'))}${POOL_TYPES.map((x) => tab(poolUi.type === x, `poolFilter('type','${x}')`, `<span class="dot" style="--tc:${typeColor(x)}"></span>${typeName(x)}`)).join('')}</div>
     <div class="frow"><span class="flabel">${t('Rarity')}</span>${tab(poolUi.rarity < 0, "poolFilter('rarity',-1)", t('All'))}${RARITY_NAMES.map((name, r) => tab(poolUi.rarity === r, `poolFilter('rarity',${r})`, t(RARITY_LABELS[name]))).join('')}</div>
@@ -922,10 +929,40 @@ function renderPool(): void {
     const cell = state.matrix.cells.find((c) => c.type === poolUi.type && c.generation === poolUi.gen);
     if (cell) cellNote = ` · ${typeName(cell.type)} · ${t('Gen {n}', {n: cell.generation})}: ${t('{n} natives', {n: cell.eligibleCount})}${cell.state === 'thin' ? ` (${t('thin')})` : ''}`;
   }
-  $('pool-summary').textContent = t('{n} of {m} draftable Pokémon', {n: list.length, m: state.pool.length}) + cellNote;
-  $('pool-grid').innerHTML = list.map((p) => `<button class="pmon${p.id === poolUi.selected ? ' sel' : ''}" title="${esc(monName(p))}" onclick="poolSelect('${p.id}')">
+  let summary = t('{n} of {m} draftable Pokémon', {n: list.length, m: state.pool.length}) + cellNote;
+  const matrix = poolUi.view === 'matrix';
+  $('pool-matrix').hidden = !matrix;
+  $('pool-grid').hidden = matrix;
+  if (matrix) {
+    const cells = state.matrix.cells.filter((c) => c.eligibleCount);
+    summary += ` · ${t('{n} cells, {m} thin', {n: cells.length, m: cells.filter((c) => c.state === 'thin').length})}`;
+    renderPoolMatrix();
+  } else $('pool-matrix').innerHTML = '';
+  $('pool-summary').textContent = summary;
+  $('pool-grid').innerHTML = matrix ? '' : list.map((p) => `<button class="pmon${p.id === poolUi.selected ? ' sel' : ''}" title="${esc(monName(p))}" onclick="poolSelect('${p.id}')">
     <img class="asset" src="${p.pixelSpriteUrl}" alt="" loading="lazy"><span class="cost r${p.rarity}">${p.rarity + 1}</span></button>`).join('');
   renderPoolDetail(list.find((p) => p.id === poolUi.selected) ?? null);
+}
+
+/** The Type × Gen table: natives per cell (of the chosen rarity when one is filtered), thin cells dimmed, a star where a Master Ball native lives. */
+function renderPoolMatrix(): void {
+  const gens = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const head = `<div class="mhead"></div>${gens.map((g) => `<div class="mhead${poolUi.gen === g ? ' on' : ''}">${g}</div>`).join('')}`;
+  const rows = POOL_TYPES.map((type) => {
+    const label = `<div class="mtype${poolUi.type === type ? ' on' : ''}"><span class="dot" style="--tc:${typeColor(type)}"></span>${typeName(type)}</div>`;
+    const cells = gens.map((g) => {
+      const cell = state.matrix!.cells.find((c) => c.type === type && c.generation === g)!;
+      if (!cell.eligibleCount) return '<div class="mcell none">·</div>';
+      const n = poolUi.rarity < 0 ? cell.eligibleCount : cell.pokemon.filter((p) => p.rarity === poolUi.rarity).length;
+      const on = (poolUi.type === type || !poolUi.type) && (poolUi.gen === g || !poolUi.gen) && (poolUi.type || poolUi.gen);
+      const cls = `mcell${cell.state === 'thin' ? ' thin' : ''}${on ? ' on' : ''}${n ? '' : ' zero'}`;
+      // the Master Ball marker only when the counts are not already filtered to another ball
+      const star = (poolUi.rarity < 0 || poolUi.rarity === LEGENDARY) && cell.pokemon.some((p) => p.rarity === LEGENDARY) ? '<span class="mstar">★</span>' : '';
+      return `<button class="${cls}" title="${esc(typeName(type))} · ${t('Gen {n}', {n: g})}: ${t('{n} natives', {n: cell.eligibleCount})}" onclick="poolCell('${type}',${g})">${n}${star}</button>`;
+    }).join('');
+    return label + cells;
+  }).join('');
+  $('pool-matrix').innerHTML = head + rows;
 }
 
 function renderPoolDetail(p: SpeciesView | null): void {
@@ -973,7 +1010,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, copyExport, poolFilter, poolSelect, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, copyExport, poolFilter, poolSelect, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
