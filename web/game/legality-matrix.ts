@@ -23,21 +23,22 @@ export const RARITY_NAMES = ['common', 'uncommon', 'rare', 'legendary'] as const
 export const TIER_RANK: Readonly<Record<string, Rarity>> = Object.freeze({
   AG: LEGENDARY, Uber: LEGENDARY, OU: RARE, UUBL: RARE, UU: UNCOMMON, RUBL: UNCOMMON, RU: UNCOMMON, NUBL: UNCOMMON,
 });
-/** A base stat total above this is legendary whatever the tier (Hoopa-Unbound, Zamazenta, Kyurem). */
+/** Untiered species only: a base stat total above this is legendary. */
 export const LEGENDARY_BST_THRESHOLD = 600;
 /** Ranked by tier alone: Truant and Slow Start make the stat-ball a trap, not a prize. */
 export const TIER_ONLY_SPECIES = new Set(['slaking', 'regigigas']);
 export const MIN_CELL_SIZE = 1;
 
 /** Base stats alone say only one thing: over the threshold is legendary, everything else is common. */
+// Used only for species with no Showdown tier; a tier decides on its own.
 export function bstRank(baseStatTotal: number): Rarity {
   return baseStatTotal > LEGENDARY_BST_THRESHOLD ? LEGENDARY : COMMON;
 }
 
 export function rarityOf(speciesId: string, tier: string | undefined, baseStatTotal: number): Rarity {
-  const byTier: Rarity = (tier ? TIER_RANK[tier] : undefined) ?? COMMON;
-  if (TIER_ONLY_SPECIES.has(speciesId)) return byTier;
-  return Math.max(byTier, bstRank(baseStatTotal)) as Rarity;
+  if (tier) return TIER_RANK[tier] ?? COMMON;
+  if (TIER_ONLY_SPECIES.has(speciesId)) return COMMON;
+  return bstRank(baseStatTotal);
 }
 export const DEFAULT_SET_SOURCE: SetSource = 'smogon';
 

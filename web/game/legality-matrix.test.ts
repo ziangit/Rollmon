@@ -69,10 +69,10 @@ test('modern type and debut generation placements', () => {
   assert.ok(legality.matrix.get(['psychic', 7])!.includes('raichualola'));
 });
 
-test('rarity is the Showdown tier rank, lifted to legendary above 600 base stats', () => {
+test('rarity is the Showdown tier rank; base stats only decide for untiered species', () => {
   assert.equal(bstRank(601), LEGENDARY); assert.equal(bstRank(600), COMMON); assert.equal(bstRank(330), COMMON);
   assert.equal(rarityOf('x', 'Uber', 450), LEGENDARY); // banned tier, ordinary stats (Palafin)
-  assert.equal(rarityOf('x', 'UUBL', 680), LEGENDARY); // 600+ stats, not Uber (Hoopa-Unbound)
+  assert.equal(rarityOf('x', 'UUBL', 680), RARE); // 600+ stats do not lift a tiered species (Hoopa-Unbound)
   assert.equal(rarityOf('x', 'OU', 545), RARE); assert.equal(rarityOf('x', 'NU', 580), COMMON); // Articuno: stats alone do not lift
   assert.equal(rarityOf('x', 'RU', 545), UNCOMMON); assert.equal(rarityOf('x', 'ZU', 500), COMMON); // Carbink
   assert.equal(rarityOf('x', undefined, 720), LEGENDARY); assert.equal(rarityOf('x', undefined, 330), COMMON);
@@ -88,12 +88,12 @@ test('real species land in the expected rarity buckets', () => {
   assert.equal(r('articuno'), COMMON); assert.equal(r('regirock'), COMMON); assert.equal(r('carbink'), COMMON);
   assert.equal(r('togekiss'), UNCOMMON); assert.equal(r('mew'), UNCOMMON); assert.equal(r('metagross'), UNCOMMON);
   assert.equal(r('garchomp'), RARE); assert.equal(r('dragonite'), RARE); assert.equal(r('tapukoko'), RARE);
-  assert.equal(r('hoopaunbound'), LEGENDARY); assert.equal(r('zamazenta'), LEGENDARY); assert.equal(r('kyurem'), LEGENDARY);
+  assert.equal(r('hoopaunbound'), RARE); assert.equal(r('zamazenta'), RARE); assert.equal(r('kyurem'), RARE); // 600+ stats, OU/UUBL
   assert.equal(r('fluttermane'), LEGENDARY); assert.equal(r('palafin'), LEGENDARY); assert.equal(r('arceusfairy'), LEGENDARY);
   for (const m of Object.values(legality.species)) assert.equal(m.legendary, m.rarity === LEGENDARY);
   const counts = [0, 0, 0, 0];
   for (const m of Object.values(legality.species)) counts[m.rarity]++;
-  assert.deepEqual(counts, [362, 131, 69, 77]);
+  assert.deepEqual(counts, [362, 131, 72, 74]);
 });
 
 test('without tier data rarity falls back to base stats', () => {
