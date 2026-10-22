@@ -53,7 +53,7 @@ test('a seeded run drafts six, builds a non-Mega default loadout, and is reprodu
   const first = a.view();
   assert.equal(first.roundNumber, 1);
   assert.ok(first.offer!.candidates.every((c) => c.rarityName === ['common', 'uncommon', 'rare', 'legendary'][c.rarity]));
-  assert.deepEqual(first.offer!.rarityOdds, [50, 28, 12, 10]);
+  assert.deepEqual(first.offer!.rarityOdds, [40, 30, 20, 10]);
   assert.equal(first.teamExport, null);
   assert.equal(first.loadout, null);
   draftBySuggestion(a); draftBySuggestion(b);
