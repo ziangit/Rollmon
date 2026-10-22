@@ -43,20 +43,21 @@ Three separate causes, only one of which the set scrape (§6) could touch:
 
 ### The design (`web/game/draft.ts`, `draft-config.ts`, `legality-matrix.ts`)
 
-- **Rarity per species** = its Showdown tier rank, lifted to legendary when
-  its base stat total is over 600. Tier: Uber/AG legendary, OU/UUBL rare,
-  UU/RUBL/RU/NUBL uncommon, everything else common. Slaking and Regigigas
-  rank by tier only (Truant / Slow Start). Arceus formes are separate
-  species. Buckets over the 652 draftable species: common 373, uncommon
-  133, rare 69, legendary 77. The single stat rule is there so that a player
-  who knows only one scale is not surprised: Hoopa-Unbound (680, UUBL),
-  Zamazenta and Kyurem (660, OU) read as legendary by stats; Flutter Mane,
-  Volcarona and Palafin by tier. A first build also lifted 570+ BST to rare
-  and 500+ to uncommon; that promoted 165 tier-weak stat balls (Carbink,
-  Shuckle, Regirock) and was dropped on 2026-10-21, so Articuno and the
-  Regis are common like their tiers. The 30 tier-only legendaries with
-  ordinary stats are shown as four stars plus their tier; the author may
-  relabel them later.
+- **Rarity per species** = its Showdown tier rank: Uber/AG legendary,
+  OU/UUBL rare, UU/RUBL/RU/NUBL uncommon, everything else common. Base
+  stats decide only for a species with no tier at all (over 600 legendary,
+  else common; Slaking and Regigigas never lifted). Arceus formes are
+  separate species. Buckets over the 652 draftable species: common 373,
+  uncommon 133, rare 72, legendary 74. History (all 2026-10-21): a first
+  build also lifted 570+ BST to rare and 500+ to uncommon, which promoted
+  165 tier-weak stat balls (Carbink, Shuckle, Regirock) and was dropped so
+  Articuno and the Regis are common like their tiers; a 600+ BST lift to
+  legendary stayed for the day, but its only effect was to make
+  Hoopa-Unbound (680, UUBL), Zamazenta and Kyurem (660, OU) Master Ball,
+  and the author wants those three as Ultra Ball, so the tier decides on
+  its own. Flutter Mane, Volcarona and Palafin are legendary by tier. The
+  30 tier-only legendaries with ordinary stats are shown as four stars plus
+  their tier; the author may relabel them later.
 - **Names on the page.** The four ranks are shown as Poké Ball / Great Ball
   / Ultra Ball / Master Ball with one to four stars and the Showdown tier
   (chosen 2026-10-21 over common/uncommon/rare/legendary, whose "legendary"
@@ -90,12 +91,12 @@ Three separate causes, only one of which the set scrape (§6) could touch:
 
 Expected numbers from a 30,000-run simulation of the final rules (player
 always takes the best ball offered): an Ultra Ball or better in 52% of
-offers, 3.1 OU-level picks per team, three or more in 69% of runs, all six
-in 2% (the ceiling is the grid: 90 cells have no OU-level native, so an
-Ultra roll there falls down to Great Ball); a Master Ball in 21% of offers
-and 76% of runs, 1.3 per team; the most legendary-prone cell offers one 43%
+offers, 3.2 OU-level picks per team, three or more in 72% of runs, all six
+in 2% (the ceiling is the grid: 85 cells have no OU-level native, so an
+Ultra roll there falls down to Great Ball); a Master Ball in 20% of offers
+and 75% of runs, 1.2 per team; the most legendary-prone cell offers one 45%
 of the time, and no cell is above 50%. `node scripts/coverage.ts` prints
-the buckets, the short cells, and the 15 legendary-heavy cells whose
+the buckets, the short cells, and the 14 legendary-heavy cells whose
 visitors keep the offer open.
 
 Knobs to playtest (`DEFAULT_DRAFT_CONFIG`): `rarityOdds`, `backfillMin`,
@@ -240,9 +241,13 @@ style, a CJK-capable pixel face (DotGothic16 now; Fusion Pixel or Ark Pixel
 if zh needs more), whole-pixel sizes, nothing under 12 px, colour as a role
 (frame / gold heading / type colour) rather than decoration.
 
-**Done: pool screen (2026-10-21).** The 18×9 matrix page is replaced by a
+**Done: pool screen (2026-10-21).** The pool page is rebuilt as a
 PokéRogue starter-select layout under the `.pr` CSS scope (the first screen
-on the new system; the rest keep the old styles until they are redone):
+on the new system; the rest keep the old styles until they are redone).
+It lands on the 18×9 Type × Gen matrix of v1 (author's choice: the matrix
+is the coverage view; native count per cell, thin cells dimmed, a star
+where a Master Ball native lives, counts follow the Rarity filter, a cell
+click drills into that cell's sprite grid) with a Matrix / Grid switch;
 a left detail panel (dex number, Showdown `gen5` pixel sprite, types,
 rarity stars + ball name, tier, BST, the cells the species occupies, and its
 first set with real move names), a filter bar (Gen / Type / Rarity / Sort
