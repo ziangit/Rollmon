@@ -225,6 +225,39 @@ ZU in gen7). No manual labelling. BST is the fallback for anything untiered.
 
 One pass with the new draft flow and i18n keys known, so it is done once.
 
+**Review (2026-10-21).** Screenshots of every screen at desktop and phone
+width and in zh/ja, read independently by two models, agreed on the problems:
+Pixelify Sans at weight 700 is unreadable at small sizes (2→8, 3→9, c→o,
+confirmed by zoomed crops); the same orange rounded frame sits on every
+component so nothing has a hierarchy; four fonts, Press Start 2P used below
+8 px; the topbar tools strip overflows a phone viewport horizontally; the
+battle screen fixes the replay iframe at 620 px and stacks blank replay
+cards; copy is in a developer voice with emoji; the title is a day sky while
+every other screen is night. Direction chosen by the author: keep the
+pixel theme and use **PokéRogue** as the reference (its starter-select,
+battle, and title-menu screens), execute it properly: one square panel
+style, a CJK-capable pixel face (DotGothic16 now; Fusion Pixel or Ark Pixel
+if zh needs more), whole-pixel sizes, nothing under 12 px, colour as a role
+(frame / gold heading / type colour) rather than decoration.
+
+**Done: pool screen (2026-10-21).** The 18×9 matrix page is replaced by a
+PokéRogue starter-select layout under the `.pr` CSS scope (the first screen
+on the new system; the rest keep the old styles until they are redone):
+a left detail panel (dex number, Showdown `gen5` pixel sprite, types,
+rarity stars + ball name, tier, BST, the cells the species occupies, and its
+first set with real move names), a filter bar (Gen / Type / Rarity / Sort
+tabs), and a sprite grid of every draftable species with the rarity number
+in the corner, as PokéRogue draws starter cost. Filtering to one Gen × Type
+shows the cell with its native count and a thin note. The title roller now
+rolls a real cell of this pool and shows one of its natives (`roller.ts`,
+animated sprite with a pixel fallback) instead of v1's fixed decorative
+list. Known nit: items and abilities of override sets are shown from their
+ids (`Airballoon`), as there is no item-name table in the data bundle.
+
+**Next screens, in order:** draft (the cards and the reel), loadout, battle
+(the replay frame and live cards), results and the leaderboard drawer, then
+the topbar strip (phone overflow). The title page stays as it is.
+
 ## 9. i18n
 
 What Showdown offers: the server repo has `translations/zh-cn`, `zh-tw`, `ja`
@@ -247,7 +280,7 @@ keys with the same placeholders.
 Not translated, by design or for later: the replay player and battle protocol
 (English only upstream), set exports (PokéPaste is an interchange format),
 move/item/ability names, boss names (author's data), the slot roller's reel
-labels (`roller.js`, carried over from v1), and `SessionError` messages from
+labels (`roller.ts`), and `SessionError` messages from
 the game layer. The pixel display font has no CJK glyphs, so headings in zh/ja
 fall back to the system font; the UI rework (§8) should pick a CJK pixel face.
 
