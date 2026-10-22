@@ -111,6 +111,17 @@ gets a one-line notice and a "low power" switch that halves both search budgets
 (`DEFAULT_BUDGET_MS`); the choice is remembered in `localStorage`. The dev knobs
 `?p1ms=&p2ms=` keep working and override the switch.
 
+Phone cost, measured by emulation on 2026-10-22 (headless Chrome, iPhone 13
+viewport, Lighthouse-style CPU throttling on the main thread; the worker cannot
+be throttled, so the engine bench was run on the main thread): 230.8k MCTS
+iterations per 100 ms on the Mac, 53.2k at 4x (mid-range phone), 34.3k at 6x
+(low-end). Budgets are wall-clock, so a slower phone plays weaker, not longer:
+a four-battle campaign took 37 s with the replay animating at 60 fps on the
+throttled thread and only two long tasks. Live site on slow 4G: title usable at
+5.5 s, worker ready at 11.6 s (1.5 MB brotli: worker 1.03, data 0.26, wasm
+0.21), but play.pokemonshowdown.com sends ~4.7 MB of replay client and sprites
+per run. Heap: page 75–105 MB, worker ~25 MB. Still unmeasured: real WebKit.
+
 ## 3. Opponent bands (after §1)
 
 Rosters: level_1 3 teams, level_2 3, Red fixed, middle 6 (draws 3), advanced 9
