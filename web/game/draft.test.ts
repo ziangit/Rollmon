@@ -131,7 +131,7 @@ function offeredShare(ld: LegalityData, special: string, config: Parameters<type
   for (let i = 0; i < n; i++) if (new Draft(ld, {rng, config}).currentOffer!.candidates.includes(special)) hits++;
   return hits / n;
 }
-const draftConfig = (c: {candidateCap?: number; rarityOdds?: [number, number, number, number]; backfillMin?: number; backfillMinNonLegendary?: number; backfillMinRare?: number}) => c;
+const draftConfig = (c: {candidateCap?: number; rarityOdds?: [number, number, number, number]; backfillMin?: number; backfillMinNonLegendary?: number}) => c;
 
 test('a slot rolls its rarity from the configured odds', () => {
   // one slot, 10% legendary: the legendary is offered about one time in ten
@@ -183,32 +183,6 @@ test('legendary-heavy cells pull non-legendary visitors so a legendary is never 
   }
   // five slots at 10% each: roughly 41% of offers, far from the 100% a six-species cell would force
   assert.ok(withLegend / 500 > 0.3 && withLegend / 500 < 0.55, `${withLegend / 500}`);
-});
-
-test('a cell without a rare native borrows one rare visitor, never a legendary, so an Ultra Ball roll can land', () => {
-  const species: Record<string, SpeciesMetadata> = {};
-  for (let i = 0; i < 6; i++) species[`n${i}`] = meta(`n${i}`, ['bug'], {gen: 2});
-  for (let i = 0; i < 3; i++) species[`g3c${i}`] = meta(`g3c${i}`, ['bug'], {gen: 3});
-  species.g3legend = meta('g3legend', ['bug'], {gen: 3, rarity: LEGENDARY});
-  species.g5rare = meta('g5rare', ['bug'], {gen: 5, rarity: RARE});
-  const ld = dataOf(species, [
-    [['bug', 2], [0, 1, 2, 3, 4, 5].map((i) => `n${i}`)],
-    [['bug', 3], ['g3c0', 'g3c1', 'g3c2', 'g3legend']],
-    [['bug', 5], ['g5rare']],
-  ]);
-  const rng = firstCellWeightedRng(6);
-  let withRare = 0;
-  for (let i = 0; i < 300; i++) {
-    const offer = new Draft(ld, {rng, config: {rarityOdds: [40, 30, 20, 10], backfillMin: 6, backfillMinNonLegendary: 5, backfillMinRare: 1}}).currentOffer!;
-    assert.equal(offer.candidates.length, 5);
-    assert.ok(!offer.candidates.includes('g3legend'), 'the rare floor skips the nearer legendary');
-    assert.ok(!offer.visitors.some((id) => id.startsWith('g3c')), 'the size floor was already met by natives');
-    if (offer.candidates.includes('g5rare')) withRare++;
-  }
-  // rare 20% + legendary 10% falling down: 1 - 0.7^5 ≈ 83% of offers
-  assert.ok(withRare / 300 > 0.7 && withRare / 300 < 0.95, `${withRare / 300}`);
-  const without = new Draft(ld, {rng, config: {backfillMinRare: 0}}).currentOffer!;
-  assert.ok(!without.candidates.includes('g5rare'), 'with the floor off the far rare stays home');
 });
 
 test('an offer exposes the candidate list, its visitors, and a soft suggestion', () => {

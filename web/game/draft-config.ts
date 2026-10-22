@@ -9,10 +9,8 @@ export interface DraftConfig {
   rarityOdds: readonly [number, number, number, number];
   /** a cell is filled with visitors from the nearest generations of the same type until it has this many candidates … */
   backfillMin: number;
-  /** … and this many non-legendary candidates, so a legendary is never forced into the offer … */
+  /** … and this many non-legendary candidates, so a legendary is never forced into the offer */
   backfillMinNonLegendary: number;
-  /** … and this many rare (Ultra Ball) candidates, so a rare roll can land in every cell (90 cells have no OU native) */
-  backfillMinRare: number;
   manualSkipCount: number;
   /** a cell with fewer natives than this grants a free reroll */
   thinCellThreshold: number;
@@ -23,7 +21,6 @@ export const DEFAULT_DRAFT_CONFIG: Readonly<DraftConfig> = Object.freeze({
   rarityOdds: Object.freeze([40, 30, 20, 10] as [number, number, number, number]),
   backfillMin: 6,
   backfillMinNonLegendary: 5,
-  backfillMinRare: 1,
   manualSkipCount: 2,
   thinCellThreshold: 3,
 });
@@ -36,7 +33,6 @@ export function draftConfig(overrides: Partial<DraftConfig> = {}): DraftConfig {
   }
   if (config.backfillMin < 1) throw new RangeError('backfillMin must be positive');
   if (config.backfillMinNonLegendary < 0) throw new RangeError('backfillMinNonLegendary cannot be negative');
-  if (config.backfillMinRare < 0) throw new RangeError('backfillMinRare cannot be negative');
   if (config.manualSkipCount < 0) throw new RangeError('manualSkipCount cannot be negative');
   if (config.thinCellThreshold < 1) throw new RangeError('thinCellThreshold must be positive');
   return config;

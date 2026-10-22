@@ -1,13 +1,13 @@
 // Six-round draft mechanics built on the legality matrix (docs/ROADMAP.md §1,
 // design decided 2026-10-21). Each round rolls a cell; the cell's natives are
 // joined by visitors from the nearest generations of the same type until the
-// pool has `backfillMin` candidates, `backfillMinNonLegendary` that are not
-// legendary, and `backfillMinRare` rares; each of the `candidateCap` offer slots then rolls a rarity from
+// pool has `backfillMin` candidates and `backfillMinNonLegendary` that are not
+// legendary; each of the `candidateCap` offer slots then rolls a rarity from
 // `rarityOdds` (falling down to the next lower rarity the pool still has) and
 // a species uniformly within it. The Python reference (rollmons/draft.py)
 // still implements the pre-§1 weighting.
 import {draftConfig, type DraftConfig} from './draft-config.ts';
-import {COMMON, LEGENDARY, RARE, sameCell, type Cell, type LegalityData, type Rarity} from './legality-matrix.ts';
+import {COMMON, LEGENDARY, sameCell, type Cell, type LegalityData, type Rarity} from './legality-matrix.ts';
 import {defaultRng, type ChoiceRng, type WeightedRng} from './rng.ts';
 
 export const TEAM_SIZE = 6;
@@ -95,25 +95,17 @@ export class Draft {
     return (this.data.matrix.get(cell) ?? []).filter((id) => !drafted.has(id));
   }
 
-  /**
-   * Natives plus visitors from the nearest generations of the same type, until
-   * the floors are met. Size and non-legendary floors take any visitor; the
-   * rare floor takes rares only (never a legendary), so it leaves the legendary
-   * odds alone and lets an Ultra Ball roll land in a cell with no OU native.
-   */
+  /** Natives plus visitors from the nearest generations of the same type, until the floors are met. */
   private backfill(cell: Cell, natives: string[]): string[] {
     const pool = [...natives];
-    const count = (pred: (r: Rarity) => boolean) => pool.filter((id) => pred(this.rarity(id))).length;
-    const sized = () => pool.length >= this.config.backfillMin && count((r) => r !== LEGENDARY) >= this.config.backfillMinNonLegendary;
-    const filled = () => sized() && count((r) => r === RARE) >= this.config.backfillMinRare;
+    const filled = () => pool.length >= this.config.backfillMin
+      && pool.filter((id) => this.rarity(id) !== LEGENDARY).length >= this.config.backfillMinNonLegendary;
     for (let distance = 1; !filled() && distance <= 8; distance++) {
       const visitors = [cell[1] - distance, cell[1] + distance]
         .flatMap((generation) => this.undraftedCandidates([cell[0], generation]))
         .filter((id) => !pool.includes(id));
-      while (!filled()) {
-        const eligible = sized() ? visitors.filter((id) => this.rarity(id) === RARE) : visitors;
-        if (!eligible.length) break;
-        const pick = this.rng.choice(eligible);
+      while (visitors.length && !filled()) {
+        const pick = this.rng.choice(visitors);
         visitors.splice(visitors.indexOf(pick), 1);
         pool.push(pick);
       }
