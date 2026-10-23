@@ -227,6 +227,18 @@ lists what is left:
   the right end of the topbar elsewhere. The board opens as a drawer, so the
   title screen keeps only the logo and the Start panel.
 
+### Feedback and set contributions (built 2026-10-22)
+A **✉ Feedback** button in the tools strip opens a drawer with one text
+box; **Contribute a set** in the pool's species panel opens the same drawer
+for that species, and the paste must parse as a Showdown export for it
+(`parseShowdownExport`, every block's species checked) or it is refused
+with the parser's message. `POST /api/feedback` (`web/api/feedback.ts`,
+same function, Vercel route `?op=feedback`) stores kind, text, species,
+screen, language, seed, user agent, the account name when signed in, and
+the hashed address; 10 per network per day. Same-origin only, so a local
+build shows "can only be sent from the hosted site". Rows are read in the
+Neon console: `select * from feedback order by id desc`. No admin page.
+
 ### Score (built; numbers are playtest knobs in `web/game/score.ts`)
 ```
 score = Σ over won battles of  bandPoints × speedBonus  ×  teamHandicap
