@@ -49,4 +49,10 @@ test('feedback is limited per network per day; without a store it is 503', async
   assert.equal((await api(post({kind: 'feedback', text: 'one more'}))).status, 429);
   assert.equal((await api(post({kind: 'feedback', text: 'other network'}, {ip: '198.51.100.1'}))).status, 201);
   assert.equal((await createApi({ctx, store: async () => null})(post({kind: 'feedback', text: 'x'}))).status, 503);
+  // the author's account has no cap, even from the exhausted network
+  const reg = await api({method: 'POST', path: '/api/auth/register', query: new URLSearchParams(), body: JSON.stringify({name: 'Lonie Tzzz', password: 'hunter22x'}), ip: '203.0.113.9'});
+  assert.equal(reg.status, 201);
+  const cookie = reg.setCookie!.split(';')[0];
+  for (let i = 0; i < FEEDBACK_PER_IP_PER_DAY + 2; i++) assert.equal((await api(post({kind: 'feedback', text: `dev ${i}`}, {cookie}))).status, 201);
+  assert.equal((await api(post({kind: 'feedback', text: 'still capped'}))).status, 429, 'other visitors on that network stay capped');
 });

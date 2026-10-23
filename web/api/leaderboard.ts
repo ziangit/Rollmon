@@ -13,6 +13,7 @@ import {
   type User, type UserRecord, type UserStore,
 } from './auth.ts';
 import {FEEDBACK_PER_IP_PER_DAY, validateFeedback, type FeedbackStore} from './feedback.ts';
+import {isDevAccount} from '../game/dev-accounts.ts';
 
 export interface Entry {
   id: number;
@@ -126,10 +127,11 @@ export function createApi(opts: ApiOptions): (req: ApiRequest) => Promise<ApiRes
     const checked = validateFeedback(payload, opts.ctx);
     if ('error' in checked) return {status: 400, body: {error: checked.error}};
     const ip = secret ? ipHash(secret, req.ip) : null;
-    if (ip && await store.feedbackSince(ip, new Date(now() - DAY_MS)) >= FEEDBACK_PER_IP_PER_DAY) {
+    const user = session(req);
+    // the author's accounts contribute without a cap
+    if (ip && !isDevAccount(user?.name) && await store.feedbackSince(ip, new Date(now() - DAY_MS)) >= FEEDBACK_PER_IP_PER_DAY) {
       return {status: 429, body: {error: 'too much feedback from this network today; try again tomorrow'}};
     }
-    const user = session(req);
     const {id} = await store.addFeedback({...checked.row, agent: req.agent?.slice(0, 200) ?? null, userId: user?.id ?? null, name: user?.name ?? null, ipHash: ip});
     return {status: 201, body: {id}};
   }

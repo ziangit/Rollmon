@@ -11,6 +11,7 @@ import {type MatrixCellView,
   type SessionView, type SpeciesView, speciesSetOptions} from './session.ts';
 import {LEGENDARY, RARITY_NAMES} from '../game/legality-matrix.ts';
 import type {SelectableSet} from '../game/team-assembly.ts';
+import {isDevAccount} from '../game/dev-accounts.ts';
 import {initRoller, rollMon, setRollerPool} from './roller.ts';
 import {applyStatic, initLang, lang, localSpeciesName, setLang, t, type Lang} from './i18n.ts';
 
@@ -41,10 +42,8 @@ const params = new URLSearchParams(location.search);
 const GATE = params.get('gate') !== '0';
 const API_BASE = params.get('api') ?? (/\.vercel\.app$/.test(location.hostname) ? '' : 'https://rollmon.vercel.app');
 const AUTH_ENABLED = API_BASE === '';
-/** The boss-ladder page is a developer tool: players go from the loadout straight into the campaign. Open for the author's account (and locally, where there are no accounts). */
-const DEV_ACCOUNTS = ['lonietzzz'];
-const accountId = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
-const isDeveloper = () => !AUTH_ENABLED || (!!account && DEV_ACCOUNTS.includes(accountId(account.name)));
+/** The boss-ladder page is a developer tool: players go from the loadout straight into the campaign. Open for the author's accounts (and locally, where there are no accounts). */
+const isDeveloper = () => !AUTH_ENABLED || isDevAccount(account?.name);
 // Vercel Web Analytics (page views, no cookies). The script is served by the
 // deployment only, so a local build does not request it.
 if (location.protocol === 'https:') {
