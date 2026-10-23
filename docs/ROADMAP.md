@@ -316,12 +316,15 @@ has to confirm. The party column and the pips became a six-slot sprite
 strip in the page head (current slot pulsing); the round number sits in
 the cell header. Phone: three tiles per row, the panel stacks, slots
 shrink to 44 px. Pick-to-pick transition (same day, author's request):
-the picked sprite arcs into its party slot (a fixed clone driven by the
-Web Animations API) while the other tiles drop away, then the next cell's
-header bounces in, its tiles slide in one after another and the panel
-rises; the landed slot pops; switching tiles swaps the panel with a short
-rise. All of it is skipped under `prefers-reduced-motion`, and a pick is
-ignored while one plays.
+the tiles drop away one after another and the panel fades (Web
+Animations API), then the next cell's header bounces in, its tiles slide
+in one after another and the panel rises; the new slot pops; switching
+tiles swaps the panel with a short rise. A first version also flew the
+picked sprite into its slot; the author asked for that to go, and its
+fade had been left filling forwards on the panel element, which blanked
+the sets after the first pick (fixed by cancelling it after it finishes).
+All of it is skipped under `prefers-reduced-motion`, and a pick is ignored
+while one plays.
 **Next screens, in order:** loadout, battle (the replay frame and live
 cards), results and the leaderboard drawer, then the topbar strip (phone
 overflow). The title page stays as it is.
