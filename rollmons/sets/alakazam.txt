@@ -1,0 +1,28 @@
+Sash Counter (Alakazam) @ Focus Sash
+Ability: Magic Guard
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+- Counter
+- Expanding Force
+- Dazzling Gleam
+- Focus Blast
+
+Mega Alakazam (Alakazam) @ Alakazite
+Ability: Magic Guard
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Psychic
+- Focus Blast
+- Shadow Ball
+- Calm Mind
+
+Psychic Terrain Mega Alakazam (Alakazam) @ Alakazite
+Ability: Magic Guard
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Expanding Force
+- Focus Blast
+- Shadow Ball
+- Calm Mind

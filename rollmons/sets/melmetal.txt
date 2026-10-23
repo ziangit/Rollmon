@@ -1,0 +1,8 @@
+Toxic Protect (Melmetal) @ Leftovers
+Ability: Iron Fist
+EVs: 220 HP / 96 Atk / 180 SpD / 12 Spe
+Adamant Nature
+- Double Iron Bash
+- Earthquake
+- Toxic
+- Protect

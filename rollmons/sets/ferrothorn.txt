@@ -1,0 +1,8 @@
+Gyro Ferrothorn (Ferrothorn) @ Leftovers
+Ability: Iron Barbs
+EVs: 252 HP / 16 Def / 240 SpD
+Sassy Nature
+- Power Whip
+- Spikes
+- Gyro Ball
+- Leech Seed

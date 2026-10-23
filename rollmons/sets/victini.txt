@@ -1,0 +1,17 @@
+Scarf V (Victini) @ Choice Scarf
+Ability: Victory Star
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- V-create
+- U-turn
+- Bolt Strike
+- Zen Headbutt
+
+Band V (Victini) @ Choice Band
+Ability: Victory Star
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- V-create
+- U-turn
+- Bolt Strike
+- Zen Headbutt

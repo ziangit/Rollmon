@@ -1,0 +1,8 @@
+Bulk Up Z (Zeraora) @ Leftovers
+Ability: Volt Absorb
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Bulk Up
+- Plasma Fists
+- Close Combat
+- Knock Off

@@ -1,0 +1,8 @@
+Fire Ground Moltres (Moltres) @ Heavy-Duty Boots
+Ability: Flame Body
+EVs: 248 HP / 252 SpA / 8 SpD
+Modest Nature
+- Roost
+- Flamethrower
+- Scorching Sands
+- U-turn

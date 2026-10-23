@@ -1,0 +1,18 @@
+Mega Mewtwo Y (Mewtwo) @ Mewtwonite Y
+Ability: Unnerve
+EVs: 40 Def / 216 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Psystrike
+- Ice Beam
+- Fire Blast
+- Calm Mind
+
+Mega Mewtwo X (Mewtwo) @ Mewtwonite X
+Ability: Pressure
+EVs: 252 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Low Kick
+- Taunt
+- Ice Beam
+- Stone Edge

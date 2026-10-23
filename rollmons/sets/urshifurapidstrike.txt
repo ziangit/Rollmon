@@ -1,0 +1,8 @@
+Trailblaze Urshifu (Urshifu-Rapid-Strike) @ Protective Pads
+Ability: Unseen Fist
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Trailblaze
+- Swords Dance
+- Close Combat
+- Surging Strikes

@@ -1,0 +1,39 @@
+Scarf Lele (Tapu Lele) @ Choice Scarf
+Ability: Psychic Surge
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Psychic
+- Moonblast
+- Focus Blast
+- Psyshock
+
+Spec Lele (Tapu Lele) @ Choice Specs
+Ability: Psychic Surge
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Moonblast
+- Psyshock
+- Psychic
+- Focus Blast
+
+AV Lele (Tapu Lele) @ Assault Vest
+Ability: Psychic Surge
+EVs: 80 HP / 252 SpA / 176 Spe
+Modest Nature
+IVs: 0 Atk
+- Psychic
+- Moonblast
+- Focus Blast
+- Psyshock
+
+CM Lele (Tapu Lele) @ Twisted Spoon
+Ability: Psychic Surge
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Calm Mind
+- Psyshock
+- Draining Kiss
+- Focus Blast

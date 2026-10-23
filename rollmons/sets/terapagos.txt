@@ -1,0 +1,18 @@
+Spec Terapagos (Terapagos) @ Choice Specs
+Ability: Tera Shift
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+IVs: 15 Atk
+- Tera Starstorm
+- Ice Beam
+- Earth Power
+- Flamethrower
+
+Support Terapagos (Terapagos) @ Heavy-Duty Boots
+Ability: Tera Shift
+EVs: 252 SpA / 4 SpD / 252 Spe
+Modest Nature
+- Rapid Spin
+- Tera Starstorm
+- Flamethrower
+- Ice Beam

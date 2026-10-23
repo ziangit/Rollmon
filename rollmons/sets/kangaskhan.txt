@@ -1,0 +1,17 @@
+Mega Seismic Toss (Kangaskhan) @ Kangaskhanite
+Ability: Scrappy
+EVs: 212 HP / 44 Atk / 252 Spe
+Adamant Nature
+- Fake Out
+- Seismic Toss
+- Ice Punch
+- Rock Tomb
+
+Mega Set-Up Attacker (Kangaskhan) @ Kangaskhanite
+Ability: Scrappy
+EVs: 252 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Fake Out
+- Return
+- Sucker Punch
+- Power-Up Punch

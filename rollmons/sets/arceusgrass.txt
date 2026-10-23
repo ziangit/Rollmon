@@ -1,0 +1,9 @@
+Ice Beam Grass (Arceus-Grass) @ Meadow Plate
+Ability: Multitype
+EVs: 252 HP / 4 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Grass Knot
+- Earth Power
+- Ice Beam
+- Recover

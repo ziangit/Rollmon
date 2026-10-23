@@ -1,0 +1,8 @@
+Band Darmanitan (Darmanitan-Galar) @ Choice Band
+Ability: Gorilla Tactics
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Icicle Crash
+- Flare Blitz
+- Earthquake
+- U-turn

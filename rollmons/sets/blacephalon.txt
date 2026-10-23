@@ -1,0 +1,9 @@
+Scarf Blacephalon (Blacephalon) @ Choice Scarf
+Ability: Beast Boost
+EVs: 252 SpA / 4 SpD / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Shadow Ball
+- Flamethrower
+- Overheat
+- Trick

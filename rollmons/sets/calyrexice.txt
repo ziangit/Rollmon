@@ -1,0 +1,8 @@
+Dual Dance Calyrex (Calyrex-Ice) @ Weakness Policy
+Ability: As One (Glastrier)
+EVs: 252 Atk / 4 Def / 252 Spe
+Adamant Nature
+- Swords Dance
+- Glacial Lance
+- High Horsepower
+- Agility

@@ -1,0 +1,9 @@
+Scarf without Healing Wish (Shaymin-Sky) @ Choice Scarf
+Ability: Serene Grace
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Air Slash
+- Seed Flare
+- Earth Power
+- Dazzling Gleam
