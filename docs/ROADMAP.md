@@ -235,7 +235,9 @@ for that species, and the paste must parse as a Showdown export for it
 with the parser's message. `POST /api/feedback` (`web/api/feedback.ts`,
 same function, Vercel route `?op=feedback`) stores kind, text, species,
 screen, language, seed, user agent, the account name when signed in, and
-the hashed address; 10 per network per day. Same-origin only, so a local
+the hashed address; 10 per network per day, except for the author's accounts
+(`web/game/dev-accounts.ts`, shared with the page's developer gate), which
+have no cap (2026-10-23). Same-origin only, so a local
 build shows "can only be sent from the hosted site". A set contribution
 also carries a one-line **summary** of what the set does (required, 200
 characters, column `note`; added 2026-10-22 at the author's request, the
