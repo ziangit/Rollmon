@@ -65,6 +65,9 @@ try {
     if (rarities.length !== names.length) throw new Error(`round ${round}: ${names.length} candidates but ${rarities.length} rarity rows`);
     const visitors = await page.$$eval('#candidates .cand.visitor', (ns) => ns.length);
     const tabs = await page.evaluate(() => { const tabs = document.querySelectorAll('#cand-detail .stab'); if (tabs.length > 1) tabs[1].click(); return tabs.length; });
+    // the panel rises in after the tiles; it must end fully visible with the open set's moves
+    await page.waitForFunction(() => { const e = document.getElementById('cand-detail'); return getComputedStyle(e).opacity === '1' && e.querySelectorAll('.pmove').length > 0; }, {timeout: 3000})
+      .catch(() => { throw new Error(`round ${round}: set panel not visible after the transition`); });
     console.log(`  ${label}: ${cell} -> ${names.map((n, i) => `${n} ${rarities[i]}`).join(', ')}${visitors ? ` (${visitors} visitor${visitors > 1 ? 's' : ''})` : ''} | ${tabs} sets`);
     await click('#cand-detail .pick');
     await page.waitForFunction((r) => document.querySelectorAll('#party .pslot.filled').length === r, {}, round);
