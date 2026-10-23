@@ -1,0 +1,17 @@
+Shift Gear Genesect (Genesect) @ Life Orb
+Ability: Download
+EVs: 4 HP / 252 Atk / 252 Spe
+Adamant Nature
+- Shift Gear
+- Iron Head
+- Blaze Kick
+- Leech Life
+
+Banded Genesect (Genesect) @ Choice Band
+Ability: Download
+EVs: 4 HP / 252 Atk / 252 Spe
+Adamant Nature
+- Iron Head
+- U-turn
+- Extreme Speed
+- Blaze Kick

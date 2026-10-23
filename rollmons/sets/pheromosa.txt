@@ -1,0 +1,18 @@
+Spec Pheromosa (Pheromosa) @ Choice Specs
+Ability: Beast Boost
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+- Bug Buzz
+- Focus Blast
+- U-turn
+- Ice Beam
+
+Quiver Dance Pheromosa (Pheromosa) @ Life Orb
+Ability: Beast Boost
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Quiver Dance
+- Bug Buzz
+- Focus Blast
+- Ice Beam

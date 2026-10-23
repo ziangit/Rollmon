@@ -1,0 +1,8 @@
+Scarf Fish (Dracovish) @ Choice Scarf
+Ability: Strong Jaw
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Fishious Rend
+- Crunch
+- Outrage
+- Psychic Fangs

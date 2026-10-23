@@ -1,0 +1,8 @@
+Spec Volt Switch (Miraidon) @ Choice Specs
+Ability: Hadron Engine
+EVs: 4 Def / 252 SpA / 252 Spe
+Timid Nature
+- Electro Drift
+- Draco Meteor
+- Volt Switch
+- Overheat

@@ -1,0 +1,9 @@
+Scarf Reshiram (Reshiram) @ Choice Scarf
+Ability: Turboblaze
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Blue Flare
+- Draco Meteor
+- Earth Power
+- Shadow Ball

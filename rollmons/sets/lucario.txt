@@ -7,3 +7,13 @@ Jolly Nature
 - Close Combat
 - Meteor Mash
 - Extreme Speed
+
+Special Lucario (Lucario) @ Life Orb
+Ability: Steadfast
+EVs: 4 HP / 252 SpA / 252 Spe
+Timid Nature
+IVs: 0 Atk
+- Nasty Plot
+- Flash Cannon
+- Focus Blast
+- Dark Pulse

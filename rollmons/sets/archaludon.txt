@@ -1,0 +1,9 @@
+Power Herb Archaludon (Archaludon) @ Power Herb
+Ability: Stamina
+EVs: 4 Def / 252 SpA / 252 Spe
+Modest Nature
+IVs: 0 Atk
+- Electro Shot
+- Draco Meteor
+- Flash Cannon
+- Stealth Rock

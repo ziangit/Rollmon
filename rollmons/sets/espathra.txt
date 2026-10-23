@@ -1,0 +1,18 @@
+Baton Pass Espathra (Espathra) @ Leftovers
+Ability: Speed Boost
+EVs: 248 HP / 252 Def / 8 SpD
+Bold Nature
+IVs: 0 Atk
+- Calm Mind
+- Protect
+- Substitute
+- Baton Pass
+
+Calm Mind Espathra (Espathra) @ Leftovers
+Ability: Speed Boost
+EVs: 152 HP / 244 Def / 112 Spe
+Bold Nature
+- Calm Mind
+- Stored Power
+- Dazzling Gleam
+- Roost
