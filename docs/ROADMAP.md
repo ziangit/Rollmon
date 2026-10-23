@@ -236,8 +236,12 @@ with the parser's message. `POST /api/feedback` (`web/api/feedback.ts`,
 same function, Vercel route `?op=feedback`) stores kind, text, species,
 screen, language, seed, user agent, the account name when signed in, and
 the hashed address; 10 per network per day. Same-origin only, so a local
-build shows "can only be sent from the hosted site". Rows are read in the
-Neon console: `select * from feedback order by id desc`. No admin page.
+build shows "can only be sent from the hosted site". A set contribution
+also carries a one-line **summary** of what the set does (required, 200
+characters, column `note`; added 2026-10-22 at the author's request, the
+column is created on existing tables by an `alter table … if not exists`
+in the schema list), so a row reads as summary + export. Rows are read in
+the Neon console: `select * from feedback order by id desc`. No admin page.
 
 ### Score (built; numbers are playtest knobs in `web/game/score.ts`)
 ```
