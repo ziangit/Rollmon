@@ -282,8 +282,7 @@ button:disabled{cursor:not-allowed;opacity:.42}
 .cand-info{display:grid;gap:.7rem}
 .cand-detail .pool-set{border-top:0;padding-top:0}
 .cand-detail .pick{margin-top:1rem;width:100%}
-/* pick-to-pick transition: the sprite flies to its slot, the next cell's tiles slide in one after another */
-.fly{position:fixed;z-index:60;pointer-events:none;image-rendering:pixelated;transform-origin:center;filter:drop-shadow(0 6px 0 rgba(0,0,0,.35))}
+/* pick-to-pick transition: the tiles drop away, the next cell's tiles slide in one after another, the new slot pops */
 .cand.enter{animation:candin .42s cubic-bezier(.2,.9,.3,1.2) both}
 @keyframes candin{from{opacity:0;transform:translateX(40px) scale(.8)}to{opacity:1;transform:none}}
 .encounter.enter{animation:cellin .5s cubic-bezier(.2,.9,.3,1.1) both}

@@ -304,48 +304,25 @@ function draftAction(action: () => void): void {
 }
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 let draftBusy = false;
-/** Pick (or skip) with a transition: the picked sprite flies into its party slot while the other tiles drop away, then the next cell slides in. */
-async function draftTransition(pickedId: string | null, action: () => void): Promise<void> {
+/** Pick (or skip) with a transition: the tiles drop away one after another, then the next cell slides in. */
+async function draftTransition(action: () => void): Promise<void> {
   if (draftBusy) return;
   if (reducedMotion()) { draftAction(action); return; }
   draftBusy = true;
   try {
     const tiles = Array.from(document.querySelectorAll<HTMLElement>('#candidates .cand'));
-    const picked = tiles.find((el) => el.dataset.id === pickedId);
-    const slot = document.querySelector<HTMLElement>('#party .pslot.current');
-    const runs: Promise<unknown>[] = [];
-    tiles.forEach((el, i) => {
-      if (el === picked) return;
-      runs.push(el.animate([{opacity: 1, transform: 'none'}, {opacity: 0, transform: 'translateY(26px) scale(.85)'}],
-        {duration: 260, delay: i * 40, easing: 'ease-in', fill: 'forwards'}).finished);
-    });
-    const detail = $('cand-detail');
-    runs.push(detail.animate([{opacity: 1}, {opacity: 0}], {duration: 220, fill: 'forwards'}).finished);
-    const img = picked ? picked.querySelector<HTMLImageElement>('.cand-sprite img') : null;
-    if (picked && img && slot) {
-      // a fixed clone of the sprite arcs from the tile to the slot; the tile itself fades
-      const from = img.getBoundingClientRect(); const to = slot.getBoundingClientRect();
-      const fly = img.cloneNode(true) as HTMLImageElement;
-      fly.className = 'fly';
-      Object.assign(fly.style, {left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px`});
-      document.body.appendChild(fly);
-      const dx = to.left + to.width / 2 - (from.left + from.width / 2);
-      const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-      const k = (to.width - 4) / from.width;
-      picked.animate([{opacity: 1}, {opacity: .35}], {duration: 200, fill: 'forwards'});
-      runs.push(fly.animate([
-        {transform: 'translate(0,0) scale(1)', offset: 0},
-        {transform: `translate(${dx * .5}px,${dy * .5 - 70}px) scale(${(1 + k) / 2})`, offset: .55},
-        {transform: `translate(${dx}px,${dy}px) scale(${k})`, offset: 1},
-      ], {duration: 560, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'forwards'}).finished.then(() => fly.remove()));
-    }
-    await Promise.all(runs);
+    const runs = tiles.map((el, i) => el.animate([{opacity: 1, transform: 'none'}, {opacity: 0, transform: 'translateY(26px) scale(.85)'}],
+      {duration: 260, delay: i * 40, easing: 'ease-in', fill: 'forwards'}));
+    // the panel element survives the re-render, so its fade must not keep filling forwards afterwards
+    const fade = $('cand-detail').animate([{opacity: 1}, {opacity: 0}], {duration: 220, fill: 'forwards'});
+    await Promise.all([...runs, fade].map((a) => a.finished));
+    fade.cancel();
     draftUi.enter = true;
     draftAction(action);
   } finally { draftBusy = false; }
 }
-function pick(id: string, setId = ''): void { void draftTransition(id, () => state.session!.pick(id, setId || undefined)); }
-function skip(): void { void draftTransition(null, () => state.session!.skip()); }
+function pick(id: string, setId = ''): void { void draftTransition(() => state.session!.pick(id, setId || undefined)); }
+function skip(): void { void draftTransition(() => state.session!.skip()); }
 
 async function copyExport(): Promise<void> {
   if (!state.teamExport) return;
