@@ -246,9 +246,12 @@ in the schema list), so a row reads as summary + export. Reading the rows
 (2026-10-23): `GET /api/feedback?limit=200` returns them newest first
 (no hashed addresses) for a signed-in developer account or with
 `Authorization: Bearer <FEEDBACK_READ_TOKEN>`; the token is a Vercel env
-var (production + preview, not flagged sensitive, so `vercel env pull`
-recovers it) that the author's tooling / an agent session uses to pull
-contributed sets without the Neon console. The Neon console still works:
+var (production + preview; the project stores every env var as sensitive,
+so `vercel env pull` only yields a placeholder) that the author's tooling
+/ an agent session uses to pull contributed sets without the Neon console.
+The value is kept in the git-ignored `web/.env.local` on the author's
+machine; if lost, rotate it: `vercel env rm FEEDBACK_READ_TOKEN
+production` then `vercel env add` with a fresh random value. The Neon console still works:
 `select * from feedback order by id desc`. No admin page.
 
 ### Score (built; retuned 2026-10-23; numbers are playtest knobs in `web/game/score.ts`)
