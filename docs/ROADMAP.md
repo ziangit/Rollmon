@@ -242,8 +242,14 @@ build shows "can only be sent from the hosted site". A set contribution
 also carries a one-line **summary** of what the set does (required, 200
 characters, column `note`; added 2026-10-22 at the author's request, the
 column is created on existing tables by an `alter table … if not exists`
-in the schema list), so a row reads as summary + export. Rows are read in
-the Neon console: `select * from feedback order by id desc`. No admin page.
+in the schema list), so a row reads as summary + export. Reading the rows
+(2026-10-23): `GET /api/feedback?limit=200` returns them newest first
+(no hashed addresses) for a signed-in developer account or with
+`Authorization: Bearer <FEEDBACK_READ_TOKEN>`; the token is a Vercel env
+var (production + preview, not flagged sensitive, so `vercel env pull`
+recovers it) that the author's tooling / an agent session uses to pull
+contributed sets without the Neon console. The Neon console still works:
+`select * from feedback order by id desc`. No admin page.
 
 ### Score (built; retuned 2026-10-23; numbers are playtest knobs in `web/game/score.ts`)
 ```
