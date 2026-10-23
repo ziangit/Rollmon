@@ -12,6 +12,7 @@ import {
   cleanName, cookieValue, hashPassword, ipHash, readSession, sessionCookie, sessionToken, validPassword, verifyPassword,
   type User, type UserRecord, type UserStore,
 } from './auth.ts';
+import {FEEDBACK_PER_IP_PER_DAY, validateFeedback, type FeedbackStore} from './feedback.ts';
 
 export interface Entry {
   id: number;
@@ -39,7 +40,7 @@ export interface NewEntry {
 
 export class DuplicateRunError extends Error {}
 
-export interface Store extends UserStore {
+export interface Store extends UserStore, FeedbackStore {
   /** The top entries, one per player (their highest score). */
   top(limit: number): Promise<Entry[]>;
   /** Stores the run; `best` is the player's highest score after it and `rank` that score's place among players. */
@@ -53,6 +54,8 @@ export interface ApiRequest {
   body: string | null;
   cookie?: string | null;
   ip?: string | null;
+  /** User-Agent, kept with feedback so a layout report names its browser */
+  agent?: string | null;
 }
 export interface ApiResponse { status: number; body: unknown; setCookie?: string }
 
@@ -111,9 +114,27 @@ export function createApi(opts: ApiOptions): (req: ApiRequest) => Promise<ApiRes
     return {status: 200, body: {user: {name: user.name}}, setCookie: sessionCookie(sessionToken(secret, user, now()))};
   }
 
+  async function feedback(req: ApiRequest): Promise<ApiResponse> {
+    if (req.method !== 'POST') return {status: 405, body: {error: 'method not allowed'}};
+    const store = await opts.store();
+    if (!store) return {status: 503, body: {error: 'feedback not configured'}};
+    const payload = parse<Record<string, unknown>>(req, 64 * 1024);
+    if (isResponse(payload)) return payload;
+    const checked = validateFeedback(payload, opts.ctx);
+    if ('error' in checked) return {status: 400, body: {error: checked.error}};
+    const ip = secret ? ipHash(secret, req.ip) : null;
+    if (ip && await store.feedbackSince(ip, new Date(now() - DAY_MS)) >= FEEDBACK_PER_IP_PER_DAY) {
+      return {status: 429, body: {error: 'too much feedback from this network today; try again tomorrow'}};
+    }
+    const user = session(req);
+    const {id} = await store.addFeedback({...checked.row, agent: req.agent?.slice(0, 200) ?? null, userId: user?.id ?? null, name: user?.name ?? null, ipHash: ip});
+    return {status: 201, body: {id}};
+  }
+
   return async (req) => {
     const authOp = /^\/api\/auth\/([a-z]+)$/.exec(req.path);
     if (authOp) return auth(req, authOp[1]);
+    if (req.path === '/api/feedback') return feedback(req);
     if (req.path !== '/api/leaderboard') return {status: 404, body: {error: 'not found'}};
     const store = await opts.store();
     if (req.method === 'GET') {
@@ -184,6 +205,22 @@ export const SCHEMA = [
   'create index if not exists leaderboard_rank_idx on leaderboard (score desc, created_at asc)',
   'create index if not exists leaderboard_user_idx on leaderboard (user_id, score desc, created_at asc)',
   'create unique index if not exists leaderboard_user_run_idx on leaderboard (user_id, seed)',
+  // Feedback and set contributions (api/feedback.ts); read from the Neon console.
+  `create table if not exists feedback (
+     id bigserial primary key,
+     created_at timestamptz not null default now(),
+     user_id bigint references users (id),
+     name text,
+     kind text not null,
+     species text,
+     screen text,
+     lang text,
+     seed bigint,
+     agent text,
+     body text not null,
+     ip_hash text
+   )`,
+  'create index if not exists feedback_ip_idx on feedback (ip_hash, created_at)',
 ];
 
 // One row per player: their highest score, earliest if tied.
@@ -237,6 +274,16 @@ export async function neonStore(url: string): Promise<Store> {
       const [{n}] = await sql.query('select count(*) as n from users where ip_hash = $1 and created_at > $2', [ip, since.toISOString()]) as {n: string | number}[];
       return Number(n);
     },
+    async addFeedback(f) {
+      const [row] = await sql.query(
+        'insert into feedback (user_id, name, kind, species, screen, lang, seed, agent, body, ip_hash) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning id',
+        [f.userId, f.name, f.kind, f.species, f.screen, f.lang, f.seed, f.agent, f.text, f.ipHash]) as {id: string | number}[];
+      return {id: Number(row.id)};
+    },
+    async feedbackSince(ip, since) {
+      const [{n}] = await sql.query('select count(*) as n from feedback where ip_hash = $1 and created_at > $2', [ip, since.toISOString()]) as {n: string | number}[];
+      return Number(n);
+    },
   };
 }
 
@@ -256,9 +303,10 @@ export function nodeHandler(api: (req: ApiRequest) => Promise<ApiResponse>): (re
     };
     try {
       const url = new URL(req.url ?? '/', 'http://localhost');
-      // Vercel rewrites /api/auth/<op> to /api/leaderboard?auth=<op> (deploy/vercel-build.sh).
+      // Vercel rewrites /api/auth/<op> to /api/leaderboard?auth=<op> and /api/feedback to ?op=feedback (deploy/vercel-build.sh).
       const authOp = url.searchParams.get('auth');
-      const path = authOp ? `/api/auth/${authOp}` : url.pathname.replace(/\/$/, '');
+      const op = url.searchParams.get('op');
+      const path = authOp ? `/api/auth/${authOp}` : op ? `/api/${op}` : url.pathname.replace(/\/$/, '');
       let body: string | null = null;
       if (req.method === 'POST') {
         const origin = req.headers.origin;
@@ -274,7 +322,7 @@ export function nodeHandler(api: (req: ApiRequest) => Promise<ApiResponse>): (re
       }
       const forwarded = req.headers['x-forwarded-for'];
       const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0].trim() || (req.headers['x-real-ip'] as string | undefined) || req.socket?.remoteAddress || null;
-      send(await api({method: req.method ?? 'GET', path, query: url.searchParams, body, cookie: req.headers.cookie ?? null, ip}));
+      send(await api({method: req.method ?? 'GET', path, query: url.searchParams, body, cookie: req.headers.cookie ?? null, ip, agent: (req.headers['user-agent'] as string | undefined) ?? null}));
     } catch (err) {
       console.error(err);
       send({status: 500, body: {error: 'internal error'}});
