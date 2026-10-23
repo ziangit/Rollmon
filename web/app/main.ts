@@ -8,8 +8,7 @@ import {esc, mountLiveReplay, mountReplay, type LiveReplay} from '../replay/embe
 import {type MatrixCellView, 
   BOSS_ORDER_MAX, BOSS_ORDER_MIN, BossBook, DraftError, GameSession, PLAYER_NAME, SessionError, createGameContext, matrixView, poolSpecies,
   type BattleResult, type BattleSpec, type BossInfo, type GameContext, type GauntletView, type MatrixView, type OfferView,
-  type SessionView, type SpeciesView,
-} from './session.ts';
+  type SessionView, type SpeciesView, speciesSetOptions} from './session.ts';
 import {LEGENDARY, RARITY_NAMES} from '../game/legality-matrix.ts';
 import {initRoller, rollMon, setRollerPool} from './roller.ts';
 import {applyStatic, initLang, localSpeciesName, setLang, t, type Lang} from './i18n.ts';
@@ -896,10 +895,12 @@ async function logout(): Promise<void> {
 // lists the cell's natives in the left panel, a sprite click shows the
 // species. The Rarity tabs change the matrix counts and dim the other balls.
 const POOL_TYPES = ['normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison', 'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
-const poolUi: {rarity: number; type: string; gen: number; selected: string} = {rarity: -1, type: '', gen: 0, selected: ''};
+const poolUi: {rarity: number; type: string; gen: number; selected: string; set: number} = {rarity: -1, type: '', gen: 0, selected: '', set: 0};
 
 function poolFilter(rarity: number): void { poolUi.rarity = rarity; renderPool(); }
-function poolSelect(id: string): void { poolUi.selected = id; renderPool(); }
+function poolSelect(id: string): void { if (id !== poolUi.selected) poolUi.set = 0; poolUi.selected = id; renderPool(); }
+/** Open one of the selected species' sets. */
+function poolSet(index: number): void { poolUi.set = index; renderPool(); }
 function poolCell(type: string, gen: number): void {
   poolUi.type = type; poolUi.gen = gen;
   const cell = poolCellView();
@@ -985,6 +986,10 @@ function speciesDetail(p: SpeciesView): string {
     return x === poolUi.type ? `<span>${label}</span>` : `<button class="cell-link" onclick="poolCell('${x}',${p.debutGeneration})">${label}</button>`;
   }).join(' · ');
   const stars = '★'.repeat(p.rarity + 1) + '☆'.repeat(3 - p.rarity);
+  // every set the loadout would offer: override sets first, then the source's
+  const sets = speciesSetOptions(state.ctx!, p.id);
+  const open = Math.min(poolUi.set, Math.max(0, sets.length - 1));
+  const set = sets[open] ?? p.set;
   return `
     <div class="pool-art">
       <div class="pool-sprite"><img class="asset" src="${p.pixelSpriteUrl}" alt=""></div>
@@ -1001,9 +1006,10 @@ function speciesDetail(p: SpeciesView): string {
       <div><dt>${t('Cells')}</dt><dd>${cells}</dd></div>
     </dl>
     <div class="pool-set">
-      <div class="pool-set-head">${esc(p.set.label)}</div>
-      <div class="pool-kv">${esc(p.set.item ? displayName(p.set.item) : '—')} · ${esc(displayName(p.set.ability))}</div>
-      <ul class="pool-moves">${p.set.moves.map((mv) => `<li class="pmove t-${moveType(mv)}">${esc(moveName(mv))}</li>`).join('')}</ul>
+      <div class="pool-set-head">${t('{n} sets', {n: sets.length})}</div>
+      <ul class="pool-sets">${sets.map((o, i) => `<li><button class="stab${i === open ? ' on' : ''}" onclick="poolSet(${i})">${esc(o.label)}${o.isMega ? ' ⚡' : ''}</button></li>`).join('')}</ul>
+      <div class="pool-kv">${esc(set.item ? displayName(set.item) : '—')} · ${esc(displayName(set.ability))}</div>
+      <ul class="pool-moves">${set.moves.map((mv) => `<li class="pmove t-${moveType(mv)}">${esc(moveName(mv))}</li>`).join('')}</ul>
     </div>`;
 }
 
@@ -1034,7 +1040,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, copyExport, poolFilter, poolSelect, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
