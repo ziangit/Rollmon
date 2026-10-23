@@ -1,0 +1,17 @@
+Scarf Lion (Solgaleo) @ Choice Scarf
+Ability: Full Metal Body
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Sunsteel Strike
+- Flare Blitz
+- Earthquake
+- Stone Edge
+
+Future Sight Lion (Solgaleo) @ Leftovers
+Ability: Full Metal Body
+EVs: 252 HP / 4 SpA / 252 SpD
+Sassy Nature
+- Future Sight
+- Teleport
+- Sunsteel Strike
+- Morning Sun

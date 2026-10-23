@@ -1,0 +1,35 @@
+Band (Sneasler) @ Choice Band
+Ability: Poison Touch
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Close Combat
+- U-turn
+- Dire Claw
+- Throat Chop
+
+White Herb Unburden (Sneasler) @ White Herb
+Ability: Unburden
+EVs: 4 HP / 252 Atk / 252 Spe
+Adamant Nature
+- Swords Dance
+- Close Combat
+- Dire Claw
+- Acrobatics
+
+Boots Ranger (Sneasler) @ Heavy-Duty Boots
+Ability: Poison Touch
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Fake Out
+- Close Combat
+- Dire Claw
+- U-turn
+
+Balloon Unburden (Sneasler) @ Air Balloon
+Ability: Unburden
+EVs: 4 HP / 252 Atk / 252 Spe
+Adamant Nature
+- Swords Dance
+- Close Combat
+- Dire Claw
+- Acrobatics
