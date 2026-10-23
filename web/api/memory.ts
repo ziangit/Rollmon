@@ -13,13 +13,13 @@ export function memoryStore(now: () => number = Date.now): MemoryStore {
   const rows: (Entry & NewEntry)[] = [];
   const users: (UserRecord & {ipHash: string | null})[] = [];
   const feedback: (NewFeedback & {id: number; createdAt: string})[] = [];
-  const byScore = (a: {score: number; createdAt: string}, b: {score: number; createdAt: string}) => b.score - a.score || a.createdAt.localeCompare(b.createdAt);
+  const byScore = (a: {score: number; turns: number; createdAt: string}, b: {score: number; turns: number; createdAt: string}) => b.score - a.score || a.turns - b.turns || a.createdAt.localeCompare(b.createdAt);
   const bests = () => {
     const best = new Map<number, Entry & NewEntry>();
     for (const r of [...rows].sort(byScore)) if (!best.has(r.userId)) best.set(r.userId, r);
     return [...best.values()].sort(byScore);
   };
-  const entry = ({id, name, score, wins, battles, team, handicap, createdAt}: Entry): Entry => ({id, name, score, wins, battles, team, handicap, createdAt});
+  const entry = ({id, name, score, wins, battles, team, handicap, turns, createdAt}: Entry): Entry => ({id, name, score, wins, battles, team, handicap, turns, createdAt});
   return {
     rows,
     users,

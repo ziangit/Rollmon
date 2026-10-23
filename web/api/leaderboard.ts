@@ -22,6 +22,8 @@ export interface Entry {
   battles: number;
   team: string[];
   handicap: number;
+  /** total turns of the run: ties rank the shorter run first */
+  turns: number;
   createdAt: string;
 }
 
@@ -34,6 +36,7 @@ export interface NewEntry {
   seed: number;
   team: string[];
   handicap: number;
+  turns: number;
   summary: string;
   proof: unknown;
 }
@@ -158,7 +161,7 @@ export function createApi(opts: ApiOptions): (req: ApiRequest) => Promise<ApiRes
       try {
         const {id, rank, best} = await store.insert({
           userId: user.id, name: user.name, score: run.score.total, wins: run.score.wins, battles: run.results.length, seed, team: run.team,
-          handicap: run.score.handicap, summary: run.summary, proof: payload.proof,
+          handicap: run.score.handicap, turns: run.score.turns, summary: run.summary, proof: payload.proof,
         });
         return {status: 201, body: {id, rank, best, score: run.score.total, wins: run.score.wins}};
       } catch (err) {
@@ -194,8 +197,11 @@ export const SCHEMA = [
      team text[] not null,
      handicap real not null,
      summary text not null,
-     proof jsonb not null
+     proof jsonb not null,
+     turns integer not null default 0
    )`,
+  // 2026-10-23: total turns as the tiebreak (rows from before carry 0)
+  'alter table leaderboard add column if not exists turns integer not null default 0',
   // Migration from the pre-accounts table (anonymous rows keyed by a browser token).
   'alter table leaderboard add column if not exists user_id bigint references users (id)',
   'delete from leaderboard where user_id is null',
@@ -227,35 +233,37 @@ export const SCHEMA = [
 ];
 
 // One row per player: their highest score, earliest if tied.
-const BEST_PER_USER = 'select distinct on (user_id) id, user_id, name, score, wins, battles, team, handicap, created_at from leaderboard order by user_id, score desc, created_at asc';
+// ranking: score, then fewer turns, then the earlier post
+const RANK = 'score desc, turns asc, created_at asc';
+const BEST_PER_USER = `select distinct on (user_id) id, user_id, name, score, wins, battles, team, handicap, turns, created_at from leaderboard order by user_id, ${RANK}`;
 
 export async function neonStore(url: string): Promise<Store> {
   const {neon} = await import('@neondatabase/serverless');
   const sql = neon(url);
   for (const stmt of SCHEMA) await sql.query(stmt);
-  type Row = {id: string | number; name: string; score: number; wins: number; battles: number; team: string[]; handicap: number; created_at: string};
-  const toEntry = (r: Row): Entry => ({id: Number(r.id), name: r.name, score: r.score, wins: r.wins, battles: r.battles, team: r.team, handicap: r.handicap, createdAt: new Date(r.created_at).toISOString()});
+  type Row = {id: string | number; name: string; score: number; wins: number; battles: number; team: string[]; handicap: number; turns: number; created_at: string};
+  const toEntry = (r: Row): Entry => ({id: Number(r.id), name: r.name, score: r.score, wins: r.wins, battles: r.battles, team: r.team, handicap: r.handicap, turns: r.turns, createdAt: new Date(r.created_at).toISOString()});
   const unique = (err: unknown, index: string) => new RegExp(`${index}|duplicate key`).test((err as Error).message);
   return {
     async top(limit) {
-      const rows = await sql.query(`select * from (${BEST_PER_USER}) b order by score desc, created_at asc limit $1`, [limit]) as Row[];
+      const rows = await sql.query(`select * from (${BEST_PER_USER}) b order by ${RANK} limit $1`, [limit]) as Row[];
       return rows.map(toEntry);
     },
     async insert(e) {
       let rows: {id: string | number}[];
       try {
         rows = await sql.query(
-          'insert into leaderboard (user_id, name, score, wins, battles, seed, team, handicap, summary, proof) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning id',
-          [e.userId, e.name, e.score, e.wins, e.battles, e.seed, e.team, e.handicap, e.summary, JSON.stringify(e.proof)],
+          'insert into leaderboard (user_id, name, score, wins, battles, seed, team, handicap, turns, summary, proof) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning id',
+          [e.userId, e.name, e.score, e.wins, e.battles, e.seed, e.team, e.handicap, e.turns, e.summary, JSON.stringify(e.proof)],
         ) as typeof rows;
       } catch (err) {
         if (unique(err, 'leaderboard_user_run_idx')) throw new DuplicateRunError('duplicate run');
         throw err;
       }
-      const [best] = await sql.query('select score, created_at from leaderboard where user_id = $1 order by score desc, created_at asc limit 1', [e.userId]) as {score: number; created_at: string}[];
+      const [best] = await sql.query(`select score, turns, created_at from leaderboard where user_id = $1 order by ${RANK} limit 1`, [e.userId]) as {score: number; turns: number; created_at: string}[];
       const [{rank}] = await sql.query(
-        `select count(*) + 1 as rank from (${BEST_PER_USER}) b where b.user_id <> $1 and (b.score > $2 or (b.score = $2 and b.created_at < $3))`,
-        [e.userId, best.score, best.created_at],
+        `select count(*) + 1 as rank from (${BEST_PER_USER}) b where b.user_id <> $1 and (b.score > $2 or (b.score = $2 and (b.turns < $3 or (b.turns = $3 and b.created_at < $4))))`,
+        [e.userId, best.score, best.turns, best.created_at],
       ) as {rank: string | number}[];
       return {id: Number(rows[0].id), rank: Number(rank), best: best.score};
     },
