@@ -187,13 +187,9 @@ function renderDraft(draft: SessionView): void {
   $<HTMLButtonElement>('copy-export').disabled = !state.teamExport;
   renderPartyStrip(draft);
   const live = $('draft-live');
-  const done = $('draft-done');
-  if (draft.complete) {
-    live.classList.add('hidden'); done.classList.remove('hidden');
-    renderPartyList(draft.team, 'party-done');
-    return;
-  }
-  live.classList.remove('hidden'); done.classList.add('hidden');
+  // a complete draft has no draft screen left: draftAction moves on to the loadout
+  live.classList.toggle('hidden', draft.complete);
+  if (draft.complete) return;
   const offer = draft.offer!;
   // a new offer highlights its first candidate; a re-render keeps the player's choice
   if (offer.roundNumber !== draftUi.round || !offer.candidates.some((c) => c.id === draftUi.selected)) {
@@ -280,15 +276,6 @@ function renderPartyStrip(draft: SessionView): void {
   $('party-count').textContent = draft.complete ? t('Complete') : t('{n} / 6 drafted', {n});
   fixImages(root);
 }
-/** The drafted team as a list (the done card). */
-function renderPartyList(team: SpeciesView[], targetId: string): void {
-  const root = $(targetId);
-  root.innerHTML = team.map((p) => `<li class="slot"><span class="mini">${sprite(p)}</span>
-         <span class="info"><strong>${monName(p)}</strong>
-         <span>${t('Gen {g} · BST {b}', {g: p.debutGeneration, b: p.baseStatTotal})}</span></span></li>`).join('');
-  fixImages(root);
-}
-
 function newRun(): void {
   go('draft');
   $('encounter').innerHTML = `<div><p class="lead">${t('Rolling the first cell…')}</p></div>`;
@@ -302,7 +289,12 @@ function newRun(): void {
   } catch (e) { $('encounter').innerHTML = `<div><p class="lead">${esc(errorMessage(e))}</p></div>`; }
 }
 function draftAction(action: () => void): void {
-  try { action(); renderDraft(refreshView()); } catch (e) {
+  try {
+    action();
+    const view = refreshView();
+    renderDraft(view);
+    if (view.complete) go('loadout');
+  } catch (e) {
     if (e instanceof DraftError || e instanceof SessionError) $('draft-status').textContent = e.message;
     else throw e;
   }

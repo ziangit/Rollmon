@@ -140,15 +140,6 @@
       </div>
     </div>
 
-    <div id="draft-done" class="hidden card" style="padding:1.6rem;text-align:center">
-      <h2 style="font-size:1.6rem" data-i18n="Team assembled 🎉">Team assembled 🎉</h2>
-      <p class="lead" data-i18n="Six unique Pokémon, locked at level 100. Next, choose each one's set.">Six unique Pokémon, locked at level 100. Next, choose each one's set.</p>
-      <div style="display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;margin-top:1.2rem">
-        <button class="btn btn-primary btn-lg" onclick="go('loadout')" data-i18n="Choose sets →">Choose sets →</button>
-        <button class="btn btn-ghost" id="copy-export" onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
-      </div>
-      <ul class="party-list" id="party-done" style="max-width:420px;margin:1.6rem auto 0;text-align:left"></ul>
-    </div>
   </div>
 </section>
 
@@ -161,7 +152,10 @@
         <h1 data-i18n="Choose your sets">Choose your sets</h1>
         <p class="lead" data-i18n="Pick one set per Pokémon. Mega is opt-in — only one Mega can evolve per battle.">Pick one set per Pokémon. Mega is opt-in — only one Mega can evolve per battle.</p>
       </div>
-      <button class="btn btn-primary" onclick="startCampaign(true)" data-i18n="Start the gauntlet →">Start the gauntlet →</button>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" id="copy-export" onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
+        <button class="btn btn-primary" onclick="startCampaign(true)" data-i18n="Start the gauntlet →">Start the gauntlet →</button>
+      </div>
     </div>
     <p class="status-line" id="loadout-status"></p>
     <div class="loadout-list" id="loadout-list"></div>

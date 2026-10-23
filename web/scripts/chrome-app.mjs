@@ -72,13 +72,11 @@ try {
     await click('#cand-detail .pick');
     await page.waitForFunction((r) => document.querySelectorAll('#party .pslot.filled').length === r, {}, round);
   }
-  await page.waitForSelector('#draft-done:not(.hidden)');
-  const team = await page.$$eval('#party-done .slot strong', (ns) => ns.map((n) => n.textContent));
-  console.log(`[${elapsed()}] drafted:`, team.join(', '));
-
-  // loadout: default sets, one card per Pokémon
-  await click('#draft-done .btn-primary');
+  // the sixth pick lands on the loadout: default sets, one card per Pokémon, the export button there
   await page.waitForFunction(() => window.__rollmons.screen() === 'loadout');
+  const team = await page.$$eval('#party .pslot.filled', (ns) => ns.map((n) => n.title));
+  console.log(`[${elapsed()}] drafted:`, team.join(', '));
+  if (await page.$eval('#copy-export', (b) => b.disabled)) throw new Error('export button disabled on the loadout');
   const cards = await page.$$eval('#loadout-list .loadout-card', (cs) => cs.map((c) => ({name: c.querySelector('strong').textContent, options: c.querySelectorAll('option').length})));
   console.log('  loadout:', cards.map((c) => `${c.name} (${c.options || 1})`).join(', '));
   // the Gauntlet step is gone for players; the developer page opens only locally or for the author's account
