@@ -154,7 +154,7 @@
         <p class="lead" data-i18n="Pick one set per Pokémon. Mega is opt-in — only one Mega can evolve per battle.">Pick one set per Pokémon. Mega is opt-in — only one Mega can evolve per battle.</p>
       </div>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-        <button class="btn btn-ghost" id="copy-export" onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
+        <button class="btn btn-ghost copy-export" id="copy-export" onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
         <button class="btn btn-primary" onclick="startCampaign(true)" data-i18n="Start the gauntlet →">Start the gauntlet →</button>
       </div>
     </div>
@@ -260,6 +260,8 @@
     </section>
 
     <div class="result-actions">
+      <!-- the team is what players want to keep once the run is over -->
+      <button class="btn btn-ghost copy-export" id="copy-export-results" onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
       <button class="btn btn-ghost" onclick="go('battle')" data-i18n="Rewatch battles">Rewatch battles</button>
       <button class="btn btn-primary" onclick="newRun()" data-i18n="↻ New run">↻ New run</button>
     </div>

@@ -325,7 +325,7 @@ async function copyExport(): Promise<void> {
   if (!state.teamExport) return;
   try {
     await navigator.clipboard.writeText(state.teamExport);
-    document.querySelectorAll<HTMLButtonElement>('#copy-export').forEach((b) => { const was = b.textContent; b.textContent = t('Copied ✓'); setTimeout(() => { b.textContent = was; }, 1200); });
+    document.querySelectorAll<HTMLButtonElement>('.copy-export').forEach((b) => { const was = b.textContent; b.textContent = t('Copied ✓'); setTimeout(() => { b.textContent = was; }, 1200); });
   } catch { /* clipboard unavailable */ }
 }
 

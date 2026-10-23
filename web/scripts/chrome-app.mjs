@@ -132,6 +132,11 @@ try {
   const score = await page.evaluate(() => ({total: Number(document.getElementById('score-total')?.textContent), signin: !!document.getElementById('score-signin'), status: document.querySelector('#score-card .score-status')?.textContent ?? ''}));
   console.log('  score:', JSON.stringify(score), '| view score:', view.score, '| topbar tools:', await page.evaluate(() => !!document.querySelector('#topbar #tools')));
   if (!(score.total >= 0) || score.total !== view.score || score.signin !== hosted) { console.error('score card missing, does not match the session score, or lacks the sign-in button'); process.exitCode = 1; }
+  // the team export is on the results too; the clipboard is not readable headless, so check the button copies the session's export
+  await page.evaluate(() => { navigator.clipboard.writeText = async (t) => { window.__copied = t; }; });
+  await click('#copy-export-results');
+  const copied = await page.evaluate(() => ({text: window.__copied, same: window.__copied === window.__rollmons.view().teamExport}));
+  if (!copied.text || !copied.same) throw new Error('results export button did not copy the team');
   console.log('  damage rows:', await page.$$eval('#damage-bars .dmg-row', (r) => r.length), '| ladder rows:', await page.$$eval('#ladder-results .ladder-row', (r) => r.length), '| mvp:', await page.$eval('#mvp-card', (e) => e.classList.contains('hidden') ? 'none' : e.querySelector('strong').textContent));
 
   // rewatch: the replay player paints inside the first theater card
