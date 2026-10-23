@@ -175,7 +175,7 @@ function refreshView(): SessionView {
   state.view = state.session!.view();
   return state.view;
 }
-const draftUi: {round: number; selected: string; set: number} = {round: 0, selected: '', set: 0};
+const draftUi: {round: number; selected: string; set: number; enter: boolean} = {round: 0, selected: '', set: 0, enter: false};
 function renderDraft(draft: SessionView): void {
   $('draft-status').textContent = '';
   state.teamExport = draft.complete ? (draft.teamExport || '') : '';
@@ -194,9 +194,17 @@ function renderDraft(draft: SessionView): void {
   if (offer.roundNumber !== draftUi.round || !offer.candidates.some((c) => c.id === draftUi.selected)) {
     draftUi.round = offer.roundNumber; draftUi.selected = offer.candidates[0]?.id ?? ''; draftUi.set = 0;
   }
+  $('encounter').classList.remove('enter'); $('cand-detail').classList.remove('enter', 'swap');
   renderEncounter(draft);
   renderCandidates(offer);
   renderCandidateDetail(offer);
+  if (draftUi.enter) {
+    draftUi.enter = false;
+    $('encounter').classList.add('enter');
+    document.querySelectorAll<HTMLElement>('#candidates .cand').forEach((el, i) => { el.classList.add('enter'); el.style.animationDelay = `${i * 70}ms`; });
+    $('cand-detail').classList.add('enter');
+    document.querySelector('#party .pslot.filled:last-of-type')?.classList.add('land');
+  }
 }
 function renderEncounter(draft: SessionView): void {
   const o = draft.offer!;
@@ -218,7 +226,7 @@ function renderEncounter(draft: SessionView): void {
 function renderCandidates(offer: OfferView): void {
   const root = $('candidates');
   root.innerHTML = offer.candidates.map((p) => `
-    <button class="cand${p.id === draftUi.selected ? ' on' : ''}${p.visitor ? ' visitor' : ''}" onclick="draftSelect('${p.id}')" title="${esc(monName(p))}">
+    <button class="cand${p.id === draftUi.selected ? ' on' : ''}${p.visitor ? ' visitor' : ''}" data-id="${p.id}" onclick="draftSelect('${p.id}')" title="${esc(monName(p))}">
       <span class="cand-sprite"><img class="asset" src="${p.pixelSpriteUrl}" alt=""></span>
       <span class="cand-name">${monName(p)}</span>
       <span class="rarity r${p.rarity}"><span class="stars">${starsOf(p)}</span><span>${t(RARITY_LABELS[p.rarityName])}</span></span>
@@ -244,8 +252,10 @@ function renderCandidateDetail(offer: OfferView): void {
 function draftSelect(id: string): void {
   const offer = state.view?.offer;
   if (!offer) return;
+  if (id === draftUi.selected) return;
   draftUi.selected = id; draftUi.set = 0;
   renderCandidates(offer); renderCandidateDetail(offer);
+  if (!reducedMotion()) $('cand-detail').classList.add('swap');
 }
 function draftSet(index: number): void {
   const offer = state.view?.offer;
@@ -292,8 +302,50 @@ function draftAction(action: () => void): void {
     else throw e;
   }
 }
-function pick(id: string, setId = ''): void { draftAction(() => state.session!.pick(id, setId || undefined)); }
-function skip(): void { draftAction(() => state.session!.skip()); }
+const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+let draftBusy = false;
+/** Pick (or skip) with a transition: the picked sprite flies into its party slot while the other tiles drop away, then the next cell slides in. */
+async function draftTransition(pickedId: string | null, action: () => void): Promise<void> {
+  if (draftBusy) return;
+  if (reducedMotion()) { draftAction(action); return; }
+  draftBusy = true;
+  try {
+    const tiles = Array.from(document.querySelectorAll<HTMLElement>('#candidates .cand'));
+    const picked = tiles.find((el) => el.dataset.id === pickedId);
+    const slot = document.querySelector<HTMLElement>('#party .pslot.current');
+    const runs: Promise<unknown>[] = [];
+    tiles.forEach((el, i) => {
+      if (el === picked) return;
+      runs.push(el.animate([{opacity: 1, transform: 'none'}, {opacity: 0, transform: 'translateY(26px) scale(.85)'}],
+        {duration: 260, delay: i * 40, easing: 'ease-in', fill: 'forwards'}).finished);
+    });
+    const detail = $('cand-detail');
+    runs.push(detail.animate([{opacity: 1}, {opacity: 0}], {duration: 220, fill: 'forwards'}).finished);
+    const img = picked ? picked.querySelector<HTMLImageElement>('.cand-sprite img') : null;
+    if (picked && img && slot) {
+      // a fixed clone of the sprite arcs from the tile to the slot; the tile itself fades
+      const from = img.getBoundingClientRect(); const to = slot.getBoundingClientRect();
+      const fly = img.cloneNode(true) as HTMLImageElement;
+      fly.className = 'fly';
+      Object.assign(fly.style, {left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px`});
+      document.body.appendChild(fly);
+      const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+      const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+      const k = (to.width - 4) / from.width;
+      picked.animate([{opacity: 1}, {opacity: .35}], {duration: 200, fill: 'forwards'});
+      runs.push(fly.animate([
+        {transform: 'translate(0,0) scale(1)', offset: 0},
+        {transform: `translate(${dx * .5}px,${dy * .5 - 70}px) scale(${(1 + k) / 2})`, offset: .55},
+        {transform: `translate(${dx}px,${dy}px) scale(${k})`, offset: 1},
+      ], {duration: 560, easing: 'cubic-bezier(.3,.7,.3,1)', fill: 'forwards'}).finished.then(() => fly.remove()));
+    }
+    await Promise.all(runs);
+    draftUi.enter = true;
+    draftAction(action);
+  } finally { draftBusy = false; }
+}
+function pick(id: string, setId = ''): void { void draftTransition(id, () => state.session!.pick(id, setId || undefined)); }
+function skip(): void { void draftTransition(null, () => state.session!.skip()); }
 
 async function copyExport(): Promise<void> {
   if (!state.teamExport) return;

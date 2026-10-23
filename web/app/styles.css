@@ -282,6 +282,18 @@ button:disabled{cursor:not-allowed;opacity:.42}
 .cand-info{display:grid;gap:.7rem}
 .cand-detail .pool-set{border-top:0;padding-top:0}
 .cand-detail .pick{margin-top:1rem;width:100%}
+/* pick-to-pick transition: the sprite flies to its slot, the next cell's tiles slide in one after another */
+.fly{position:fixed;z-index:60;pointer-events:none;image-rendering:pixelated;transform-origin:center;filter:drop-shadow(0 6px 0 rgba(0,0,0,.35))}
+.cand.enter{animation:candin .42s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes candin{from{opacity:0;transform:translateX(40px) scale(.8)}to{opacity:1;transform:none}}
+.encounter.enter{animation:cellin .5s cubic-bezier(.2,.9,.3,1.1) both}
+@keyframes cellin{0%{opacity:0;transform:translateY(-10px)}60%{opacity:1;transform:translateY(4px)}100%{transform:none}}
+.cand-detail.enter{animation:rise .4s .3s ease-out both}
+.cand-detail.swap{animation:swap .22s ease-out}
+@keyframes swap{from{opacity:.2;transform:translateY(8px)}to{opacity:1;transform:none}}
+.pslot.land{animation:land .45s cubic-bezier(.2,.9,.3,1.4)}
+@keyframes land{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:none}}
+@media(prefers-reduced-motion:reduce){.cand.enter,.encounter.enter,.cand-detail.enter,.cand-detail.swap,.pslot.land,.pslot.current{animation:none}}
 @media(max-width:980px){.cand-strip{grid-template-columns:repeat(3,minmax(0,1fr))}.cand-detail{grid-template-columns:1fr}}
 @media(max-width:560px){.pslot{width:44px;height:44px}.pslot img{width:40px;height:40px}.party-strip{gap:.3rem}.cand-sprite,.cand-sprite img{width:64px;height:64px}.cand{padding:.5rem .25rem .6rem}.cand .chips{gap:.25rem}.chip{font-size:.72rem;padding:.12rem .4rem}}
 
