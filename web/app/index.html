@@ -51,6 +51,7 @@
   <div class="panel-head"><h3 id="feedback-title">Feedback</h3><button class="btn btn-ghost btn-sm" onclick="closeFeedback()" aria-label="Close">✕</button></div>
   <form class="feedback-form" id="feedback-form" onsubmit="submitFeedback(event)">
     <p class="feedback-hint" id="feedback-hint"></p>
+    <label class="field hidden" id="feedback-note-field"><span data-i18n="Summary">Summary</span><input id="feedback-note" maxlength="200" autocomplete="off" spellcheck="false"></label>
     <textarea id="feedback-text" rows="10" maxlength="4000" required spellcheck="false"></textarea>
     <p class="auth-error" id="feedback-error"></p>
     <div class="feedback-actions"><span class="feedback-status" id="feedback-status"></span><button class="btn btn-primary btn-sm" id="feedback-send" type="submit" data-i18n="Send">Send</button></div>

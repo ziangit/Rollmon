@@ -48,7 +48,9 @@ try {
   // feedback: the button in the strip; the pool's "Contribute a set" opens the drawer for that species
   const contribute = await page.$$eval('#pool-detail .contribute', (b) => b.length);
   await page.evaluate(() => window.openFeedback('set', 'lucario'));
-  const drawer = await page.evaluate(() => ({open: !document.getElementById('feedback-drawer').classList.contains('hidden'), title: document.getElementById('feedback-title').textContent}));
+  const drawer = await page.evaluate(() => ({open: !document.getElementById('feedback-drawer').classList.contains('hidden'), title: document.getElementById('feedback-title').textContent,
+    summary: !document.getElementById('feedback-note-field').classList.contains('hidden') && document.getElementById('feedback-note').required}));
+  if (!drawer.summary) throw new Error('set contribution drawer has no summary field');
   await page.evaluate(() => window.closeFeedback());
   console.log(`[${elapsed()}] title tools:`, JSON.stringify(tools), '| contribute buttons:', contribute, '| drawer:', JSON.stringify(drawer));
   if (!tools.feedback || !contribute || !drawer.open || !/Lucario/.test(drawer.title)) { console.error('feedback button, contribute button, or drawer missing'); process.exitCode = 1; }

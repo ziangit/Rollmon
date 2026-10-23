@@ -887,6 +887,11 @@ function openFeedback(kind: 'feedback' | 'set' = 'feedback', speciesId = ''): vo
   const ta = $<HTMLTextAreaElement>('feedback-text');
   ta.value = '';
   ta.placeholder = kind === 'set' ? `${english} @ Leftovers\nAbility: …\nEVs: 252 HP / 252 Atk / 4 Spe\nAdamant Nature\n- …\n- …\n- …\n- …` : '';
+  // a set comes with a one-line summary of what it does
+  $('feedback-note-field').classList.toggle('hidden', kind !== 'set');
+  const note = $<HTMLInputElement>('feedback-note');
+  note.value = ''; note.required = kind === 'set';
+  note.placeholder = kind === 'set' ? t('What the set does, e.g. Scarf revenge killer; Knock Off for Chansey') : '';
   $('feedback-error').textContent = '';
   $('feedback-status').textContent = AUTH_ENABLED ? '' : t('Feedback can only be sent from the hosted site.');
   $<HTMLButtonElement>('feedback-send').disabled = !AUTH_ENABLED;
@@ -903,12 +908,13 @@ async function submitFeedback(ev: Event): Promise<void> {
   const btn = $<HTMLButtonElement>('feedback-send'), err = $('feedback-error'), status = $('feedback-status');
   btn.disabled = true; err.textContent = ''; status.textContent = t('Sending…');
   try {
-    const payload = {kind: feedbackKind, species: feedbackSpecies || null, text: $<HTMLTextAreaElement>('feedback-text').value, screen: currentScreen, lang: lang(), seed: state.session?.seed ?? null};
+    const payload = {kind: feedbackKind, species: feedbackSpecies || null, note: feedbackKind === 'set' ? $<HTMLInputElement>('feedback-note').value : null, text: $<HTMLTextAreaElement>('feedback-text').value, screen: currentScreen, lang: lang(), seed: state.session?.seed ?? null};
     const res = await fetch(`${API_BASE}/api/feedback`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
     const body = await res.json().catch(() => ({})) as {error?: string};
     if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
     status.textContent = t('Thanks, received.');
     $<HTMLTextAreaElement>('feedback-text').value = '';
+    $<HTMLInputElement>('feedback-note').value = '';
   } catch (e) {
     status.textContent = '';
     err.textContent = errorMessage(e);
