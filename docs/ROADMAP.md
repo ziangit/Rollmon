@@ -325,6 +325,15 @@ fade had been left filling forwards on the panel element, which blanked
 the sets after the first pick (fixed by cancelling it after it finishes).
 All of it is skipped under `prefers-reduced-motion`, and a pick is ignored
 while one plays.
+**Boss page is a developer page (2026-10-22, author's call).** Players
+never needed the ladder editor: the loadout's button now starts the tiered
+campaign directly, the Gauntlet step is gone from the topbar (Draft ·
+Loadout · Battle · Results), and the boss page opens only from a "⚙
+Gauntlet" button in the tools strip that shows for the author's account
+(`DEV_ACCOUNTS` in `main.ts`, matched as a Showdown id) and locally, where
+there are no accounts. Direct navigation to it as a player falls back to
+the loadout. This is a UI gate, not security: the manual ladder was never
+a scoring path (proofs replay the campaign only).
 **Next screens, in order:** loadout, battle (the replay frame and live
 cards), results and the leaderboard drawer, then the topbar strip (phone
 overflow). The title page stays as it is.
