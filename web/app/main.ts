@@ -566,6 +566,7 @@ function updateSummaryAccess(): void {
   const ready = !!g && g.complete && !state.gauntletRunning && allWatched(g);
   $<HTMLButtonElement>('to-results').disabled = !ready;
   $('summary-fab').classList.toggle('hidden', !(ready && currentScreen === 'battle'));
+  $('run-end').classList.toggle('hidden', !ready);
 }
 function liveLines(live: LiveReplay, lines: string[]): void {
   live.add(lines);

@@ -222,6 +222,12 @@
       <ol class="rail" id="rail"></ol>
       <div class="theater" id="theater"></div>
     </div>
+    <!-- after the last replay the player is at the bottom of the page, far from the fixed summary button -->
+    <div class="card run-end hidden" id="run-end">
+      <span class="run-end-lead" data-i18n="Run complete — view the summary.">Run complete — view the summary.</span>
+      <button class="btn btn-ghost" onclick="newRun()" data-i18n="↻ New run">↻ New run</button>
+      <button class="btn btn-primary" onclick="go('results')" data-i18n="View run summary →">View run summary →</button>
+    </div>
   </div>
 </section>
 

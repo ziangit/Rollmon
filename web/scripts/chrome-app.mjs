@@ -118,7 +118,10 @@ try {
   const fab = await page.evaluate(() => ({shown: !document.getElementById('summary-fab').classList.contains('hidden'), screen: window.__rollmons.screen(), lead: document.getElementById('battle-lead').textContent}));
   console.log(`[${elapsed()}] run over:`, JSON.stringify(fab));
   if (!fab.shown || fab.screen !== 'battle') { console.error('summary button not shown on the battle screen after the run'); process.exitCode = 1; }
-  await click('#summary-fab');
+  // the end-of-run card under the last replay offers the same two ways out
+  const runEnd = await page.$eval('#run-end', (e) => ({shown: !e.classList.contains('hidden'), buttons: e.querySelectorAll('button').length}));
+  if (!runEnd.shown || runEnd.buttons !== 2) throw new Error(`end-of-run card: ${JSON.stringify(runEnd)}`);
+  await click('#run-end .btn-primary');
   await page.waitForFunction(() => window.__rollmons.screen() === 'results');
   const view = await page.evaluate(() => { const v = window.__rollmons.view(); return {summary: v.gauntlet.summary, score: v.gauntlet.score?.total, results: v.gauntlet.results.map((r) => [r.bossName, r.winner, r.turns, r.megas, r.problems.length])}; });
   console.log(`[${elapsed()}] results:`, await page.$eval('#result-title', (e) => e.textContent), '|', await page.$eval('#result-record', (e) => e.textContent));

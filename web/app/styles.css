@@ -132,6 +132,8 @@ button:disabled{cursor:not-allowed;opacity:.42}
 }
 .lead{color:var(--muted);font-size:1.02rem;margin:.5rem 0 0}
 .summary-fab{position:fixed;top:72px;right:18px;z-index:45;box-shadow:0 0 0 3px var(--edge),0 6px 0 var(--edge)}
+.run-end{margin-top:1.2rem;padding:1rem 1.2rem;display:flex;align-items:center;justify-content:flex-end;gap:.7rem;flex-wrap:wrap}
+.run-end-lead{margin-right:auto;color:var(--muted)}
 .lang{font:inherit;font-size:.8rem;padding:.35rem .5rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);cursor:pointer}
 /* ---- tools strip (leaderboard · language · account), fixed corner on the title screen ---- */
 .tools{display:flex;align-items:center;gap:.6rem;margin-right:.4rem}
