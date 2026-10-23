@@ -339,7 +339,9 @@ there are no accounts. Direct navigation to it as a player falls back to
 the loadout. This is a UI gate, not security: the manual ladder was never
 a scoring path (proofs replay the campaign only).
 **Next screens, in order:** loadout, battle (the replay frame and live
-cards), results and the leaderboard drawer, then the topbar strip (phone
+cards; an end-of-run card with New run / View run summary under the last
+replay was added 2026-10-22, since the fixed button is far from where
+the player is after watching the last battle), results and the leaderboard drawer, then the topbar strip (phone
 overflow). The title page stays as it is.
 
 ## 9. i18n
