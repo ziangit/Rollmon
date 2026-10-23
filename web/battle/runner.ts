@@ -3,7 +3,7 @@
 // callers put it in a Web Worker (worker.ts) or a Node script (scripts/).
 // `replayBattle` re-runs a battle from its recorded choices with the sim alone
 // (no search), which is how a leaderboard submission is verified.
-import {Battle, extractChannelMessages, type PokemonSet, type PRNGSeed} from '@pkmn/sim';
+import {Battle, Dex, extractChannelMessages, type PokemonSet, type PRNGSeed} from '@pkmn/sim';
 import {battleToEngineState} from './engine-state.ts';
 import {legalChoices, needsDecision, pickChoice, requestOf, type MctsResult, type SideResult} from './driver.ts';
 import {mulberry32} from '../game/rng.ts';
@@ -11,8 +11,12 @@ import {mulberry32} from '../game/rng.ts';
 export {mulberry32};
 
 // v1 also listed "Z-Move Clause" and "CFZ Clause"; @pkmn/sim 0.10.11 has
-// neither rule and gen9 has no Z-moves, so they are dropped here.
-export const RULES = ['Species Clause', '+Past', 'Dynamax Clause', 'Terastal Clause', '!! Max Move Count = 4', 'Adjust Level = 100'];
+// neither rule and gen9 has no Z-moves, so they are dropped here. "Species
+// Clause" (v1, and still in the Python reference's format) is dropped too:
+// Custom Game never validates it, it has no in-battle effect, and the hosted
+// replay client reads the rule as "a repeated species must be an Illusion"
+// and draws a Zoroark in the team bar when a team has two Arceus formes.
+export const RULES = ['+Past', 'Dynamax Clause', 'Terastal Clause', '!! Max Move Count = 4', 'Adjust Level = 100'];
 export const FORMAT = `gen9customgame@@@${RULES.join(',')}`;
 
 /** The omniscient channel of the sim's log. Custom Game is a debug format in
@@ -92,12 +96,31 @@ interface LoopConfig {
   fallbackOf(side: SideId, rejected: string, legal: Map<string, string>, battle: Battle): string | null;
 }
 
+/**
+ * Two formes of one species on a team (the draft offers Arceus formes as
+ * separate species) would both be named after the base species, so their
+ * protocol idents collide ("p1a: Arceus"); the hosted replay client then
+ * assumes an Illusion user and draws a Zoroark in the team bar. Name such
+ * members "Arceus Fairy" instead (the sim resets a nickname equal to the
+ * species string back to the base species, hence the space). Nicknames do
+ * not affect the sim's mechanics or RNG, so recorded choices replay unchanged.
+ */
+export function distinctNicknames(team: PokemonSet[]): PokemonSet[] {
+  const base = (m: PokemonSet) => Dex.species.get(m.species).baseSpecies || m.species;
+  const counts = new Map<string, number>();
+  for (const m of team) counts.set(base(m), (counts.get(base(m)) ?? 0) + 1);
+  return team.map((m) => {
+    const forme = Dex.species.get(m.species).forme;
+    return !m.name && forme && (counts.get(base(m)) ?? 0) > 1 ? {...m, name: `${base(m)} ${forme}`} : m;
+  });
+}
+
 function play(cfg: LoopConfig): Outcome {
   const seedNum = cfg.seed ?? 1;
   const seed = `sodium,${(seedNum >>> 0).toString(16).padStart(16, '0')}` as PRNGSeed;
   const battle = new Battle({formatid: FORMAT as never, seed, strictChoices: true});
-  battle.setPlayer('p1', cfg.p1);
-  battle.setPlayer('p2', cfg.p2);
+  battle.setPlayer('p1', {...cfg.p1, team: distinctNicknames(cfg.p1.team)});
+  battle.setPlayer('p2', {...cfg.p2, team: distinctNicknames(cfg.p2.team)});
 
   let fallbacks = 0;
   const problems: string[] = [];

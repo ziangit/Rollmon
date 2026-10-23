@@ -4,7 +4,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Teams} from '@pkmn/sim';
-import {ReplayMismatchError, replayBattle, runBattle, type Engine} from './runner.ts';
+import {distinctNicknames, ReplayMismatchError, replayBattle, runBattle, type Engine} from './runner.ts';
 import {loadGameData} from '../scripts/game-data.ts';
 
 const data = loadGameData();
@@ -38,4 +38,14 @@ test('a battle replays exactly from its recorded choices, and tampering is detec
   assert.throws(() => replayBattle({...base, choices: original.choices.map((c, i) => (i === 0 ? {...c, side: c.side === 'p1' ? 'p2' : 'p1'} : c))}), ReplayMismatchError, 'wrong side');
   assert.throws(() => replayBattle({...base, choices: original.choices.map((c, i) => (i === 2 ? {...c, choice: 'move 9'} : c))}), ReplayMismatchError, 'illegal choice');
   assert.throws(() => replayBattle({...base, seed: 12, choices: original.choices}), ReplayMismatchError, 'another seed diverges');
+});
+
+test('two formes of one species get distinct nicknames so their replay idents differ', () => {
+  const two = Teams.import('Arceus-Fairy @ Pixie Plate\nAbility: Multitype\n- Judgment\n\nArceus-Rock @ Stone Plate\nAbility: Multitype\n- Judgment\n\nSalamence @ Leftovers\nAbility: Intimidate\n- Roost')!;
+  assert.deepEqual(distinctNicknames(two).map((m) => m.name), ['Arceus Fairy', 'Arceus Rock', '']);
+  const lone = team('Cynthia').team;
+  assert.deepEqual(distinctNicknames(lone), lone, 'a team without a repeated species is untouched');
+  const out = runBattle({engine: noEngine, p1: {name: 'P', team: two.concat(team('Cynthia').team.slice(0, 3))}, p2: team('Leon'), seed: 3});
+  assert.ok(out.log.some((l) => l.startsWith('|switch|p1a: Arceus Fairy|')), 'the replay names the forme');
+  assert.ok(!out.log.some((l) => /^\|(switch|drag)\|p1a: Arceus\|/.test(l)), 'no bare "Arceus" ident');
 });
