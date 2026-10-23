@@ -11,7 +11,7 @@ findings, and the designs for the items that are decided. Items marked
 | 3 | Opponent band playability review | P1 | after §1 |
 | 4 | Watch the battle live | P1 | done |
 | 5 | Favicon | P1 | done |
-| 6 | Draft pool coverage audit, Smogon set scrape | done | §6; 652 draftable species since 2026-10-21 (was 437) |
+| 6 | Draft pool coverage audit, Smogon set scrape | done | §6; 649 draftable species since 2026-10-22 (652 on 2026-10-21, was 437) |
 | 7 | Leaderboard | P1 | done (Neon connected 2026-10-18, accounts 2026-10-19); follow-ups in §7 |
 | 8 | UI rework | P2 | after §1 and §9 |
 | 9 | i18n (zh / en / ja) | P2 | easy part done (UI strings, species names); CJK font and reel labels open, §9 |
@@ -46,9 +46,14 @@ Three separate causes, only one of which the set scrape (§6) could touch:
 - **Rarity per species** = its Showdown tier rank: Uber/AG legendary,
   OU/UUBL rare, UU/RUBL/RU/NUBL uncommon, everything else common. Base
   stats decide only for a species with no tier at all (over 600 legendary,
-  else common; Slaking and Regigigas never lifted). Arceus formes are
-  separate species. Buckets over the 652 draftable species: common 373,
-  uncommon 133, rare 72, legendary 74. History (all 2026-10-21): a first
+  else common; Slaking and Regigigas never lifted). A species whose
+  override file holds a Mega set ranks by the Mega forme's tier when that
+  is higher (2026-10-22: Charizard is ZU but Mega Charizard OU, Salamence
+  RUBL but Mega Salamence Uber; 30 of the 42 Mega species move up,
+  `effectiveTier`). Arceus formes are separate species; the Gourgeist sizes
+  are one species (Super; `DROPPED_FORMES`, 2026-10-22). Buckets over the
+  649 draftable species: common 349, uncommon 135, rare 86, legendary 79
+  (373/133/72/74 before the Mega rule). History (all 2026-10-21): a first
   build also lifted 570+ BST to rare and 500+ to uncommon, which promoted
   165 tier-weak stat balls (Carbink, Shuckle, Regirock) and was dropped so
   Articuno and the Regis are common like their tiers; a 600+ BST lift to
@@ -90,14 +95,17 @@ Three separate causes, only one of which the set scrape (§6) could touch:
 - The cell roll stays uniform and the 18×9 grid keeps its identity.
 
 Expected numbers from a 30,000-run simulation of the final rules (player
-always takes the best ball offered): an Ultra Ball or better in 52% of
-offers, 3.2 OU-level picks per team, three or more in 72% of runs, all six
-in 2% (the ceiling is the grid: 85 cells have no OU-level native, so an
-Ultra roll there falls down to Great Ball); a Master Ball in 20% of offers
-and 75% of runs, 1.2 per team; the most legendary-prone cell offers one 45%
-of the time, and no cell is above 50%. `node scripts/coverage.ts` prints
-the buckets, the short cells, and the 14 legendary-heavy cells whose
-visitors keep the offer open.
+always takes the best ball offered), after the Mega rule of 2026-10-22: an
+Ultra Ball or better in 64% of offers, 3.8 OU-level picks per team, three
+or more in 88% of runs, all six in 7% (the ceiling is the grid: 69 cells
+have no OU-level native, so an Ultra roll there falls down to Great Ball);
+a Master Ball in 22% of offers and 78% of runs, 1.3 per team; the most
+legendary-prone cell (fighting/gen8) offers one 44% of the time, and no
+cell is above 50%. Before the Mega rule the same simulation gave 52%, 3.2,
+72%, 2%, 85 cells, 20%, 75%, 1.2: the 40/30/20/10 slot odds have not been
+retuned for the lift. `node scripts/coverage.ts` prints the buckets, the
+short cells, and the 19 legendary-heavy cells whose visitors keep the
+offer open.
 
 Knobs to playtest (`DEFAULT_DRAFT_CONFIG`): `rarityOdds`, `backfillMin`,
 `backfillMinNonLegendary`, `thinCellThreshold`. The Python reference
@@ -172,7 +180,7 @@ ZU, AG and their National Dex versions), never a side format. Z-Crystal sets
 are skipped and Hidden Power is dropped (the gen 9 data has no typed Hidden
 Power and the battle driver cannot map a plain one). `node scripts/
 check-names.ts` now also runs the usable Smogon sets past the engine. Result:
-645 species with sets, 652 draftable species; `node scripts/coverage.ts`
+645 species with sets, 649 draftable species; `node scripts/coverage.ts`
 lists what is left:
 
 - 12 Scarlet/Violet species with no analysis in any generation (Wyrdeer,
