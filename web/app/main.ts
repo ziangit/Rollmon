@@ -1063,7 +1063,7 @@ async function boot(): Promise<void> {
     renderPool();
     feedRoller();
     renderBosses(state.bossBook.list());
-    $('title-foot').textContent = t('Lv 100 · Gen 9 · engine-enforced dedupe');
+    $('title-foot').textContent = t('Lv 100 · Gen 9'); // data-i18n keeps it translated after a language switch
   } catch (e) {
     $('pool-summary').textContent = errorMessage(e);
     $('title-foot').textContent = t('Could not load game data: {error}', {error: errorMessage(e)});
