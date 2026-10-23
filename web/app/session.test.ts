@@ -2,7 +2,7 @@
 // route-level expectations in tests/test_web_app.py that do not need a server.
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {BossBook, GameSession, SessionError, createGameContext, matrixView, poolSpecies, speciesView, type BattleSpec} from './session.ts';
+import {BossBook, GameSession, SessionError, createGameContext, matrixView, poolSpecies, speciesView, type BattleSpec, speciesSetOptions} from './session.ts';
 import {showdownSpriteId} from './sprites.ts';
 import {NoSkipsRemainingError} from '../game/draft.ts';
 import {loadGameData} from '../scripts/game-data.ts';
@@ -186,4 +186,15 @@ test('the boss book validates pasted and edited bosses', () => {
   draftBySuggestion(s);
   s.startGauntlet(['custom-1', 'ash'], false);
   assert.deepEqual(s.gauntletView().bosses.map((b) => b.name), ['Misty', 'Ash Ketchum']);
+});
+
+test('a set chosen on the draft screen becomes the loadout choice', () => {
+  const s = new GameSession(ctx, {seed: 7});
+  const first = s.draft.currentOffer!.candidates[0];
+  const sets = speciesSetOptions(ctx, first);
+  assert.throws(() => s.pick(first, 'bogus:1'), /unknown set/);
+  s.pick(first, sets[sets.length - 1].setId);
+  while (!s.draft.complete) s.pick(s.draft.currentOffer!.suggestedSpecies);
+  assert.equal(s.view().loadout!.find((e) => e.speciesId === first)!.chosenSetId, sets[sets.length - 1].setId);
+  assert.ok(s.view().teamExport!.includes(sets[sets.length - 1].export));
 });

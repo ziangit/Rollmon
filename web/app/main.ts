@@ -10,6 +10,7 @@ import {type MatrixCellView,
   type BattleResult, type BattleSpec, type BossInfo, type GameContext, type GauntletView, type MatrixView, type OfferView,
   type SessionView, type SpeciesView, speciesSetOptions} from './session.ts';
 import {LEGENDARY, RARITY_NAMES} from '../game/legality-matrix.ts';
+import type {SelectableSet} from '../game/team-assembly.ts';
 import {initRoller, rollMon, setRollerPool} from './roller.ts';
 import {applyStatic, initLang, lang, localSpeciesName, setLang, t, type Lang} from './i18n.ts';
 
@@ -174,40 +175,35 @@ function refreshView(): SessionView {
   state.view = state.session!.view();
   return state.view;
 }
+const draftUi: {round: number; selected: string; set: number} = {round: 0, selected: '', set: 0};
 function renderDraft(draft: SessionView): void {
   $('draft-status').textContent = '';
   state.teamExport = draft.complete ? (draft.teamExport || '') : '';
   $<HTMLButtonElement>('copy-export').disabled = !state.teamExport;
-
-  renderPips(draft);
-  renderParty(draft.team, 'party');
-  $('party-count').textContent = t('{n} / 6 drafted', {n: draft.team.length});
-
+  renderPartyStrip(draft);
   const live = $('draft-live');
   const done = $('draft-done');
   if (draft.complete) {
     live.classList.add('hidden'); done.classList.remove('hidden');
-    renderParty(draft.team, 'party-done');
+    renderPartyList(draft.team, 'party-done');
     return;
   }
   live.classList.remove('hidden'); done.classList.add('hidden');
+  const offer = draft.offer!;
+  // a new offer highlights its first candidate; a re-render keeps the player's choice
+  if (offer.roundNumber !== draftUi.round || !offer.candidates.some((c) => c.id === draftUi.selected)) {
+    draftUi.round = offer.roundNumber; draftUi.selected = offer.candidates[0]?.id ?? ''; draftUi.set = 0;
+  }
   renderEncounter(draft);
-  renderCandidates(draft.offer!);
-}
-function renderPips(draft: SessionView): void {
-  const filled = draft.team.length;
-  $('pips').innerHTML = Array.from({length: 6}, (_, i) => {
-    const cls = i < filled ? 'filled' : (i === filled && !draft.complete ? 'current' : '');
-    return `<span class="pip ${cls}"></span>`;
-  }).join('');
-  $('round-label').textContent = draft.complete ? t('Complete') : t('Round {n} of 6', {n: draft.offer!.roundNumber});
+  renderCandidates(offer);
+  renderCandidateDetail(offer);
 }
 function renderEncounter(draft: SessionView): void {
   const o = draft.offer!;
   const totalSkips = draft.draftConfig.manualSkipCount;
   $('encounter').innerHTML = `
     <div>
-      <p class="eyebrow" style="margin:0 0 .25rem">${t('Wild cell')}</p>
+      <p class="eyebrow" style="margin:0 0 .25rem">${t('Wild cell')} · ${t('Round {n} of 6', {n: o.roundNumber})}</p>
       <div class="cell-name"><span style="color:${typeColor(o.cell.type)}">${typeName(o.cell.type)}</span> · ${t('Gen {n}', {n: o.cell.generation})}</div>
       <p class="odds-note">${t('Slot odds — Poké Ball {c}% · Great Ball {u}% · Ultra Ball {r}% · Master Ball {l}%', {c: o.rarityOdds[0], u: o.rarityOdds[1], r: o.rarityOdds[2], l: o.rarityOdds[3]})}</p>
       ${o.nativeCount < o.thinCellThreshold ? `<p class="thin-note">${t('Thin cell — only {n} from this generation; the rest are visitors from nearby generations.', {n: o.nativeCount})}</p>` : ''}
@@ -218,55 +214,63 @@ function renderEncounter(draft: SessionView): void {
       </button>
     </div>`;
 }
-// Full PokéPaste text. Smogon/override sets ship an export; randbats sets
-// don't, so build one from the parsed fields + the neutral assembly spread.
-interface PasteSet { export?: string | null; item?: string; ability?: string; moves?: string[] }
-function pokepaste(name: string, set: PasteSet | null, spread: SpeciesView['assemblySpread'] | null): string {
-  if (set && set.export) return set.export;
-  const lines = [`${titleCase(name)}${set && set.item ? ` @ ${displayName(set.item)}` : ''}`];
-  if (set && set.ability) lines.push(`Ability: ${displayName(set.ability)}`);
-  if (spread) {
-    lines.push(`Level: ${spread.level}`);
-    const ev = Object.entries(spread.evs).map(([k, v]) => `${v} ${k}`).join(' / ');
-    if (ev) lines.push(`EVs: ${ev}`);
-    if (spread.nature) lines.push(`${spread.nature} Nature`);
-  }
-  (set?.moves ?? []).forEach((m) => lines.push(`- ${titleCase(m)}`));
-  return lines.join('\n');
-}
-function setSummary(p: SpeciesView): string {
-  return `<div class="setbox"><pre class="pokepaste-set">${esc(pokepaste(p.name, p.set, p.assemblySpread))}</pre></div>`;
-}
+/** The five candidates as tiles; the highlighted one is detailed below. */
 function renderCandidates(offer: OfferView): void {
   const root = $('candidates');
-  root.innerHTML = offer.candidates.map((p) => {
-    return `
-    <article class="mon${p.visitor ? ' visitor' : ''}">
-      <div class="mon-top">
-        <span class="mon-badge">${t('Gen {g} · BST {b}', {g: p.debutGeneration, b: p.baseStatTotal})}</span>
-        <div class="sprite-frame">${sprite(p)}</div>
-        <div class="mon-name">${monName(p)}</div>
-        <div class="chips">${typeChips(p)}</div>
-      </div>
-      <div class="mon-body">
-        ${rarityRow(p)}
-        ${setSummary(p)}
-      </div>
-      <button class="btn btn-primary pick" onclick="pick('${p.id}')">${t('Pick {name}', {name: monName(p)})}</button>
-    </article>`;
-  }).join('');
+  root.innerHTML = offer.candidates.map((p) => `
+    <button class="cand${p.id === draftUi.selected ? ' on' : ''}${p.visitor ? ' visitor' : ''}" onclick="draftSelect('${p.id}')" title="${esc(monName(p))}">
+      <span class="cand-sprite"><img class="asset" src="${p.pixelSpriteUrl}" alt=""></span>
+      <span class="cand-name">${monName(p)}</span>
+      <span class="rarity r${p.rarity}"><span class="stars">${starsOf(p)}</span><span>${t(RARITY_LABELS[p.rarityName])}</span></span>
+      <span class="chips">${typeChips(p)}</span>
+    </button>`).join('');
   fixImages(root);
 }
-function renderParty(team: SpeciesView[], targetId: string): void {
+/** The highlighted candidate: species block, every set it can run, and the Pick button (the open set goes to the loadout). */
+function renderCandidateDetail(offer: OfferView): void {
+  const root = $('cand-detail');
+  const p = offer.candidates.find((c) => c.id === draftUi.selected) ?? offer.candidates[0];
+  if (!p) { root.innerHTML = ''; return; }
+  const sets = speciesSetOptions(state.ctx!, p.id);
+  const open = Math.min(draftUi.set, Math.max(0, sets.length - 1));
+  root.innerHTML = `
+    <div class="cand-info">${speciesBlock(p, {label: t('Generation'), value: t('Gen {n}', {n: p.debutGeneration})})}</div>
+    <div class="cand-sets">
+      ${setBlock(p, sets, open, 'draftSet')}
+      <button class="btn btn-primary btn-lg pick" onclick="pick('${p.id}','${sets[open]?.setId ?? ''}')">${t('Pick {name}', {name: monName(p)})}</button>
+    </div>`;
+  fixImages(root);
+}
+function draftSelect(id: string): void {
+  const offer = state.view?.offer;
+  if (!offer) return;
+  draftUi.selected = id; draftUi.set = 0;
+  renderCandidates(offer); renderCandidateDetail(offer);
+}
+function draftSet(index: number): void {
+  const offer = state.view?.offer;
+  if (!offer) return;
+  draftUi.set = index;
+  renderCandidateDetail(offer);
+}
+/** Six small slots in the page head: filled left to right, the current round's slot pulsing. */
+function renderPartyStrip(draft: SessionView): void {
+  const root = $('party');
+  const n = draft.team.length;
+  root.innerHTML = Array.from({length: 6}, (_, i) => {
+    const p = draft.team[i];
+    if (p) return `<li class="pslot filled" title="${esc(monName(p))}"><img class="asset" src="${p.pixelSpriteUrl}" alt=""></li>`;
+    return `<li class="pslot empty${i === n && !draft.complete ? ' current' : ''}"><span class="pokeball ball"></span></li>`;
+  }).join('');
+  $('party-count').textContent = draft.complete ? t('Complete') : t('{n} / 6 drafted', {n});
+  fixImages(root);
+}
+/** The drafted team as a list (the done card). */
+function renderPartyList(team: SpeciesView[], targetId: string): void {
   const root = $(targetId);
-  const slots: (SpeciesView | null)[] = [...team];
-  while (slots.length < 6) slots.push(null);
-  root.innerHTML = slots.map((p, i) => p
-    ? `<li class="slot"><span class="mini">${sprite(p)}</span>
+  root.innerHTML = team.map((p) => `<li class="slot"><span class="mini">${sprite(p)}</span>
          <span class="info"><strong>${monName(p)}</strong>
-         <span>${t('Gen {g} · BST {b}', {g: p.debutGeneration, b: p.baseStatTotal})}</span></span></li>`
-    : `<li class="slot empty"><span class="pokeball ball"></span><span class="info"><strong>${t('Slot {n}', {n: i + 1})}</strong><span>${t('Empty')}</span></span></li>`,
-  ).join('');
+         <span>${t('Gen {g} · BST {b}', {g: p.debutGeneration, b: p.baseStatTotal})}</span></span></li>`).join('');
   fixImages(root);
 }
 
@@ -288,7 +292,7 @@ function draftAction(action: () => void): void {
     else throw e;
   }
 }
-function pick(id: string): void { draftAction(() => state.session!.pick(id)); }
+function pick(id: string, setId = ''): void { draftAction(() => state.session!.pick(id, setId || undefined)); }
 function skip(): void { draftAction(() => state.session!.skip()); }
 
 async function copyExport(): Promise<void> {
@@ -302,6 +306,21 @@ async function copyExport(): Promise<void> {
 /* =====================================================================
    LOADOUT  (choose one set per drafted Pokémon; Mega is opt-in)
    ===================================================================== */
+interface PasteSet { export?: string | null; item?: string; ability?: string; moves?: string[] }
+function pokepaste(name: string, set: PasteSet | null, spread: SpeciesView['assemblySpread'] | null): string {
+  if (set && set.export) return set.export;
+  const lines = [`${titleCase(name)}${set && set.item ? ` @ ${displayName(set.item)}` : ''}`];
+  if (set && set.ability) lines.push(`Ability: ${displayName(set.ability)}`);
+  if (spread) {
+    lines.push(`Level: ${spread.level}`);
+    const ev = Object.entries(spread.evs).map(([k, v]) => `${v} ${k}`).join(' / ');
+    if (ev) lines.push(`EVs: ${ev}`);
+    if (spread.nature) lines.push(`${spread.nature} Nature`);
+  }
+  (set?.moves ?? []).forEach((m) => lines.push(`- ${titleCase(m)}`));
+  return lines.join('\n');
+}
+
 function renderLoadout(): void {
   const draft = state.view;
   const list = $('loadout-list');
@@ -1019,21 +1038,13 @@ function renderPoolPanel(): void {
   fixImages(d);
 }
 
-function speciesDetail(p: SpeciesView): string {
-  const moveData = (move: string) => state.ctx!.data.moves[move.toLowerCase().replace(/[^a-z0-9]/g, '')] as {type?: string; name?: string} | undefined;
-  const moveType = (move: string) => String(moveData(move)?.type ?? 'normal').toLowerCase();
-  const moveName = (move: string) => moveData(move)?.name ?? titleCase(move);
-  // the other cells this species lives in are one click away
-  const cells = p.types.map((x) => {
-    const cell = state.matrix!.cells.find((c) => c.type === x && c.generation === p.debutGeneration);
-    const label = `${typeName(x)} ${cell?.eligibleCount ?? 0}`;
-    return x === poolUi.type ? `<span>${label}</span>` : `<button class="cell-link" onclick="poolCell('${x}',${p.debutGeneration})">${label}</button>`;
-  }).join(' · ');
-  const stars = '★'.repeat(p.rarity + 1) + '☆'.repeat(3 - p.rarity);
-  // every set the loadout would offer: override sets first, then the source's
-  const sets = speciesSetOptions(state.ctx!, p.id);
-  const open = Math.min(poolUi.set, Math.max(0, sets.length - 1));
-  const set = sets[open] ?? p.set;
+const moveData = (move: string) => state.ctx!.data.moves[move.toLowerCase().replace(/[^a-z0-9]/g, '')] as {type?: string; name?: string} | undefined;
+const moveType = (move: string) => String(moveData(move)?.type ?? 'normal').toLowerCase();
+const moveName = (move: string) => moveData(move)?.name ?? titleCase(move);
+const starsOf = (p: {rarity: number}) => '★'.repeat(p.rarity + 1) + '☆'.repeat(3 - p.rarity);
+
+/** Sprite, dex number, name, types, then rarity / tier / BST rows and one more (the pool's cells, the draft's generation). Shared by the pool panel and the draft panel. */
+function speciesBlock(p: SpeciesView, extra: {label: string; value: string}): string {
   return `
     <div class="pool-art">
       <div class="pool-sprite"><img class="asset" src="${p.pixelSpriteUrl}" alt=""></div>
@@ -1044,17 +1055,34 @@ function speciesDetail(p: SpeciesView): string {
       </div>
     </div>
     <dl class="pool-rows">
-      <div><dt>${t('Rarity')}</dt><dd class="r${p.rarity}">${stars} ${t(RARITY_LABELS[p.rarityName])}</dd></div>
+      <div><dt>${t('Rarity')}</dt><dd class="r${p.rarity}">${starsOf(p)} ${t(RARITY_LABELS[p.rarityName])}</dd></div>
       <div><dt>${t('Tier')}</dt><dd>${p.tier ? esc(p.tier) : '—'}</dd></div>
       <div><dt>${t('BST')}</dt><dd>${p.baseStatTotal}</dd></div>
-      <div><dt>${t('Cells')}</dt><dd>${cells}</dd></div>
-    </dl>
+      <div><dt>${extra.label}</dt><dd>${extra.value}</dd></div>
+    </dl>`;
+}
+/** Set tabs (override sets first, then the source's) and the open set's item, ability and type-coloured moves; a tab calls the window function `onTab(index)`. */
+function setBlock(p: {id: string}, sets: SelectableSet[], open: number, onTab: string): string {
+  const set = sets[open];
+  if (!set) return '';
+  return `
     <div class="pool-set">
       <div class="pool-set-head"><span>${t('{n} sets', {n: sets.length})}</span><button class="btn btn-ghost btn-sm contribute" onclick="openFeedback('set','${p.id}')">${t('Contribute a set')}</button></div>
-      <ul class="pool-sets">${sets.map((o, i) => `<li><button class="stab${i === open ? ' on' : ''}" onclick="poolSet(${i})">${esc(o.label)}${o.isMega ? ' ⚡' : ''}</button></li>`).join('')}</ul>
+      <ul class="pool-sets">${sets.map((o, i) => `<li><button class="stab${i === open ? ' on' : ''}" onclick="${onTab}(${i})">${esc(o.label)}${o.isMega ? ' ⚡' : ''}</button></li>`).join('')}</ul>
       <div class="pool-kv">${esc(set.item ? displayName(set.item) : '—')} · ${esc(displayName(set.ability))}</div>
       <ul class="pool-moves">${set.moves.map((mv) => `<li class="pmove t-${moveType(mv)}">${esc(moveName(mv))}</li>`).join('')}</ul>
     </div>`;
+}
+function speciesDetail(p: SpeciesView): string {
+  // the other cells this species lives in are one click away
+  const cells = p.types.map((x) => {
+    const cell = state.matrix!.cells.find((c) => c.type === x && c.generation === p.debutGeneration);
+    const label = `${typeName(x)} ${cell?.eligibleCount ?? 0}`;
+    return x === poolUi.type ? `<span>${label}</span>` : `<button class="cell-link" onclick="poolCell('${x}',${p.debutGeneration})">${label}</button>`;
+  }).join(' · ');
+  const sets = speciesSetOptions(state.ctx!, p.id);
+  const open = Math.min(poolUi.set, Math.max(0, sets.length - 1));
+  return speciesBlock(p, {label: t('Cells'), value: cells}) + setBlock(p, sets, open, 'poolSet');
 }
 
 let nameIndex: Map<string, string> | null = null;
@@ -1084,7 +1112,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openFeedback, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openFeedback, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);

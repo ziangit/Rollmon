@@ -341,6 +341,8 @@ export class GameSession {
   readonly bosses: BossBook;
   private readonly rng: Rng;
   private loadout: Record<string, string> | null = null;
+  /** sets chosen on the draft screen, applied when the draft completes */
+  private readonly draftSets = new Map<string, string>();
   private teamExport: string | null = null;
   private battleResult: BattleResult | null = null;
   private gauntletBossIds: string[] = [];
@@ -367,12 +369,16 @@ export class GameSession {
 
   // ---- draft
 
-  pick(speciesId: string): void {
+  /** Draft the species; a `setId` chosen on the draft screen becomes its loadout set once the draft completes (recorded as a `set:` action, so proofs replay it). */
+  pick(speciesId: string, setId?: string): void {
+    if (setId && !speciesSetOptions(this.ctx, speciesId).some((o) => o.setId === setId)) throw new SessionError('unknown set for this species');
     this.draft.submitPick(speciesId);
     this.actions.push(`pick:${speciesId}`);
+    if (setId) this.draftSets.set(speciesId, setId);
     if (this.draft.complete) {
       this.loadout = this.defaultLoadout();
       this.teamExport = this.assembleFromLoadout();
+      for (const [id, set] of this.draftSets) if (this.loadout[id] !== set) this.chooseSet(id, set);
     }
   }
 

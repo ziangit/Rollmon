@@ -231,12 +231,16 @@ button:disabled{cursor:not-allowed;opacity:.42}
 /* .title-team removed — slot-machine Gen × Type animation will replace it */
 
 /* ============ DRAFT ============ */
-.round-bar{display:flex;align-items:center;gap:.9rem;flex-wrap:wrap;margin-bottom:1.1rem}
-.pips{display:flex;gap:.45rem}
-.pip{width:15px;height:15px;border-radius:0;background:var(--surface-2);box-shadow:0 0 0 2px var(--edge)}
-.pip.filled{background:var(--gold);box-shadow:0 0 0 2px var(--edge)}
-.pip.current{background:var(--frame);box-shadow:0 0 0 2px var(--edge),0 0 0 5px rgba(236,90,50,.35);animation:pulse 1s steps(2) infinite}
-@keyframes pulse{50%{box-shadow:0 0 0 2px var(--edge),0 0 0 7px rgba(236,90,50,.12)}}
+/* party strip in the page head: six slots, filled left to right, the current one pulsing */
+.party-box{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;min-width:0}
+.party-strip{display:flex;gap:.4rem;list-style:none;margin:0;padding:0}
+.pslot{width:52px;height:52px;display:grid;place-items:center;background:var(--surface-2);border:2px solid var(--edge);border-radius:6px}
+.pslot img{width:48px;height:48px;image-rendering:pixelated}
+.pslot.empty{border:2px dashed var(--border);background:transparent}
+.pslot .ball{width:22px;height:22px;opacity:.4}
+.pslot.current{border:2px solid var(--frame);animation:pulse 1s steps(2) infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 5px rgba(236,90,50,.25)}}
+.party-count{color:var(--muted);font-size:.9rem;white-space:nowrap}
 
 .encounter{
   display:flex;align-items:center;gap:1rem;flex-wrap:wrap;justify-content:space-between;
@@ -244,60 +248,44 @@ button:disabled{cursor:not-allowed;opacity:.42}
 }
 .encounter .cell-name{font-family:var(--font-display);font-size:1.6rem;font-weight:700;text-shadow:0 2px 0 var(--edge)}
 .encounter .thin-note{color:var(--gold);font-weight:600;font-size:.9rem;margin:.3rem 0 0}
+.encounter .odds-note{color:var(--muted);font-size:.78rem;margin:.3rem 0 0}
 .encounter-actions{display:flex;gap:.5rem;flex-wrap:wrap}
 
-.draft-grid{display:grid;grid-template-columns:1fr 320px;gap:1.3rem;align-items:start}
-.candidate-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:1.1rem}
-.mon{
-  position:relative;overflow:hidden;
-  display:flex;flex-direction:column;transition:transform .08s steps(2);
-}
-.mon:hover{transform:translateY(-3px)}
-.mon.suggested{border-color:var(--gold);box-shadow:0 0 0 3px var(--edge), inset 0 0 0 3px var(--edge), 0 0 0 6px rgba(255,204,62,.45), 5px 6px 0 rgba(8,6,18,.5)}
-.mon-top{position:relative;padding:1rem 1rem .6rem;text-align:center;
-  background:linear-gradient(180deg, var(--tint,rgba(255,255,255,.05)), transparent 75%)}
-.mon-badge{position:absolute;top:.55rem;left:.55rem;font-family:var(--font-pixel);font-size:.5rem;
-  font-weight:400;letter-spacing:.02em;color:var(--muted);background:var(--surface-2);
-  padding:.3rem .42rem;border-radius:var(--r-sm);border:2px solid var(--edge)}
-.star{position:absolute;top:.5rem;right:.55rem;color:var(--gold);font-size:1.2rem;filter:drop-shadow(2px 2px 0 var(--edge))}
-.sprite-frame{width:108px;height:108px;margin:0 auto;display:grid;place-items:center}
-.sprite-frame img{max-width:100%;max-height:100%;image-rendering:pixelated;
-  filter:drop-shadow(3px 3px 0 rgba(8,6,18,.45))}
-.mon-name{font-family:var(--font-display);font-weight:700;font-size:1.22rem;margin:.4rem 0 .1rem;text-transform:capitalize;text-shadow:0 2px 0 var(--edge)}
-.mon-meta{font-family:var(--font-pixel);font-size:.52rem;color:var(--muted)}
+/* candidates: a strip of five tiles, the highlighted one detailed underneath (same blocks as the pool panel) */
+.draft-panel{padding:1rem 1.1rem 1.1rem}
+.cand-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.6rem;padding-bottom:1rem;margin-bottom:1rem;border-bottom:2px solid var(--border)}
+.cand{font:inherit;color:var(--ink);background:var(--surface-2);border:2px solid var(--edge);border-radius:var(--r-sm);padding:.6rem .4rem .7rem;
+  display:grid;justify-items:center;align-content:start;gap:.3rem;cursor:pointer;text-align:center;min-width:0}
+.cand:hover{border-color:var(--muted)}
+.cand.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.cand.visitor{border-style:dashed}
+.cand.visitor.on{border-style:solid}
+.cand-sprite{width:96px;height:96px;display:grid;place-items:center}
+.cand-sprite img{width:96px;height:96px;image-rendering:pixelated;object-fit:contain}
+.cand-name{font-family:var(--font-display);font-weight:700;font-size:1.05rem;text-shadow:0 2px 0 var(--edge);overflow-wrap:anywhere}
+.cand .rarity{justify-content:center;flex-wrap:wrap}
+.cand .chips{margin:0}
 .chips{display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin:.6rem 0 0}
 .chip{
   font-family:var(--font-display);font-weight:600;font-size:.82rem;
   padding:.18rem .6rem;border-radius:var(--r-sm);color:#fff;text-transform:capitalize;
   border:2px solid var(--edge);text-shadow:1px 1px 0 rgba(0,0,0,.5);
 }
-.mon-body{padding:.5rem .9rem 1rem;display:flex;flex-direction:column;gap:.6rem;flex:1}
+.chip.visitor{background:var(--surface-2);color:var(--ink);border-style:dashed;text-transform:none}
 .rarity{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--muted)}
 .rarity .stars{letter-spacing:.08em;font-size:.95rem;color:var(--muted);filter:drop-shadow(1px 1px 0 var(--edge))}
 .rarity.r1 .stars{color:#9fd36a}
 .rarity.r2 .stars{color:#7ab9e0}
 .rarity.r3 .stars{color:var(--gold)}
 .rarity .mono{margin-left:auto}
-.chip.visitor{background:var(--surface-2);color:var(--ink);border-style:dashed;text-transform:none}
-.mon.visitor{border-style:dashed}
-.encounter .odds-note{color:var(--muted);font-size:.78rem;margin:.3rem 0 0}
-.setbox{background:var(--surface-2);border:2px solid var(--edge);border-radius:var(--r-sm);padding:.6rem .7rem;font-size:.82rem}
-.setbox .row{color:var(--muted);font-family:var(--font-body);font-size:.82rem;line-height:1.5;overflow-wrap:anywhere}
-.setbox .row b{color:var(--ink);font-weight:700}
-.moves{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.45rem}
-.move{font-size:.76rem;font-family:var(--font-body);padding:.18rem .5rem;border-radius:var(--r-sm);
-  background:var(--surface);border:2px solid var(--edge);color:var(--ink)}
-details.raw{margin-top:.4rem}
-details.raw summary{font-size:.78rem;color:var(--faint);cursor:pointer;font-family:var(--font-body)}
-details.raw pre{margin:.4rem 0 0;font-size:.78rem;line-height:1.45;white-space:pre-wrap;
-  font-family:ui-monospace,Menlo,monospace;color:var(--muted);background:transparent}
-.pick{margin:0 .9rem 1rem;width:calc(100% - 1.8rem)}
+.cand-detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:1.4rem;align-items:start}
+.cand-info{display:grid;gap:.7rem}
+.cand-detail .pool-set{border-top:0;padding-top:0}
+.cand-detail .pick{margin-top:1rem;width:100%}
+@media(max-width:980px){.cand-strip{grid-template-columns:repeat(3,minmax(0,1fr))}.cand-detail{grid-template-columns:1fr}}
+@media(max-width:560px){.pslot{width:44px;height:44px}.pslot img{width:40px;height:40px}.party-strip{gap:.3rem}.cand-sprite,.cand-sprite img{width:64px;height:64px}.cand{padding:.5rem .25rem .6rem}.cand .chips{gap:.25rem}.chip{font-size:.72rem;padding:.12rem .4rem}}
 
-/* party tray */
-.party{position:sticky;top:84px;align-self:start}
-.party.card{padding:1.1rem}
-.party h3{font-size:1.1rem;margin-bottom:.2rem}
-.party .sub{color:var(--muted);font-size:.85rem;margin:0 0 .8rem;font-family:var(--font-pixel);font-size:.56rem}
+/* party tray (done card) */
 .party-list{display:flex;flex-direction:column;gap:.55rem;list-style:none;margin:0 0 .9rem;padding:0}
 .slot{display:flex;align-items:center;gap:.7rem;padding:.5rem .6rem;border-radius:var(--r-sm);
   min-height:60px}
@@ -407,14 +395,13 @@ details.raw pre{margin:.4rem 0 0;font-size:.78rem;line-height:1.45;white-space:p
 .asset-failed{display:none}
 
 @media(max-width:980px){
-  .draft-grid,.boss-cols,.battle-cols{grid-template-columns:1fr}
-  .party,.rail{position:static}
+  .boss-cols,.battle-cols{grid-template-columns:1fr}
+  .rail{position:static}
   .rail{flex-direction:row;flex-wrap:wrap}
   .steps{display:none}
 }
 @media(max-width:560px){
   body{font-size:16px}
-  .candidate-grid{grid-template-columns:1fr}
   .match{flex-direction:column;text-align:center}
 }
 

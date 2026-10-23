@@ -127,23 +127,16 @@
         <p class="eyebrow" data-i18n="Step 1 — Build your team">Step 1 — Build your team</p>
         <h1 data-i18n="Draft your six">Draft your six</h1>
       </div>
-      <button class="btn btn-ghost btn-sm" id="copy-export" disabled onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
-    </div>
-    <div class="round-bar">
-      <div class="pips" id="pips"></div>
-      <span id="round-label" class="mono" style="font-size:.82rem;color:var(--muted)"></span>
+      <div class="party-box"><ul class="party-strip" id="party"></ul><span class="party-count" id="party-count"></span></div>
     </div>
     <p class="status-line" id="draft-status"></p>
 
     <div id="draft-live">
       <div class="encounter" id="encounter"></div>
-      <div class="draft-grid">
-        <div class="candidate-grid" id="candidates"></div>
-        <aside class="party card" style="padding:1.1rem">
-          <h3 data-i18n="Your party">Your party</h3>
-          <p class="sub" id="party-count">0 / 6 drafted</p>
-          <ul class="party-list" id="party"></ul>
-        </aside>
+      <!-- the five candidates as a strip; the highlighted one is shown below with every set it can run -->
+      <div class="card draft-panel">
+        <div class="cand-strip" id="candidates"></div>
+        <div class="cand-detail" id="cand-detail"></div>
       </div>
     </div>
 
@@ -152,7 +145,7 @@
       <p class="lead" data-i18n="Six unique Pokémon, locked at level 100. Next, choose each one's set.">Six unique Pokémon, locked at level 100. Next, choose each one's set.</p>
       <div style="display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;margin-top:1.2rem">
         <button class="btn btn-primary btn-lg" onclick="go('loadout')" data-i18n="Choose sets →">Choose sets →</button>
-        <button class="btn btn-ghost" onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
+        <button class="btn btn-ghost" id="copy-export" onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
       </div>
       <ul class="party-list" id="party-done" style="max-width:420px;margin:1.6rem auto 0;text-align:left"></ul>
     </div>

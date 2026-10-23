@@ -54,19 +54,20 @@ try {
   if (!tools.feedback || !contribute || !drawer.open || !/Lucario/.test(drawer.title)) { console.error('feedback button, contribute button, or drawer missing'); process.exitCode = 1; }
   if (!tools.corner || tools.signin !== hosted) { console.error('tools strip not in the corner, or the account button does not match the deployment'); process.exitCode = 1; }
 
-  // draft: six rounds, first candidate each time
+  // draft: six rounds; the first tile is highlighted, its second set (when there is one) is opened so the proof carries a set choice
   await click('#screen-title .title-actions .btn-primary');
   for (let round = 1; round <= 6; round++) {
-    await page.waitForSelector('#candidates .pick');
-    const label = await page.$eval('#round-label', (e) => e.textContent);
+    await page.waitForSelector('#cand-detail .pick');
+    const label = await page.$eval('#encounter .eyebrow', (e) => e.textContent.replace(/\s+/g, ' ').trim());
     const cell = await page.$eval('#encounter .cell-name', (e) => e.textContent.replace(/\s+/g, ' ').trim());
-    const names = await page.$$eval('#candidates .mon-name', (ns) => ns.map((n) => n.textContent));
-    const rarities = await page.$$eval('#candidates .rarity .stars', (ns) => ns.map((n) => n.textContent));
+    const names = await page.$$eval('#candidates .cand-name', (ns) => ns.map((n) => n.textContent));
+    const rarities = await page.$$eval('#candidates .cand .stars', (ns) => ns.map((n) => n.textContent));
     if (rarities.length !== names.length) throw new Error(`round ${round}: ${names.length} candidates but ${rarities.length} rarity rows`);
-    const visitors = await page.$$eval('#candidates .mon.visitor', (ns) => ns.length);
-    console.log(`  ${label}: ${cell} -> ${names.map((n, i) => `${n} ${rarities[i]}`).join(', ')}${visitors ? ` (${visitors} visitor${visitors > 1 ? 's' : ''})` : ''}`);
-    await click('#candidates .pick');
-    await page.waitForFunction((r) => document.querySelectorAll('#party .slot:not(.empty)').length === r, {}, round);
+    const visitors = await page.$$eval('#candidates .cand.visitor', (ns) => ns.length);
+    const tabs = await page.evaluate(() => { const tabs = document.querySelectorAll('#cand-detail .stab'); if (tabs.length > 1) tabs[1].click(); return tabs.length; });
+    console.log(`  ${label}: ${cell} -> ${names.map((n, i) => `${n} ${rarities[i]}`).join(', ')}${visitors ? ` (${visitors} visitor${visitors > 1 ? 's' : ''})` : ''} | ${tabs} sets`);
+    await click('#cand-detail .pick');
+    await page.waitForFunction((r) => document.querySelectorAll('#party .pslot.filled').length === r, {}, round);
   }
   await page.waitForSelector('#draft-done:not(.hidden)');
   const team = await page.$$eval('#party-done .slot strong', (ns) => ns.map((n) => n.textContent));
