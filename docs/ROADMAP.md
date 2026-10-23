@@ -315,7 +315,13 @@ and, when the draft completes, applies it after the default loadout as
 has to confirm. The party column and the pips became a six-slot sprite
 strip in the page head (current slot pulsing); the round number sits in
 the cell header. Phone: three tiles per row, the panel stacks, slots
-shrink to 44 px.
+shrink to 44 px. Pick-to-pick transition (same day, author's request):
+the picked sprite arcs into its party slot (a fixed clone driven by the
+Web Animations API) while the other tiles drop away, then the next cell's
+header bounces in, its tiles slide in one after another and the panel
+rises; the landed slot pops; switching tiles swaps the panel with a short
+rise. All of it is skipped under `prefers-reduced-motion`, and a pick is
+ignored while one plays.
 **Next screens, in order:** loadout, battle (the replay frame and live
 cards), results and the leaderboard drawer, then the topbar strip (phone
 overflow). The title page stays as it is.
