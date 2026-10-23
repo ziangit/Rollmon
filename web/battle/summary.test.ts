@@ -17,6 +17,20 @@ test('damage summary attributes player damage from replay logs', () => {
   assert.deepEqual([...damageByPlayerPokemon(log, 'Player')], [['Azumarill', 118]]);
 });
 
+test('a Mega forme\'s damage is credited to its base species', () => {
+  const log = [
+    '|player|p1|Player|', '|player|p2|Boss|',
+    '|switch|p1a: Salamence|Salamence, L100, M|100/100', '|switch|p2a: Lapras|Lapras, L100|100/100',
+    '|move|p1a: Salamence|Dragon Dance|p1a: Salamence',
+    '|detailschange|p1a: Salamence|Salamence-Mega, L100, M', '|-mega|p1a: Salamence|Salamence|Salamencite',
+    '|move|p1a: Salamence|Return|p2a: Lapras', '|-damage|p2a: Lapras|40/100',
+    '|switch|p1a: Lucario|Lucario, L100|100/100', '|switch|p1a: Salamence|Salamence-Mega, L100, M|100/100',
+    '|move|p1a: Salamence|Return|p2a: Lapras', '|-damage|p2a: Lapras|0 fnt',
+    '|win|Player',
+  ];
+  assert.deepEqual([...damageByPlayerPokemon(log, 'Player')], [['Salamence', 100]]);
+});
+
 test('omniscient logs with absolute HP are measured as percent of max', () => {
   const log = [
     '|player|p1|Player||', '|player|p2|Boss||',

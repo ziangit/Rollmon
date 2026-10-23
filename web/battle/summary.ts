@@ -13,7 +13,8 @@ export function normalizeSpeciesKey(value: string): string {
 
 const slotOf = (ident: string) => ident.split(':', 1)[0];
 const nameOf = (ident: string) => ident.includes(':') ? ident.slice(ident.indexOf(':') + 1).trim() : ident.trim();
-const speciesOf = (details: string) => details.split(',', 1)[0].trim();
+/** Species from switch details; a Mega forme ("Salamence-Mega", "Charizard-Mega-X") counts as its base species. */
+const speciesOf = (details: string) => details.split(',', 1)[0].trim().replace(/-Mega(-[XY])?$/, '');
 
 function conditionPercent(condition: string): number {
   const hp = condition.split(/\s+/)[0];

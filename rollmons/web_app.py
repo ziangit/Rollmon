@@ -297,7 +297,8 @@ def _normalize_species_key(value: str) -> str:
 
 
 def _species_from_switch_details(value: str) -> str:
-    return value.split(",", 1)[0].strip()
+    # A Mega forme ("Salamence-Mega", "Charizard-Mega-X") counts as its base species.
+    return re.sub(r"-Mega(-[XY])?$", "", value.split(",", 1)[0].strip())
 
 
 def _condition_percent(condition: str) -> float:
