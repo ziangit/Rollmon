@@ -299,10 +299,26 @@ is never empty; on a phone the matrix comes first and a cell click scrolls
 to the panel. The title roller now
 rolls a real cell of this pool and shows one of its natives (`roller.ts`,
 animated sprite with a pixel fallback) instead of v1's fixed decorative
-list. 
-**Next screens, in order:** draft (the cards and the reel), loadout, battle
-(the replay frame and live cards), results and the leaderboard drawer, then
-the topbar strip (phone overflow). The title page stays as it is.
+list.
+**Draft screen (2026-10-22, for the author to test).** The author wanted
+the available sets visible while drafting. Of the two options offered (A:
+the open set in every card; B: a candidate strip and one detail panel) the
+author chose B. The five candidates are a strip of tiles (sprite, name,
+stars + ball, type chips, dashed frame for a visitor); the highlighted one
+is detailed below in the pool's species block (dex number, types, rarity,
+tier, BST, debut generation) plus the pool's set block (one tab per set,
+item · ability, type-coloured moves, Contribute a set), both shared with
+the pool panel (`speciesBlock` / `setBlock` in `main.ts`). The Pick button
+carries the open set: `GameSession.pick(speciesId, setId?)` remembers it
+and, when the draft completes, applies it after the default loadout as
+`set:` actions, so the proof replays unchanged and the loadout screen only
+has to confirm. The party column and the pips became a six-slot sprite
+strip in the page head (current slot pulsing); the round number sits in
+the cell header. Phone: three tiles per row, the panel stacks, slots
+shrink to 44 px.
+**Next screens, in order:** loadout, battle (the replay frame and live
+cards), results and the leaderboard drawer, then the topbar strip (phone
+overflow). The title page stays as it is.
 
 ## 9. i18n
 
