@@ -521,8 +521,15 @@ export class GameSession {
   /** Leaderboard score of a complete campaign (docs/ROADMAP.md §7), else null. */
   score(): RunScore | null {
     if (!this.isCampaign || !this.gauntletComplete || !this.gauntletResults.length) return null;
-    const team = this.draft.picks.map((id) => ({speciesId: id, tier: this.ctx.data.tiers[id], baseStatTotal: this.ctx.legality.species[id].baseStatTotal}));
-    return scoreRun(this.gauntletResults, team);
+    return scoreRun(this.gauntletResults, this.draft.picks.map((id) => this.scoredSpecies(id)));
+  }
+
+  /** A species scores by the forme it plays: a chosen Mega set counts as the Mega forme's tier. */
+  private scoredSpecies(speciesId: string): {speciesId: string; tier?: string; baseStatTotal: number} {
+    const setId = this.loadout?.[speciesId];
+    const forme = setId ? speciesSetOptions(this.ctx, speciesId).find((o) => o.setId === setId)?.megaForme ?? null : null;
+    const tier = (forme && this.ctx.data.tiers[forme]) || this.ctx.data.tiers[speciesId];
+    return {speciesId, tier, baseStatTotal: this.ctx.legality.species[speciesId].baseStatTotal};
   }
 
   /** The replayable record of a complete campaign, or null if this run cannot be verified. */

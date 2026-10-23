@@ -198,3 +198,27 @@ test('a set chosen on the draft screen becomes the loadout choice', () => {
   assert.equal(s.view().loadout!.find((e) => e.speciesId === first)!.chosenSetId, sets[sets.length - 1].setId);
   assert.ok(s.view().teamExport!.includes(sets[sets.length - 1].export));
 });
+
+test('a chosen Mega set scores by the Mega forme\'s tier', () => {
+  // find a seed whose suggested team has a species with a Mega set
+  let s: GameSession | null = null, megaId = '', megaSet = '';
+  for (let seed = 1; seed < 200 && !s; seed++) {
+    const cand = new GameSession(ctx, {seed});
+    draftBySuggestion(cand);
+    for (const id of cand.draft.picks) {
+      const mega = speciesSetOptions(ctx, id).find((o) => o.isMega && o.megaForme && ctx.data.tiers[o.megaForme] && ctx.data.tiers[o.megaForme] !== ctx.data.tiers[id]);
+      if (mega) { s = cand; megaId = id; megaSet = mega.setId; break; }
+    }
+  }
+  assert.ok(s, 'a draftable species with a Mega set of another tier');
+  const play = (session: GameSession) => {
+    session.startCampaign(true);
+    const spec = session.nextBattleSpec()!;
+    session.recordGauntletBattle(spec, outcomeFor(spec, 'boss', session.view().team[0].name, 20));
+    return session.score()!;
+  };
+  const base = new GameSession(ctx, {seed: s!.seed});
+  draftBySuggestion(base);
+  s!.chooseSet(megaId, megaSet);
+  assert.notEqual(play(s!).handicap, play(base).handicap, 'the Mega forme changes the team handicap');
+});
