@@ -93,7 +93,7 @@ test('real species land in the expected rarity buckets', () => {
   for (const m of Object.values(legality.species)) assert.equal(m.legendary, m.rarity === LEGENDARY);
   const counts = [0, 0, 0, 0];
   for (const m of Object.values(legality.species)) counts[m.rarity]++;
-  assert.deepEqual(counts, [359, 131, 72, 74]);
+  assert.deepEqual(counts, [359, 131, 74, 72]); // 2026-10-23: Volcarona and Archaludon moved Uber -> OU (TIER_OVERRIDES)
 });
 
 test('the Gourgeist sizes collapse to Gourgeist-Super', () => {

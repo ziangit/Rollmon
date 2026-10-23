@@ -52,8 +52,11 @@ Three separate causes, only one of which the set scrape (§6) could touch:
   RUBL but Mega Salamence Uber; 30 of the 42 Mega species move up,
   `effectiveTier`). Arceus formes are separate species; the Gourgeist sizes
   are one species (Super; `DROPPED_FORMES`, 2026-10-22). Buckets over the
-  649 draftable species: common 349, uncommon 135, rare 86, legendary 79
-  (373/133/72/74 before the Mega rule). History (all 2026-10-21): a first
+  draftable species (2026-10-23): common 359, uncommon 131, rare 74,
+  legendary 72 (349/135/86/79 on 2026-10-22; 373/133/72/74 before the Mega
+  rule). `TIER_OVERRIDES` in `web/scripts/tiers.ts` holds the author's
+  tier calls (2026-10-23: Volcarona and Archaludon Uber → OU, so Ultra Ball
+  and a 0.88 handicap instead of Master Ball / 0.8). History (all 2026-10-21): a first
   build also lifted 570+ BST to rare and 500+ to uncommon, which promoted
   165 tier-weak stat balls (Carbink, Shuckle, Regirock) and was dropped so
   Articuno and the Regis are common like their tiers; a 600+ BST lift to
