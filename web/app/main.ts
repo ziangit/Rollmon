@@ -814,7 +814,8 @@ function renderScore(g: GauntletView): void {
     <div class="score-total"><span class="v" id="score-total">${score.total}</span><span class="k">${t('points')}</span></div>
     <ul class="score-rows">${rows || `<li><span>${t('No wins')}</span><b>0</b></li>`}
       <li><span>${t('Base (wins × speed)')}</span><b>${score.base.toFixed(1)}</b></li>
-      <li><span>${t('Team handicap')} <small>${t('(by tier)')}</small></span><b>× ${score.handicap.toFixed(2)}</b></li></ul>
+      <li><span>${t('Team handicap')} <small>${t('(by tier)')}</small></span><b>× ${score.handicap.toFixed(2)}</b></li>
+      <li><span>${t('Turns')} <small>${t('(tiebreak, fewer first)')}</small></span><b>${score.turns}</b></li></ul>
     ${post}
     <p class="score-status" id="score-status"></p>`;
 }
