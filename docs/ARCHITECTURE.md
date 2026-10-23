@@ -8,8 +8,12 @@
 - **`web/`** (TypeScript, bundled): the SPA (title → draft → loadout → gauntlet → battle → results, + Pokédex/pool) and a **battle Web Worker**.
 - **Battle worker** = referee + engine + driver, all in-process:
   - *Referee:* `@pkmn/sim` `BattleStream` running the rollmons custom format
-    `gen9customgame@@@Species Clause,+Past,Dynamax Clause,Terastal Clause,!! Max Move Count = 4,Adjust Level = 100`
-    (`+Past` enables Mega Stones; Z-Move/CFZ clauses are not in `@pkmn/sim` and are moot in gen9).
+    `gen9customgame@@@+Past,Dynamax Clause,Terastal Clause,!! Max Move Count = 4,Adjust Level = 100`
+    (`+Past` enables Mega Stones; Z-Move/CFZ clauses are not in `@pkmn/sim` and are moot in gen9;
+    Species Clause was dropped on 2026-10-23: Custom Game never enforces it, and the hosted replay
+    client reads the rule as "a repeated species is an Illusion user" and drew a Zoroark in the
+    team bar for a team with two Arceus formes. The runner also nicknames repeated formes
+    "Arceus Fairy" so their protocol idents differ).
   - *Engine:* poke-engine compiled to wasm (`engine/`, wasm-bindgen), features `gen9` only, Tera compiled out. Exposed calls: state from string, time-boxed MCTS, damage calc. Single-thread search.
   - *Driver:* builds the poke-engine state **directly from the sim's omniscient battle object** for the side to move (perfect information, both sides), runs MCTS for the side's budget (boss 25 ms / player 100 ms by default; per-band later), picks a choice (sample among choices within 75% of the best, as v1 did), issues `move X [mega]` / `switch N`.
   - *Output:* the standard Showdown protocol log → the existing replay embed (hosted player, hotlinked sprites) and the damage summary.
