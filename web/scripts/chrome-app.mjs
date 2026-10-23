@@ -81,11 +81,13 @@ try {
   await page.waitForFunction(() => window.__rollmons.screen() === 'loadout');
   const cards = await page.$$eval('#loadout-list .loadout-card', (cs) => cs.map((c) => ({name: c.querySelector('strong').textContent, options: c.querySelectorAll('option').length})));
   console.log('  loadout:', cards.map((c) => `${c.name} (${c.options || 1})`).join(', '));
+  // the Gauntlet step is gone for players; the developer page opens only locally or for the author's account
+  const steps = await page.$$eval('#steps .step', (ss) => ss.map((s) => s.dataset.step));
+  if (steps.includes('bosses')) throw new Error(`gauntlet step shown to players: ${steps}`);
+  const devBtn = await page.$eval('#dev-btn', (b) => !b.classList.contains('hidden'));
+  if (devBtn === hosted) throw new Error(`developer button ${devBtn ? "shown" : "hidden"} (hosted: ${hosted})`);
+  // campaign: the loadout button starts the ten tiered battles in the worker (stops on the first loss)
   await click('#screen-loadout .section-head .btn-primary');
-  await page.waitForFunction(() => window.__rollmons.screen() === 'bosses');
-
-  // campaign: ten tiered battles in the worker (stops on the first loss)
-  await click('#campaign-btn');
   await page.waitForFunction(() => window.__rollmons.screen() === 'battle');
   // Spoiler gate: after the engine has finished battle 1, nothing about it (or
   // about later bosses) is shown until its replay has been watched to the end.

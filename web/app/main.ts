@@ -41,6 +41,10 @@ const params = new URLSearchParams(location.search);
 const GATE = params.get('gate') !== '0';
 const API_BASE = params.get('api') ?? (/\.vercel\.app$/.test(location.hostname) ? '' : 'https://rollmon.vercel.app');
 const AUTH_ENABLED = API_BASE === '';
+/** The boss-ladder page is a developer tool: players go from the loadout straight into the campaign. Open for the author's account (and locally, where there are no accounts). */
+const DEV_ACCOUNTS = ['lonietzzz'];
+const accountId = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+const isDeveloper = () => !AUTH_ENABLED || (!!account && DEV_ACCOUNTS.includes(accountId(account.name)));
 // Vercel Web Analytics (page views, no cookies). The script is served by the
 // deployment only, so a local build does not request it.
 if (location.protocol === 'https:') {
@@ -101,7 +105,8 @@ function go(name: Screen): void {
   SCREENS.forEach((s) => $('screen-' + s).classList.toggle('active', s === name));
   $('topbar').classList.toggle('hidden', name === 'title');
   // The tools strip has one instance: in the topbar, or in the fixed corner on the title screen.
-  if (name === 'title') $('corner').append($('tools')); else $('topbar').insertBefore($('tools'), $('pokedex-btn'));
+  if (name === 'title') $('corner').append($('tools')); else $('topbar').insertBefore($('tools'), $('dev-btn'));
+  if (name === 'bosses' && !isDeveloper()) { go('loadout'); return; }
   $('corner').classList.toggle('hidden', name !== 'title');
   if (!$('board-drawer').classList.contains('hidden')) toggleBoard();
   if (name === 'loadout') renderLoadout();
@@ -120,7 +125,7 @@ function jumpToReplay(bid: string): void {
   setTimeout(() => { document.querySelector(`#theater [data-bid="${bid}"]`)?.scrollIntoView({behavior: 'smooth', block: 'start'}); }, 60);
 }
 function updateSteps(name: string): void {
-  const order: Record<string, number> = {draft: 0, loadout: 1, bosses: 2, battle: 3, results: 4};
+  const order: Record<string, number> = {draft: 0, loadout: 1, bosses: 1, battle: 2, results: 3};
   const cur = order[name];
   document.querySelectorAll<HTMLElement>('#steps .step').forEach((el) => {
     const i = order[el.dataset.step!];
@@ -922,6 +927,7 @@ async function submitFeedback(ev: Event): Promise<void> {
 let account: {name: string} | null = null;
 let authModeNow: 'login' | 'register' = 'login';
 function renderAccount(): void {
+  $('dev-btn').classList.toggle('hidden', !isDeveloper());
   const el = $('account');
   if (!AUTH_ENABLED) { el.innerHTML = ''; return; }
   el.innerHTML = account

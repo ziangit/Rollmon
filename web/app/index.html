@@ -21,7 +21,6 @@
   <nav class="steps" id="steps">
     <span class="step" data-step="draft" data-i18n="Draft">Draft</span>
     <span class="step" data-step="loadout" data-i18n="Loadout">Loadout</span>
-    <span class="step" data-step="bosses" data-i18n="Gauntlet">Gauntlet</span>
     <span class="step" data-step="battle" data-i18n="Battle">Battle</span>
     <span class="step" data-step="results" data-i18n="Results">Results</span>
   </nav>
@@ -32,6 +31,7 @@
     <select class="lang" data-lang-select onchange="setLanguage(this.value)" aria-label="Language"><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select>
     <span class="account" id="account"></span>
   </div>
+  <button class="btn btn-ghost btn-sm hidden" id="dev-btn" onclick="go('bosses')" data-i18n="⚙ Gauntlet">⚙ Gauntlet</button>
   <button class="btn btn-ghost btn-sm" id="pokedex-btn" onclick="togglePool()">Pokédex</button>
 </header>
 <!-- On the title screen (no topbar) the tools strip is moved into this fixed corner. -->
@@ -161,7 +161,7 @@
         <h1 data-i18n="Choose your sets">Choose your sets</h1>
         <p class="lead" data-i18n="Pick one set per Pokémon. Mega is opt-in — only one Mega can evolve per battle.">Pick one set per Pokémon. Mega is opt-in — only one Mega can evolve per battle.</p>
       </div>
-      <button class="btn btn-primary" onclick="go('bosses')" data-i18n="To the gauntlet →">To the gauntlet →</button>
+      <button class="btn btn-primary" onclick="startCampaign(true)" data-i18n="Start the gauntlet →">Start the gauntlet →</button>
     </div>
     <p class="status-line" id="loadout-status"></p>
     <div class="loadout-list" id="loadout-list"></div>
@@ -173,7 +173,7 @@
   <div class="wrap">
     <div class="section-head">
       <div>
-        <p class="eyebrow" data-i18n="Step 3 — Set the ladder">Step 3 — Set the ladder</p>
+        <p class="eyebrow" data-i18n="Developer — Set the ladder">Developer — Set the ladder</p>
         <h1 data-i18n="Boss gauntlet">Boss gauntlet</h1>
         <p class="lead" data-i18n="Run the tiered 10-battle campaign (random team per level), or set a manual ladder below.">Run the tiered 10-battle campaign (random team per level), or set a manual ladder below.</p>
       </div>
