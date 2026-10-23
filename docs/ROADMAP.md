@@ -324,7 +324,11 @@ picked sprite into its slot; the author asked for that to go, and its
 fade had been left filling forwards on the panel element, which blanked
 the sets after the first pick (fixed by cancelling it after it finishes).
 All of it is skipped under `prefers-reduced-motion`, and a pick is ignored
-while one plays.
+while one plays. The "Team assembled" card that followed the sixth pick
+was removed later that day (author: the export is pointless before the
+sets are chosen, and the next step is the loadout anyway): the sixth
+pick's transition lands on the loadout screen, which now holds the Copy
+team export button next to Start the gauntlet.
 **Boss page is a developer page (2026-10-22, author's call).** Players
 never needed the ladder editor: the loadout's button now starts the tiered
 campaign directly, the Gauntlet step is gone from the topbar (Draft ·
