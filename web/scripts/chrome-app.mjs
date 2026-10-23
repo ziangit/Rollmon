@@ -38,14 +38,20 @@ try {
   // the board opens as a drawer. A local build reads the board cross-origin and has no accounts.
   const hosted = /^https:/.test(base);
   await page.waitForFunction(() => document.getElementById('board-btn').dataset.state !== 'loading', {timeout: 20_000}).catch(() => {});
-  const tools = await page.evaluate(() => ({corner: !!document.querySelector('#corner #tools'), board: document.getElementById('board-btn').dataset.state === 'ready', signin: !!document.getElementById('signin-btn')}));
+  const tools = await page.evaluate(() => ({corner: !!document.querySelector('#corner #tools'), board: document.getElementById('board-btn').dataset.state === 'ready', signin: !!document.getElementById('signin-btn'), feedback: !!document.getElementById('feedback-btn')}));
   if (tools.board) {
     await click('#board-btn');
     await page.waitForFunction(() => !document.getElementById('board-drawer').classList.contains('hidden') && document.querySelector('#board-card .board-list li'));
     tools.rows = await page.$$eval('#board-card .board-list li', (r) => r.length);
     await click('#board-backdrop');
   }
-  console.log(`[${elapsed()}] title tools:`, JSON.stringify(tools));
+  // feedback: the button in the strip; the pool's "Contribute a set" opens the drawer for that species
+  const contribute = await page.$$eval('#pool-detail .contribute', (b) => b.length);
+  await page.evaluate(() => window.openFeedback('set', 'lucario'));
+  const drawer = await page.evaluate(() => ({open: !document.getElementById('feedback-drawer').classList.contains('hidden'), title: document.getElementById('feedback-title').textContent}));
+  await page.evaluate(() => window.closeFeedback());
+  console.log(`[${elapsed()}] title tools:`, JSON.stringify(tools), '| contribute buttons:', contribute, '| drawer:', JSON.stringify(drawer));
+  if (!tools.feedback || !contribute || !drawer.open || !/Lucario/.test(drawer.title)) { console.error('feedback button, contribute button, or drawer missing'); process.exitCode = 1; }
   if (!tools.corner || tools.signin !== hosted) { console.error('tools strip not in the corner, or the account button does not match the deployment'); process.exitCode = 1; }
 
   // draft: six rounds, first candidate each time

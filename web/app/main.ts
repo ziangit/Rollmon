@@ -11,7 +11,7 @@ import {type MatrixCellView,
   type SessionView, type SpeciesView, speciesSetOptions} from './session.ts';
 import {LEGENDARY, RARITY_NAMES} from '../game/legality-matrix.ts';
 import {initRoller, rollMon, setRollerPool} from './roller.ts';
-import {applyStatic, initLang, localSpeciesName, setLang, t, type Lang} from './i18n.ts';
+import {applyStatic, initLang, lang, localSpeciesName, setLang, t, type Lang} from './i18n.ts';
 
 /* =====================================================================
    STATE
@@ -826,6 +826,50 @@ function toggleBoard(): void {
   if (open && boardEntries !== null) void loadBoard();
 }
 
+/* ---- feedback drawer: free text, or a set contribution for one species (docs/ROADMAP.md §7) */
+let feedbackKind: 'feedback' | 'set' = 'feedback';
+let feedbackSpecies = '';
+function openFeedback(kind: 'feedback' | 'set' = 'feedback', speciesId = ''): void {
+  feedbackKind = kind; feedbackSpecies = speciesId;
+  const view = state.pool?.find((p) => p.id === speciesId);
+  const name = view ? monName(view) : speciesId;
+  const english = state.ctx?.legality.species[speciesId]?.name ?? speciesId;
+  $('feedback-title').textContent = kind === 'set' ? t('Contribute a set: {name}', {name}) : t('Feedback');
+  $('feedback-hint').textContent = kind === 'set'
+    ? t('Paste one or more Showdown export blocks for {name}. A nickname becomes the set\'s label.', {name})
+    : t('What broke, or what would you change? The screen and language you are on are sent along.');
+  const ta = $<HTMLTextAreaElement>('feedback-text');
+  ta.value = '';
+  ta.placeholder = kind === 'set' ? `${english} @ Leftovers\nAbility: …\nEVs: 252 HP / 252 Atk / 4 Spe\nAdamant Nature\n- …\n- …\n- …\n- …` : '';
+  $('feedback-error').textContent = '';
+  $('feedback-status').textContent = AUTH_ENABLED ? '' : t('Feedback can only be sent from the hosted site.');
+  $<HTMLButtonElement>('feedback-send').disabled = !AUTH_ENABLED;
+  $('feedback-drawer').classList.remove('hidden');
+  $('feedback-backdrop').classList.remove('hidden');
+  ta.focus();
+}
+function closeFeedback(): void {
+  $('feedback-drawer').classList.add('hidden');
+  $('feedback-backdrop').classList.add('hidden');
+}
+async function submitFeedback(ev: Event): Promise<void> {
+  ev.preventDefault();
+  const btn = $<HTMLButtonElement>('feedback-send'), err = $('feedback-error'), status = $('feedback-status');
+  btn.disabled = true; err.textContent = ''; status.textContent = t('Sending…');
+  try {
+    const payload = {kind: feedbackKind, species: feedbackSpecies || null, text: $<HTMLTextAreaElement>('feedback-text').value, screen: currentScreen, lang: lang(), seed: state.session?.seed ?? null};
+    const res = await fetch(`${API_BASE}/api/feedback`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+    const body = await res.json().catch(() => ({})) as {error?: string};
+    if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+    status.textContent = t('Thanks, received.');
+    $<HTMLTextAreaElement>('feedback-text').value = '';
+  } catch (e) {
+    status.textContent = '';
+    err.textContent = errorMessage(e);
+  }
+  btn.disabled = false;
+}
+
 /* ---- accounts (Showdown-style name + password; the session is a same-origin cookie) */
 let account: {name: string} | null = null;
 let authModeNow: 'login' | 'register' = 'login';
@@ -1006,7 +1050,7 @@ function speciesDetail(p: SpeciesView): string {
       <div><dt>${t('Cells')}</dt><dd>${cells}</dd></div>
     </dl>
     <div class="pool-set">
-      <div class="pool-set-head">${t('{n} sets', {n: sets.length})}</div>
+      <div class="pool-set-head"><span>${t('{n} sets', {n: sets.length})}</span><button class="btn btn-ghost btn-sm contribute" onclick="openFeedback('set','${p.id}')">${t('Contribute a set')}</button></div>
       <ul class="pool-sets">${sets.map((o, i) => `<li><button class="stab${i === open ? ' on' : ''}" onclick="poolSet(${i})">${esc(o.label)}${o.isMega ? ' ⚡' : ''}</button></li>`).join('')}</ul>
       <div class="pool-kv">${esc(set.item ? displayName(set.item) : '—')} · ${esc(displayName(set.ability))}</div>
       <ul class="pool-moves">${set.moves.map((mv) => `<li class="pmove t-${moveType(mv)}">${esc(moveName(mv))}</li>`).join('')}</ul>
@@ -1040,7 +1084,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openFeedback, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);

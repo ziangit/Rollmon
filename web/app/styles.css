@@ -29,9 +29,12 @@
   --r:    16px;
   --r-sm: 10px;
   --font-display:'Pixelify Sans','Hiragino Maru Gothic ProN',system-ui,sans-serif;
-  --font-body:'Pixelify Sans',system-ui,sans-serif;
+  /* Jersey 15 for running text and numbers: same pixel weight as the Pixelify
+     headings, but every digit is distinct (Pixelify's 2/5 and 1/7 are near
+     mirror images). CJK falls back to the system font. */
+  --font-body:'Jersey 15','Pixelify Sans',system-ui,sans-serif;
   --font-pixel:'Press Start 2P','Pixelify Sans',monospace;
-  --font-mono:'Pixelify Sans',ui-monospace,Menlo,monospace;
+  --font-mono:'Jersey 15',ui-monospace,Menlo,monospace;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -156,6 +159,14 @@ button:disabled{cursor:not-allowed;opacity:.42}
   background:var(--surface);border-left:4px solid var(--frame);box-shadow:-4px 0 0 var(--edge);animation:slide .2s steps(4)}
 @keyframes slide{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
 .drawer .panel-head{margin-bottom:.8rem}
+/* ---- feedback drawer ---- */
+.feedback-form{display:grid;gap:.6rem}
+.feedback-hint{margin:0;color:var(--muted);font-size:.9rem;line-height:1.5}
+.feedback-form textarea{width:100%;min-height:12rem;padding:.6rem .7rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font:inherit;line-height:1.4;resize:vertical}
+.feedback-form textarea:focus{outline:3px solid var(--gold);outline-offset:0}
+.feedback-actions{display:flex;justify-content:space-between;align-items:center;gap:.6rem}
+.feedback-status{color:var(--good);font-size:.9rem}
+.pool-set-head{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
 /* ---- account dialog ---- */
 .auth-dialog{width:min(22rem,calc(100vw - 2rem));padding:1.1rem 1.2rem;color:var(--ink);background:var(--surface);
   border:3px solid var(--frame);border-radius:var(--r-sm);box-shadow:0 0 0 3px var(--edge),inset 0 0 0 3px var(--edge),5px 6px 0 rgba(8,6,18,.5)}
