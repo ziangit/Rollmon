@@ -14,7 +14,8 @@ const errorOf = (res: {body: unknown}) => (res.body as {error: string}).error;
 test('feedback: free text is stored with its context; bad input is refused', async () => {
   const store = memoryStore();
   const api = createApi({ctx, store: async () => store, secret: 's3cret'});
-  assert.equal((await api({...post({}), method: 'GET'})).status, 405);
+  assert.equal((await api({...post({}), method: 'GET'})).status, 401, 'reading needs the token or a developer account');
+  assert.equal((await api({...post({}), method: 'PUT'})).status, 405);
   assert.equal((await api(post({kind: 'bug', text: 'x'}))).status, 400);
   assert.equal((await api(post({kind: 'feedback', text: '   '}))).status, 400);
   assert.equal((await api(post({kind: 'feedback', text: 'x'.repeat(4001)}))).status, 400);
@@ -55,4 +56,22 @@ test('feedback is limited per network per day; without a store it is 503', async
   const cookie = reg.setCookie!.split(';')[0];
   for (let i = 0; i < FEEDBACK_PER_IP_PER_DAY + 2; i++) assert.equal((await api(post({kind: 'feedback', text: `dev ${i}`}, {cookie}))).status, 201);
   assert.equal((await api(post({kind: 'feedback', text: 'still capped'}))).status, 429, 'other visitors on that network stay capped');
+});
+
+test('the rows are readable with the read token or as a developer account, newest first, without addresses', async () => {
+  const store = memoryStore();
+  const api = createApi({ctx, store: async () => store, secret: 's3cret', readToken: 'tok-123'});
+  await api(post({kind: 'feedback', text: 'first'}));
+  await api(post({kind: 'feedback', text: 'second'}));
+  const get = (extra: Partial<ApiRequest> = {}) => api({method: 'GET', path: '/api/feedback', query: new URLSearchParams(), body: null, ip: '203.0.113.9', ...extra});
+  assert.equal((await get()).status, 401);
+  assert.equal((await get({authorization: 'Bearer wrong'})).status, 401);
+  const res = await get({authorization: 'Bearer tok-123'});
+  assert.equal(res.status, 200);
+  const rows = (res.body as {rows: Record<string, unknown>[]}).rows;
+  assert.deepEqual(rows.map((r) => r.text), ['second', 'first']);
+  assert.ok(!('ipHash' in rows[0]) && !('userId' in rows[0]), 'no hashed address or user id in the listing');
+  const reg = await api({method: 'POST', path: '/api/auth/register', query: new URLSearchParams(), body: JSON.stringify({name: 'lonietzzz', password: 'hunter22x'}), ip: '203.0.113.9'});
+  assert.equal((await get({cookie: reg.setCookie!.split(';')[0]})).status, 200);
+  assert.equal((await createApi({ctx, store: async () => store, secret: 's3cret'})(post({kind: 'feedback', text: 'x'}, {method: 'GET'} as Partial<ApiRequest>))).status, 401, 'no token configured: only developers');
 });

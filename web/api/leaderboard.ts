@@ -60,6 +60,8 @@ export interface ApiRequest {
   ip?: string | null;
   /** User-Agent, kept with feedback so a layout report names its browser */
   agent?: string | null;
+  /** Authorization header (the feedback read token) */
+  authorization?: string | null;
 }
 export interface ApiResponse { status: number; body: unknown; setCookie?: string }
 
@@ -72,6 +74,8 @@ export interface ApiOptions {
   ctx: GameContext;
   /** Signs session cookies and hashes addresses; without it accounts are off and scores cannot be posted. */
   secret?: string;
+  /** Lets the author's tooling read feedback rows (`GET /api/feedback`, `Authorization: Bearer <token>`); a signed-in developer account can read them too. */
+  readToken?: string;
   now?: () => number;
 }
 
@@ -119,9 +123,17 @@ export function createApi(opts: ApiOptions): (req: ApiRequest) => Promise<ApiRes
   }
 
   async function feedback(req: ApiRequest): Promise<ApiResponse> {
-    if (req.method !== 'POST') return {status: 405, body: {error: 'method not allowed'}};
+    if (req.method !== 'POST' && req.method !== 'GET') return {status: 405, body: {error: 'method not allowed'}};
     const store = await opts.store();
     if (!store) return {status: 503, body: {error: 'feedback not configured'}};
+    if (req.method === 'GET') {
+      // the author's tooling (bearer token) or a signed-in developer account reads the rows, newest first
+      const bearer = /^Bearer (\S+)$/.exec(req.authorization ?? '')?.[1] ?? null;
+      const allowed = (opts.readToken && bearer === opts.readToken) || isDevAccount(session(req)?.name);
+      if (!allowed) return {status: 401, body: {error: 'sign in as a developer account or send the read token'}};
+      const limit = Math.min(500, Math.max(1, Number(req.query.get('limit') ?? 200) || 200));
+      return {status: 200, body: {rows: await store.feedbackList(limit)}};
+    }
     const payload = parse<Record<string, unknown>>(req, 64 * 1024);
     if (isResponse(payload)) return payload;
     const checked = validateFeedback(payload, opts.ctx);
@@ -297,6 +309,11 @@ export async function neonStore(url: string): Promise<Store> {
       const [{n}] = await sql.query('select count(*) as n from feedback where ip_hash = $1 and created_at > $2', [ip, since.toISOString()]) as {n: string | number}[];
       return Number(n);
     },
+    async feedbackList(limit) {
+      type F = {id: string | number; created_at: string; name: string | null; kind: 'feedback' | 'set'; species: string | null; note: string | null; screen: string | null; lang: string | null; seed: string | number | null; agent: string | null; body: string};
+      const rows = await sql.query('select id, created_at, name, kind, species, note, screen, lang, seed, agent, body from feedback order by id desc limit $1', [limit]) as F[];
+      return rows.map((r) => ({id: Number(r.id), createdAt: new Date(r.created_at).toISOString(), name: r.name, kind: r.kind, species: r.species, note: r.note, screen: r.screen, lang: r.lang, seed: r.seed === null ? null : Number(r.seed), agent: r.agent, text: r.body}));
+    },
   };
 }
 
@@ -335,7 +352,7 @@ export function nodeHandler(api: (req: ApiRequest) => Promise<ApiResponse>): (re
       }
       const forwarded = req.headers['x-forwarded-for'];
       const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0].trim() || (req.headers['x-real-ip'] as string | undefined) || req.socket?.remoteAddress || null;
-      send(await api({method: req.method ?? 'GET', path, query: url.searchParams, body, cookie: req.headers.cookie ?? null, ip, agent: (req.headers['user-agent'] as string | undefined) ?? null}));
+      send(await api({method: req.method ?? 'GET', path, query: url.searchParams, body, cookie: req.headers.cookie ?? null, ip, agent: (req.headers['user-agent'] as string | undefined) ?? null, authorization: (req.headers.authorization as string | undefined) ?? null}));
     } catch (err) {
       console.error(err);
       send({status: 500, body: {error: 'internal error'}});

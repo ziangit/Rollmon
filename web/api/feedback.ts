@@ -29,9 +29,18 @@ export interface NewFeedback extends FeedbackRow {
   name: string | null;
   ipHash: string | null;
 }
+/** A stored row as the author's tooling reads it (no hashed address). */
+export interface StoredFeedback extends FeedbackRow {
+  id: number;
+  createdAt: string;
+  name: string | null;
+  agent: string | null;
+}
 export interface FeedbackStore {
   addFeedback(f: NewFeedback): Promise<{id: number}>;
   feedbackSince(ipHash: string, since: Date): Promise<number>;
+  /** newest first */
+  feedbackList(limit: number): Promise<StoredFeedback[]>;
 }
 
 const str = (v: unknown, max: number): string | null => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);

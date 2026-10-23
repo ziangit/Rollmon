@@ -13,4 +13,4 @@ const ctx = createGameContext(data);
 const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? '';
 let store: Promise<Store | null> | null = null;
 
-export default nodeHandler(createApi({ctx, secret: process.env.SESSION_SECRET, store: () => (store ??= url ? neonStore(url) : Promise.resolve(null))}));
+export default nodeHandler(createApi({ctx, secret: process.env.SESSION_SECRET, readToken: process.env.FEEDBACK_READ_TOKEN, store: () => (store ??= url ? neonStore(url) : Promise.resolve(null))}));
