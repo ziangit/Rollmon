@@ -11,11 +11,11 @@ export const TYPES = [
 ] as const;
 export const GENERATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
 
-// Rarity (docs/ROADMAP.md §1): the species' Showdown tier rank, lifted to
-// legendary when its base stat total is over 600, so a banned-tier Pokémon
-// and a 600+ BST one both read as top rank to a player who knows only one of
-// the two scales. The page shows the four ranks as Poké / Great / Ultra /
-// Master Ball; these are the internal names.
+// Rarity (docs/ROADMAP.md §1): the species' Showdown tier rank alone; base
+// stats only rank species that have no tier. A species whose override file
+// holds a Mega set ranks by the Mega forme's tier when that is higher
+// (Charizard is ZU, Mega Charizard OU). The page shows the four ranks as
+// Poké / Great / Ultra / Master Ball; these are the internal names.
 export type Rarity = 0 | 1 | 2 | 3;
 export const COMMON: Rarity = 0, UNCOMMON: Rarity = 1, RARE: Rarity = 2, LEGENDARY: Rarity = 3;
 export const RARITY_NAMES = ['common', 'uncommon', 'rare', 'legendary'] as const;
@@ -27,6 +27,8 @@ export const TIER_RANK: Readonly<Record<string, Rarity>> = Object.freeze({
 export const LEGENDARY_BST_THRESHOLD = 600;
 /** Ranked by tier alone: Truant and Slow Start make the stat-ball a trap, not a prize. */
 export const TIER_ONLY_SPECIES = new Set(['slaking', 'regigigas']);
+/** Formes left out of the pool: the Gourgeist sizes differ only in stats, so one (Super, the usual competitive pick) is enough. */
+export const DROPPED_FORMES = new Set(['gourgeist', 'gourgeistsmall', 'gourgeistlarge']);
 export const MIN_CELL_SIZE = 1;
 
 /** Base stats alone say only one thing: over the threshold is legendary, everything else is common. */
@@ -39,6 +41,36 @@ export function rarityOf(speciesId: string, tier: string | undefined, baseStatTo
   if (tier) return TIER_RANK[tier] ?? COMMON;
   if (TIER_ONLY_SPECIES.has(speciesId)) return COMMON;
   return bstRank(baseStatTotal);
+}
+
+const tierRank = (tier: string | undefined): number => (tier ? (TIER_RANK[tier] ?? COMMON) : -1);
+/** The species' own tier, or a Mega forme's when a Mega set it can choose plays in a higher tier. */
+export function effectiveTier(base: string | undefined, megaTiers: readonly (string | undefined)[]): string | undefined {
+  let best = base;
+  for (const tier of megaTiers) if (tierRank(tier) > tierRank(best)) best = tier;
+  return best;
+}
+
+const normalizeItem = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+/** The Mega forme a held Mega Stone evolves this species into, if the item is one. */
+export function megaFormeForItem(speciesId: string, item: string, pokedex: Pokedex): string | null {
+  const key = normalizeItem(item);
+  if (!key) return null;
+  for (const suffix of ['mega', 'megax', 'megay']) {
+    const forme = `${speciesId}${suffix}`;
+    const entry = pokedex[forme];
+    if (entry && normalizeItem(String(entry.requiredItem ?? '')) === key) return forme;
+  }
+  return null;
+}
+/** Mega formes a species' override file holds a set for (one `Species @ Mega Stone` line each). */
+export function megaFormesInOverride(speciesId: string, text: string | undefined, pokedex: Pokedex): string[] {
+  const formes = new Set<string>();
+  for (const m of (text ?? '').matchAll(/^.+ @ (.+)$/gm)) {
+    const forme = megaFormeForItem(speciesId, m[1].trim(), pokedex);
+    if (forme) formes.add(forme);
+  }
+  return [...formes];
 }
 export const DEFAULT_SET_SOURCE: SetSource = 'smogon';
 
@@ -72,7 +104,7 @@ export interface SpeciesMetadata {
   types: string[];
   debutGeneration: number;
   baseStatTotal: number;
-  /** Showdown tier at the time of `scripts/tiers.ts`, if any */
+  /** Showdown tier at the time of `scripts/tiers.ts`, if any; a Mega forme's when a choosable Mega set plays higher */
   tier?: string;
   rarity: Rarity;
   /** rarity === LEGENDARY; kept as a flag for views */
@@ -186,7 +218,7 @@ export function buildLegalityData(inputs: LegalityInputs): LegalityData {
   // custom set (e.g. a Mega-Stone set) is draftable even when the configured
   // source has no usable set for it. Non-species files are filtered out here.
   const overrideAtoms = Object.keys(inputs.overrides ?? {}).sort().filter((id) => id in pokedex);
-  const atoms = [...new Set([...sourceAtoms, ...overrideAtoms])].sort();
+  const atoms = [...new Set([...sourceAtoms, ...overrideAtoms])].filter((id) => !DROPPED_FORMES.has(id)).sort();
   const species: Record<string, SpeciesMetadata> = {};
 
   for (const speciesId of atoms) {
@@ -195,7 +227,8 @@ export function buildLegalityData(inputs: LegalityInputs): LegalityData {
     validateNoBattleOnlyMechanics(speciesId, entry);
     if (!Array.isArray(entry.types) || !entry.types.length) throw new LegalityDataError(`${speciesId} has no current type data`);
     const bst = baseStatTotal(speciesId, entry);
-    const tier = inputs.tiers?.[speciesId];
+    const megaFormes = megaFormesInOverride(speciesId, inputs.overrides?.[speciesId], pokedex);
+    const tier = effectiveTier(inputs.tiers?.[speciesId], megaFormes.map((forme) => inputs.tiers?.[forme]));
     const rarity = rarityOf(speciesId, tier, bst);
     species[speciesId] = {
       speciesId,

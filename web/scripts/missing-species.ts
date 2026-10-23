@@ -3,6 +3,7 @@
 // formes are left out; cosmetic and cap formes too.
 import type {GameContext} from '../app/session.ts';
 import type {GameData} from '../game/data.ts';
+import {DROPPED_FORMES} from '../game/legality-matrix.ts';
 
 export interface MissingSpecies { id: string; name: string; bst: number; types: string; forme: boolean }
 
@@ -22,7 +23,7 @@ export function missingSpecies(data: GameData, ctx: GameContext): MissingSpecies
     if (e.baseSpecies && dex[baseId]?.cosmeticFormes?.includes(e.name)) continue;
     if (seen.has(e.name)) continue;
     seen.add(e.name);
-    if (atoms.has(id)) continue;
+    if (atoms.has(id) || DROPPED_FORMES.has(id)) continue;
     const bst = Object.values(e.baseStats as Record<string, number>).reduce((a, b) => a + b, 0);
     // regional formes count as species of their own; other formes are listed separately
     const forme = baseId !== id && !/alola|galar|hisui|paldea/.test(id);

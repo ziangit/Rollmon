@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {
   COMMON, FORME_DEBUT_GENERATION_OVERRIDES, LEGENDARY, MIN_CELL_SIZE, RARE, TIER_ONLY_SPECIES, UNCOMMON,
-  buildLegalityData, buildMatrix, bstRank, cellsForSpecies, rarityOf, type SpeciesMetadata,
+  buildLegalityData, buildMatrix, bstRank, cellsForSpecies, DROPPED_FORMES, effectiveTier, rarityOf, type SpeciesMetadata,
 } from './legality-matrix.ts';
 import {loadUsableSmogonSets} from './smogon-sets.ts';
 import {loadGameData} from '../scripts/game-data.ts';
@@ -19,8 +19,8 @@ const metadata = (id: string, types: string[], generation: number, opts: {legend
 test('atom count matches the usable Smogon source', () => {
   const source = loadUsableSmogonSets(data.smogon, data);
   assert.equal(Object.keys(source).length, 639);
-  assert.equal(legality.atoms.length, 639);
-  assert.deepEqual(new Set(legality.atoms), new Set(Object.keys(source)));
+  assert.equal(legality.atoms.length, 636); // the three dropped Gourgeist sizes
+  assert.deepEqual(new Set(legality.atoms), new Set(Object.keys(source).filter((id) => !DROPPED_FORMES.has(id))));
 });
 
 test('randbats source remains available', () => {
@@ -93,7 +93,26 @@ test('real species land in the expected rarity buckets', () => {
   for (const m of Object.values(legality.species)) assert.equal(m.legendary, m.rarity === LEGENDARY);
   const counts = [0, 0, 0, 0];
   for (const m of Object.values(legality.species)) counts[m.rarity]++;
-  assert.deepEqual(counts, [362, 131, 72, 74]);
+  assert.deepEqual(counts, [359, 131, 72, 74]);
+});
+
+test('the Gourgeist sizes collapse to Gourgeist-Super', () => {
+  assert.ok('gourgeistsuper' in legality.species);
+  for (const id of ['gourgeist', 'gourgeistsmall', 'gourgeistlarge']) assert.ok(!(id in legality.species), id);
+});
+
+test('a choosable Mega set ranks the species by the Mega forme\'s tier when that is higher', () => {
+  assert.equal(effectiveTier('ZU', ['OU', 'OU']), 'OU');
+  assert.equal(effectiveTier('OU', ['OU']), 'OU');
+  assert.equal(effectiveTier('RUBL', ['RU']), 'RUBL'); // Blastoise: the Mega plays lower, the base tier stays
+  assert.equal(effectiveTier(undefined, [undefined]), undefined);
+  const withMegas = buildLegalityData(data); // the checked-in override files
+  const s = (id: string) => withMegas.species[id];
+  assert.equal(s('charizard').tier, 'OU'); assert.equal(s('charizard').rarity, RARE);
+  assert.equal(s('salamence').tier, 'Uber'); assert.equal(s('salamence').rarity, LEGENDARY);
+  assert.equal(s('lucario').rarity, LEGENDARY); assert.equal(s('tyranitar').rarity, RARE);
+  assert.equal(s('abomasnow').rarity, COMMON); // Mega Abomasnow is NU: no lift
+  assert.equal(legality.species.charizard.rarity, COMMON); // without the override files nothing changes
 });
 
 test('without tier data rarity falls back to base stats', () => {

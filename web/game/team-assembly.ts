@@ -1,7 +1,7 @@
 // Assemble drafted atoms into fixed-level Showdown exports and enumerate the
 // sets a player may choose on the loadout screen. Port of rollmons/team_assembly.py.
 import {TEAM_SIZE} from './draft.ts';
-import {DEFAULT_SET_SOURCE, type Pokedex, type SetSource} from './legality-matrix.ts';
+import {DEFAULT_SET_SOURCE, megaFormeForItem, type Pokedex, type SetSource} from './legality-matrix.ts';
 import {defaultRng, type WeightedRng} from './rng.ts';
 import {exportBlocks, titleCase, toId} from './showdown-export.ts';
 import {loadUsableSmogonSets, type SmogonJson, type SmogonSet} from './smogon-sets.ts';
@@ -180,16 +180,7 @@ export function normalizeOverrideExport(exportText: string): string {
   return lines.join('\n').trim();
 }
 
-export function megaFormeForItem(speciesId: string, item: string, pokedex: Pokedex): string | null {
-  const key = normalizeItem(item);
-  if (!key) return null;
-  for (const suffix of ['mega', 'megax', 'megay']) {
-    const forme = `${speciesId}${suffix}`;
-    const entry = pokedex[forme];
-    if (entry && normalizeItem(String(entry.requiredItem ?? '')) === key) return forme;
-  }
-  return null;
-}
+export {megaFormeForItem};
 
 function overrideLabel(megaForme: string | null, index: number): string {
   if (megaForme === null) return `Custom ${index + 1}`;
