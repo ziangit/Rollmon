@@ -230,12 +230,18 @@ lists what is left:
   the right end of the topbar elsewhere. The board opens as a drawer, so the
   title screen keeps only the logo and the Start panel.
 
-### Feedback and set contributions (built 2026-10-22)
+### Feedback, set and boss contributions (built 2026-10-22, bosses 2026-10-23)
 A **✉ Feedback** button in the tools strip opens a drawer with one text
 box; **Contribute a set** in the pool's species panel opens the same drawer
 for that species, and the paste must parse as a Showdown export for it
 (`parseShowdownExport`, every block's species checked) or it is refused
-with the parser's message. `POST /api/feedback` (`web/api/feedback.ts`,
+with the parser's message. **Contribute a boss** on the results screen
+(next to the team export; a player who just climbed the ladder knows what
+each level should look like) opens it for a boss team: a boss name (kind
+`boss`, name stored in the `species` column), a full six-Pokémon export,
+and a required "fits level" line (which ladder level, 1–10, and why; the
+`note` column). A landed boss is a file in `rollmons/bosses/` or the band
+folder under `rollmons/pool/` the author assigns. `POST /api/feedback` (`web/api/feedback.ts`,
 same function, Vercel route `?op=feedback`) stores kind, text, species,
 screen, language, seed, user agent, the account name when signed in, and
 the hashed address; 10 per network per day, except for the author's accounts
