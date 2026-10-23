@@ -218,8 +218,11 @@ export const SCHEMA = [
      seed bigint,
      agent text,
      body text not null,
-     ip_hash text
+     ip_hash text,
+     note text
    )`,
+  // 2026-10-22: set contributions carry a one-line summary (tables created before then lack the column)
+  'alter table feedback add column if not exists note text',
   'create index if not exists feedback_ip_idx on feedback (ip_hash, created_at)',
 ];
 
@@ -276,8 +279,8 @@ export async function neonStore(url: string): Promise<Store> {
     },
     async addFeedback(f) {
       const [row] = await sql.query(
-        'insert into feedback (user_id, name, kind, species, screen, lang, seed, agent, body, ip_hash) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning id',
-        [f.userId, f.name, f.kind, f.species, f.screen, f.lang, f.seed, f.agent, f.text, f.ipHash]) as {id: string | number}[];
+        'insert into feedback (user_id, name, kind, species, note, screen, lang, seed, agent, body, ip_hash) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning id',
+        [f.userId, f.name, f.kind, f.species, f.note, f.screen, f.lang, f.seed, f.agent, f.text, f.ipHash]) as {id: string | number}[];
       return {id: Number(row.id)};
     },
     async feedbackSince(ip, since) {

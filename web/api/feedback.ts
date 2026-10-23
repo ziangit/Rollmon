@@ -8,6 +8,8 @@ import {parseShowdownExport, SubmissionError} from '../game/submissions.ts';
 
 export const FEEDBACK_PER_IP_PER_DAY = 10;
 export const FEEDBACK_MAX_CHARS = 4000;
+/** the one-line summary a set contribution comes with */
+export const FEEDBACK_NOTE_MAX_CHARS = 200;
 export type FeedbackKind = 'feedback' | 'set';
 
 export interface FeedbackRow {
@@ -15,6 +17,8 @@ export interface FeedbackRow {
   text: string;
   /** species id a set contribution is for */
   species: string | null;
+  /** a set contribution's summary: what the set does, in one line */
+  note: string | null;
   screen: string | null;
   lang: string | null;
   seed: number | null;
@@ -40,9 +44,13 @@ export function validateFeedback(payload: Record<string, unknown>, ctx: GameCont
   if (!text) return {error: 'write something first'};
   if (text.length > FEEDBACK_MAX_CHARS) return {error: `at most ${FEEDBACK_MAX_CHARS} characters`};
   let species: string | null = null;
+  let note: string | null = null;
   if (kind === 'set') {
     species = str(payload.species, 40);
     if (!species || !(species in ctx.legality.species)) return {error: 'unknown species'};
+    note = str(payload.note, FEEDBACK_NOTE_MAX_CHARS);
+    if (!note) return {error: 'say what the set does first'};
+    if (typeof payload.note === 'string' && payload.note.trim().length > FEEDBACK_NOTE_MAX_CHARS) return {error: `summary: at most ${FEEDBACK_NOTE_MAX_CHARS} characters`};
     try {
       const wrong = parseShowdownExport(text, {source: species}).find((m) => m.species !== species);
       if (wrong) return {error: `that export is for ${wrong.species}, not ${species}`};
@@ -52,5 +60,5 @@ export function validateFeedback(payload: Record<string, unknown>, ctx: GameCont
     }
   }
   const seed = typeof payload.seed === 'number' && Number.isFinite(payload.seed) ? payload.seed : null;
-  return {row: {kind, text, species, screen: str(payload.screen, 32), lang: str(payload.lang, 8), seed}};
+  return {row: {kind, text, species, note, screen: str(payload.screen, 32), lang: str(payload.lang, 8), seed}};
 }

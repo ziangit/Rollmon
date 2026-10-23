@@ -23,18 +23,23 @@ test('feedback: free text is stored with its context; bad input is refused', asy
   assert.equal(store.feedback.length, 1);
   const {id, createdAt, ipHash, ...row} = store.feedback[0];
   assert.ok(id > 0 && createdAt && ipHash, 'id, time and hashed address');
-  assert.deepEqual(row, {kind: 'feedback', text: 'the phone layout breaks', species: null, screen: 'battle', lang: 'zh', seed: 7, agent: 'test-agent', userId: null, name: null});
+  assert.deepEqual(row, {kind: 'feedback', text: 'the phone layout breaks', species: null, note: null, screen: 'battle', lang: 'zh', seed: 7, agent: 'test-agent', userId: null, name: null});
 });
 
 test('a set contribution must be a Showdown export for that species', async () => {
   const store = memoryStore();
   const api = createApi({ctx, store: async () => store, secret: 's3cret'});
   const set = 'Scarf (Sneasler) @ Choice Scarf\nAbility: Poison Touch\n- Close Combat\n- U-turn\n- Dire Claw\n- Throat Chop';
-  assert.equal(errorOf(await api(post({kind: 'set', species: 'nosuchmon', text: set}))), 'unknown species');
-  assert.match(errorOf(await api(post({kind: 'set', species: 'lucario', text: set}))), /sneasler/);
-  assert.equal((await api(post({kind: 'set', species: 'sneasler', text: 'not an export'}))).status, 400);
-  assert.equal((await api(post({kind: 'set', species: 'sneasler', text: set}))).status, 201);
+  const note = 'Scarf revenge killer; Dire Claw over Gunk Shot for the status roll';
+  assert.equal(errorOf(await api(post({kind: 'set', species: 'nosuchmon', text: set, note}))), 'unknown species');
+  assert.match(errorOf(await api(post({kind: 'set', species: 'lucario', text: set, note}))), /sneasler/);
+  assert.equal((await api(post({kind: 'set', species: 'sneasler', text: 'not an export', note}))).status, 400);
+  // a set comes with a one-line summary of what it does
+  assert.match(errorOf(await api(post({kind: 'set', species: 'sneasler', text: set}))), /what the set does/);
+  assert.match(errorOf(await api(post({kind: 'set', species: 'sneasler', text: set, note: 'x'.repeat(201)}))), /at most 200/);
+  assert.equal((await api(post({kind: 'set', species: 'sneasler', text: set, note}))).status, 201);
   assert.equal(store.feedback[0].species, 'sneasler');
+  assert.equal(store.feedback[0].note, note);
 });
 
 test('feedback is limited per network per day; without a store it is 503', async () => {
