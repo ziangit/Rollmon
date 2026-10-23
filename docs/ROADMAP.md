@@ -243,15 +243,30 @@ column is created on existing tables by an `alter table … if not exists`
 in the schema list), so a row reads as summary + export. Rows are read in
 the Neon console: `select * from feedback order by id desc`. No admin page.
 
-### Score (built; numbers are playtest knobs in `web/game/score.ts`)
+### Score (built; retuned 2026-10-23; numbers are playtest knobs in `web/game/score.ts`)
 ```
-score = Σ over won battles of  bandPoints × speedBonus  ×  teamHandicap
-bandPoints : Cakewalk 1, Meme 2, Red 3, Middle 5 each, Advanced 8 each, Air 15   (max 60)
-speedBonus : 1 + 0.25 × clamp((30 − turns) / 30, 0, 1)        (light; turns are the AI's doing)
-teamHandicap: mean over the six of costFactor(species)
-costFactor by Showdown tier: Uber/AG 0.5, OU 0.8, UU 1.0, RU 1.15, NU 1.3, PU/ZU 1.5
-tiebreak   : Pokémon left standing in the last battle, then total HP remaining
+score = round( Σ over won battles of  bandPoints × speedBonus  ×  teamHandicap  × 10 )
+bandPoints : Cakewalk 1, Meme 2, Red 3, Middle 5 each, Advanced 8 each, Air 30   (max 75)
+speedBonus : 1 + 0.05 × clamp((30 − turns) / 30, 0, 1)        (a token; the bots set the pace)
+teamHandicap: mean over the six of costFactor(forme played), rounded to 4 places
+costFactor by Showdown tier: Uber/AG 0.8, OU 0.88, UU 0.96, RU 1.04, NU 1.12, PU/ZU 1.2
+tiebreak   : fewer total turns, then the earlier post
 ```
+Decided with the author on 2026-10-23, keeping the 2026-10-18 shape: (1)
+the speed bonus was 25%, too much for something the player does not
+control, so it is a token 5%; (2) the handicap was 0.5–1.5, which let six
+ZU at level 5 beat six Ubers at level 8; at 0.8–1.2 a cheap team is worth
+about one level (six ZU at level 5 beat six Ubers at level 6, lose to
+level 7); (3) the last boss went from 15 to 30 points so that any clear
+(worst case six Ubers, 600) beats any run that fell short (best case six
+ZU at level 9 at full speed, 567): whoever beats the last boss tops the
+board. A species scores by the forme it plays: a chosen Mega set counts
+as the Mega forme's tier (closes the "draft ZU Charizard, play Mega X"
+hole; proofs carry set choices so the server verifies it). `turns` is
+stored per row (`alter table … if not exists`); rows from before carry 0
+and the old scale, so the board is wiped when this ships (`delete from
+leaderboard` in the Neon console). The earlier idea of a left-standing /
+HP tiebreak was never built and is dropped.
 A loss ends the run, so only wins count. The tier comes from the Showdown
 simulator's own data (`Dex.species.get(id).tier`); species absent from gen9
 use the latest generation where they had a tier (Nidoking UU in gen8, Raticate
