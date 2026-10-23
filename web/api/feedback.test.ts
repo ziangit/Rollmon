@@ -43,6 +43,22 @@ test('a set contribution must be a Showdown export for that species', async () =
   assert.equal(store.feedback[0].note, note);
 });
 
+test('a boss contribution is a named team of six with the level it fits', async () => {
+  const store = memoryStore();
+  const api = createApi({ctx, store: async () => store, secret: 's3cret'});
+  const team = loadGameData().bosses['leon'];
+  const note = 'Level 8: Mega Charizard X plus Dragapult; too fast for most mid-ladder teams';
+  assert.equal(errorOf(await api(post({kind: 'boss', text: team, note}))), 'name the boss first');
+  assert.match(errorOf(await api(post({kind: 'boss', boss: 'Leon <b>', text: team, note}))), /boss name/);
+  assert.match(errorOf(await api(post({kind: 'boss', boss: 'Leon', text: team}))), /which level/);
+  assert.match(errorOf(await api(post({kind: 'boss', boss: 'Leon', text: team.split('\n\n').slice(0, 5).join('\n\n'), note}))), /exactly 6/);
+  assert.equal((await api(post({kind: 'boss', boss: 'Leon', text: 'not a team', note}))).status, 400);
+  assert.equal((await api(post({kind: 'boss', boss: 'Leon', text: team, note}))).status, 201);
+  assert.equal(store.feedback[0].kind, 'boss');
+  assert.equal(store.feedback[0].species, 'Leon', 'the boss name travels in the species column');
+  assert.equal(store.feedback[0].note, note);
+});
+
 test('feedback is limited per network per day; without a store it is 503', async () => {
   const store = memoryStore();
   const api = createApi({ctx, store: async () => store, secret: 's3cret'});

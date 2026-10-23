@@ -132,6 +132,12 @@ try {
   const score = await page.evaluate(() => ({total: Number(document.getElementById('score-total')?.textContent), signin: !!document.getElementById('score-signin'), status: document.querySelector('#score-card .score-status')?.textContent ?? ''}));
   console.log('  score:', JSON.stringify(score), '| view score:', view.score, '| topbar tools:', await page.evaluate(() => !!document.querySelector('#topbar #tools')));
   if (!(score.total >= 0) || score.total !== view.score || score.signin !== hosted) { console.error('score card missing, does not match the session score, or lacks the sign-in button'); process.exitCode = 1; }
+  // a boss contribution opens from the results: the drawer asks for a name and the level it fits
+  await page.click('#contribute-boss');
+  const bossDrawer = await page.evaluate(() => ({open: !document.getElementById('feedback-drawer').classList.contains('hidden'), name: document.getElementById('feedback-name').required && !document.getElementById('feedback-name-field').classList.contains('hidden'), level: document.getElementById('feedback-note').required, label: document.getElementById('feedback-note-label').textContent}));
+  console.log(`[${elapsed()}] boss drawer:`, JSON.stringify(bossDrawer));
+  if (!bossDrawer.open || !bossDrawer.name || !bossDrawer.level) { console.error('contribute-a-boss drawer missing its name or level field'); process.exitCode = 1; }
+  await page.evaluate(() => window.closeFeedback());
   // the team export is on the results too; the clipboard is not readable headless, so check the button copies the session's export
   await page.evaluate(() => { navigator.clipboard.writeText = async (t) => { window.__copied = t; }; });
   await click('#copy-export-results');

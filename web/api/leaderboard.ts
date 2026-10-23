@@ -310,7 +310,7 @@ export async function neonStore(url: string): Promise<Store> {
       return Number(n);
     },
     async feedbackList(limit) {
-      type F = {id: string | number; created_at: string; name: string | null; kind: 'feedback' | 'set'; species: string | null; note: string | null; screen: string | null; lang: string | null; seed: string | number | null; agent: string | null; body: string};
+      type F = {id: string | number; created_at: string; name: string | null; kind: 'feedback' | 'set' | 'boss'; species: string | null; note: string | null; screen: string | null; lang: string | null; seed: string | number | null; agent: string | null; body: string};
       const rows = await sql.query('select id, created_at, name, kind, species, note, screen, lang, seed, agent, body from feedback order by id desc limit $1', [limit]) as F[];
       return rows.map((r) => ({id: Number(r.id), createdAt: new Date(r.created_at).toISOString(), name: r.name, kind: r.kind, species: r.species, note: r.note, screen: r.screen, lang: r.lang, seed: r.seed === null ? null : Number(r.seed), agent: r.agent, text: r.body}));
     },

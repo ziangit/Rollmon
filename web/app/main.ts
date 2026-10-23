@@ -872,26 +872,35 @@ function toggleBoard(): void {
   if (open && boardEntries !== null) void loadBoard();
 }
 
-/* ---- feedback drawer: free text, or a set contribution for one species (docs/ROADMAP.md §7) */
-let feedbackKind: 'feedback' | 'set' = 'feedback';
+/* ---- feedback drawer: free text, a set contribution for one species, or a boss team (docs/ROADMAP.md §7) */
+type FeedbackKind = 'feedback' | 'set' | 'boss';
+let feedbackKind: FeedbackKind = 'feedback';
 let feedbackSpecies = '';
-function openFeedback(kind: 'feedback' | 'set' = 'feedback', speciesId = ''): void {
+function openFeedback(kind: FeedbackKind = 'feedback', speciesId = ''): void {
   feedbackKind = kind; feedbackSpecies = speciesId;
   const view = state.pool?.find((p) => p.id === speciesId);
   const name = view ? monName(view) : speciesId;
   const english = state.ctx?.legality.species[speciesId]?.name ?? speciesId;
-  $('feedback-title').textContent = kind === 'set' ? t('Contribute a set: {name}', {name}) : t('Feedback');
+  $('feedback-title').textContent = kind === 'set' ? t('Contribute a set: {name}', {name}) : kind === 'boss' ? t('Contribute a boss') : t('Feedback');
   $('feedback-hint').textContent = kind === 'set'
     ? t('Paste one or more Showdown export blocks for {name}. A nickname becomes the set\'s label.', {name})
-    : t('What broke, or what would you change? The screen and language you are on are sent along.');
+    : kind === 'boss'
+      ? t('Paste a full team of six as a Showdown export, name the boss, and say which ladder level (1–10) it fits and why.')
+      : t('What broke, or what would you change? The screen and language you are on are sent along.');
   const ta = $<HTMLTextAreaElement>('feedback-text');
   ta.value = '';
-  ta.placeholder = kind === 'set' ? `${english} @ Leftovers\nAbility: …\nEVs: 252 HP / 252 Atk / 4 Spe\nAdamant Nature\n- …\n- …\n- …\n- …` : '';
-  // a set comes with a one-line summary of what it does
-  $('feedback-note-field').classList.toggle('hidden', kind !== 'set');
+  ta.placeholder = kind === 'set' ? `${english} @ Leftovers\nAbility: …\nEVs: 252 HP / 252 Atk / 4 Spe\nAdamant Nature\n- …\n- …\n- …\n- …`
+    : kind === 'boss' ? `Tyranitar @ Tyranitarite\nAbility: Sand Stream\nEVs: 252 Atk / 4 Def / 252 Spe\nJolly Nature\n- …\n- …\n- …\n- …\n\nExcadrill @ Leftovers\n…\n\n(six Pokémon)` : '';
+  // a boss has a name; a set comes with a one-line summary, a boss with the level it fits
+  $('feedback-name-field').classList.toggle('hidden', kind !== 'boss');
+  const bossName = $<HTMLInputElement>('feedback-name');
+  bossName.value = ''; bossName.required = kind === 'boss'; bossName.placeholder = kind === 'boss' ? t('e.g. Sand') : '';
+  $('feedback-note-field').classList.toggle('hidden', kind === 'feedback');
+  $('feedback-note-label').textContent = kind === 'boss' ? t('Fits level') : t('Summary');
   const note = $<HTMLInputElement>('feedback-note');
-  note.value = ''; note.required = kind === 'set';
-  note.placeholder = kind === 'set' ? t('What the set does, e.g. Scarf revenge killer; Knock Off for Chansey') : '';
+  note.value = ''; note.required = kind !== 'feedback';
+  note.placeholder = kind === 'set' ? t('What the set does, e.g. Scarf revenge killer; Knock Off for Chansey')
+    : kind === 'boss' ? t('Which level and why, e.g. Level 7: sand offense, punishes slow teams') : '';
   $('feedback-error').textContent = '';
   $('feedback-status').textContent = AUTH_ENABLED ? '' : t('Feedback can only be sent from the hosted site.');
   $<HTMLButtonElement>('feedback-send').disabled = !AUTH_ENABLED;
@@ -908,13 +917,18 @@ async function submitFeedback(ev: Event): Promise<void> {
   const btn = $<HTMLButtonElement>('feedback-send'), err = $('feedback-error'), status = $('feedback-status');
   btn.disabled = true; err.textContent = ''; status.textContent = t('Sending…');
   try {
-    const payload = {kind: feedbackKind, species: feedbackSpecies || null, note: feedbackKind === 'set' ? $<HTMLInputElement>('feedback-note').value : null, text: $<HTMLTextAreaElement>('feedback-text').value, screen: currentScreen, lang: lang(), seed: state.session?.seed ?? null};
+    const payload = {
+      kind: feedbackKind, species: feedbackSpecies || null, boss: feedbackKind === 'boss' ? $<HTMLInputElement>('feedback-name').value : null,
+      note: feedbackKind === 'feedback' ? null : $<HTMLInputElement>('feedback-note').value,
+      text: $<HTMLTextAreaElement>('feedback-text').value, screen: currentScreen, lang: lang(), seed: state.session?.seed ?? null,
+    };
     const res = await fetch(`${API_BASE}/api/feedback`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
     const body = await res.json().catch(() => ({})) as {error?: string};
     if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
     status.textContent = t('Thanks, received.');
     $<HTMLTextAreaElement>('feedback-text').value = '';
     $<HTMLInputElement>('feedback-note').value = '';
+    $<HTMLInputElement>('feedback-name').value = '';
   } catch (e) {
     status.textContent = '';
     err.textContent = errorMessage(e);

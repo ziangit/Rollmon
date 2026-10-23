@@ -1,23 +1,27 @@
-// Player feedback and set contributions (docs/ROADMAP.md §7): one table,
-// posted from the in-page drawer. Free text arrives with the screen, language
-// and seed it was written on; a set contribution must parse as a Showdown
-// export for the draftable species it was opened for, so every row is usable
-// as is. Limited per network like sign-ups.
+// Player feedback, set contributions and boss contributions (docs/ROADMAP.md
+// §7): one table, posted from the in-page drawer. Free text arrives with the
+// screen, language and seed it was written on; a set contribution must parse
+// as a Showdown export for the draftable species it was opened for, and a
+// boss contribution as a full team of six with a name and the ladder level
+// its author thinks it fits (in `note`), so every row is usable as is.
+// Limited per network like sign-ups.
 import type {GameContext} from '../app/session.ts';
 import {parseShowdownExport, SubmissionError} from '../game/submissions.ts';
 
 export const FEEDBACK_PER_IP_PER_DAY = 10;
 export const FEEDBACK_MAX_CHARS = 4000;
-/** the one-line summary a set contribution comes with */
+/** the one-line summary a set contribution comes with; a boss contribution's "fits level N because …" */
 export const FEEDBACK_NOTE_MAX_CHARS = 200;
-export type FeedbackKind = 'feedback' | 'set';
+export const BOSS_TEAM_SIZE = 6;
+export const BOSS_NAME_MAX_CHARS = 40;
+export type FeedbackKind = 'feedback' | 'set' | 'boss';
 
 export interface FeedbackRow {
   kind: FeedbackKind;
   text: string;
-  /** species id a set contribution is for */
+  /** species id a set contribution is for; the boss name of a boss contribution */
   species: string | null;
-  /** a set contribution's summary: what the set does, in one line */
+  /** a set contribution's summary (what the set does); a boss contribution's level and why */
   note: string | null;
   screen: string | null;
   lang: string | null;
@@ -47,8 +51,8 @@ const str = (v: unknown, max: number): string | null => (typeof v === 'string' &
 
 /** The validated row, or the message to answer 400 with. */
 export function validateFeedback(payload: Record<string, unknown>, ctx: GameContext): {row: FeedbackRow} | {error: string} {
-  const kind: FeedbackKind | null = payload.kind === 'set' ? 'set' : payload.kind === 'feedback' ? 'feedback' : null;
-  if (!kind) return {error: "kind must be 'feedback' or 'set'"};
+  const kind: FeedbackKind | null = payload.kind === 'set' ? 'set' : payload.kind === 'boss' ? 'boss' : payload.kind === 'feedback' ? 'feedback' : null;
+  if (!kind) return {error: "kind must be 'feedback', 'set' or 'boss'"};
   const text = typeof payload.text === 'string' ? payload.text.replace(/\r\n?/g, '\n').trim() : '';
   if (!text) return {error: 'write something first'};
   if (text.length > FEEDBACK_MAX_CHARS) return {error: `at most ${FEEDBACK_MAX_CHARS} characters`};
@@ -65,6 +69,21 @@ export function validateFeedback(payload: Record<string, unknown>, ctx: GameCont
       if (wrong) return {error: `that export is for ${wrong.species}, not ${species}`};
     } catch (err) {
       if (err instanceof SubmissionError) return {error: `not a Showdown export: ${err.message}`};
+      throw err;
+    }
+  }
+  if (kind === 'boss') {
+    // the boss name goes in the species column; a file name once it lands in rollmons/bosses
+    species = str(payload.boss, BOSS_NAME_MAX_CHARS);
+    if (!species) return {error: 'name the boss first'};
+    if (!/^[\p{L}\p{N}][\p{L}\p{N} .'-]*$/u.test(species)) return {error: 'boss name: letters, digits, spaces, dots, apostrophes and hyphens'};
+    note = str(payload.note, FEEDBACK_NOTE_MAX_CHARS);
+    if (!note) return {error: 'say which level the boss fits first'};
+    if (typeof payload.note === 'string' && payload.note.trim().length > FEEDBACK_NOTE_MAX_CHARS) return {error: `level note: at most ${FEEDBACK_NOTE_MAX_CHARS} characters`};
+    try {
+      parseShowdownExport(text, {expectedMembers: BOSS_TEAM_SIZE, source: 'boss team'});
+    } catch (err) {
+      if (err instanceof SubmissionError) return {error: `not a six-Pokémon Showdown export: ${err.message}`};
       throw err;
     }
   }

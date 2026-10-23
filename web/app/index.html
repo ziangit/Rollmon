@@ -51,7 +51,8 @@
   <div class="panel-head"><h3 id="feedback-title">Feedback</h3><button class="btn btn-ghost btn-sm" onclick="closeFeedback()" aria-label="Close">✕</button></div>
   <form class="feedback-form" id="feedback-form" onsubmit="submitFeedback(event)">
     <p class="feedback-hint" id="feedback-hint"></p>
-    <label class="field hidden" id="feedback-note-field"><span data-i18n="Summary">Summary</span><input id="feedback-note" maxlength="200" autocomplete="off" spellcheck="false"></label>
+    <label class="field hidden" id="feedback-name-field"><span data-i18n="Boss name">Boss name</span><input id="feedback-name" maxlength="40" autocomplete="off" spellcheck="false"></label>
+    <label class="field hidden" id="feedback-note-field"><span id="feedback-note-label" data-i18n="Summary">Summary</span><input id="feedback-note" maxlength="200" autocomplete="off" spellcheck="false"></label>
     <textarea id="feedback-text" rows="10" maxlength="4000" required spellcheck="false"></textarea>
     <p class="auth-error" id="feedback-error"></p>
     <div class="feedback-actions"><span class="feedback-status" id="feedback-status"></span><button class="btn btn-primary btn-sm" id="feedback-send" type="submit" data-i18n="Send">Send</button></div>
@@ -263,6 +264,8 @@
       <!-- the team is what players want to keep once the run is over -->
       <button class="btn btn-ghost copy-export" id="copy-export-results" onclick="copyExport()" data-i18n="Copy team export">Copy team export</button>
       <button class="btn btn-ghost" onclick="go('battle')" data-i18n="Rewatch battles">Rewatch battles</button>
+      <!-- players who just climbed the ladder know what a boss at each level should look like -->
+      <button class="btn btn-ghost" id="contribute-boss" onclick="openFeedback('boss')" data-i18n="Contribute a boss">Contribute a boss</button>
       <button class="btn btn-primary" onclick="newRun()" data-i18n="↻ New run">↻ New run</button>
     </div>
   </div>
