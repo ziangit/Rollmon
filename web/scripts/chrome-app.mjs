@@ -46,6 +46,7 @@ try {
   await page.evaluate(() => window.toggleMenu());
   if (!/github\.com\/ziangit\/Rollmon/.test(tools.github) || !tools.menuHidden || !tools.menu.open || tools.menu.entries !== 6 || tools.menu.account !== (hosted ? 1 : 0)) { console.error('GitHub link or phone menu missing: ' + JSON.stringify(tools)); process.exitCode = 1; }
   // How it works: four sections with the live numbers (slot odds, one band row per campaign band)
+  await page.waitForFunction(() => !document.getElementById('help-foot').classList.contains('hidden'));
   await click('#help-btn');
   tools.help = await page.evaluate(() => ({open: !document.getElementById('help-drawer').classList.contains('hidden'), sections: document.querySelectorAll('#help-body .help-sec').length,
     odds: document.querySelector('#help-body .help-odds')?.textContent, bands: document.querySelectorAll('#help-body .help-bands tbody tr').length}));

@@ -1318,7 +1318,7 @@ async function boot(): Promise<void> {
   void loadBoard();
   void loadAccount();
   $<HTMLInputElement>('low-power').checked = lowPower;
-  $('title-foot').textContent = t('Loading game data…');
+  $('title-foot-text').textContent = t('Loading game data…');
   try {
     const res = await fetch(new URL('./data/game-data.json', import.meta.url));
     if (!res.ok) throw new Error(`game data: HTTP ${res.status}`);
@@ -1330,10 +1330,11 @@ async function boot(): Promise<void> {
     renderPool();
     feedRoller();
     renderBosses(state.bossBook.list());
-    $('title-foot').textContent = t('Lv 100 · Gen 9'); // data-i18n keeps it translated after a language switch
+    $('title-foot-text').textContent = t('Lv 100 · Gen 9'); // data-i18n keeps it translated after a language switch
+    $('help-foot').classList.remove('hidden');
   } catch (e) {
     $('pool-summary').textContent = errorMessage(e);
-    $('title-foot').textContent = t('Could not load game data: {error}', {error: errorMessage(e)});
+    $('title-foot-text').textContent = t('Could not load game data: {error}', {error: errorMessage(e)});
   }
 }
 

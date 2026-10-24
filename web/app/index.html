@@ -138,8 +138,8 @@ var f=document.fonts;(f&&f.load?Promise.all(['700 1em "Pixelify Sans"','1em "Pre
         <button class="btn btn-primary btn-lg" onclick="newRun()" data-i18n="▶ Start a new run">▶ Start a new run</button>
         <button class="btn btn-ghost btn-lg" onclick="go('pool')" data-i18n="Browse the pool">Browse the pool</button>
       </div>
-      <button class="btn btn-ghost btn-sm help-btn" id="help-btn" onclick="toggleHelp()" data-i18n="? How it works">? How it works</button>
-      <p class="title-foot" id="title-foot" data-i18n="Lv 100 · Gen 9">Lv 100 · Gen 9</p>
+      <!-- the rules link rides the foot line (a third button did not fit the row and a small one alone looked stray) -->
+      <p class="title-foot" id="title-foot"><span id="title-foot-text" data-i18n="Lv 100 · Gen 9">Lv 100 · Gen 9</span><span class="hidden" id="help-foot"> · <a href="#" class="help-link" id="help-btn" onclick="toggleHelp(); return false" data-i18n="How it works?">How it works?</a></span></p>
     </div>
   </div>
   <div class="roller" id="roller">

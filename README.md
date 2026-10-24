@@ -20,7 +20,7 @@ A single-player Pokémon draft autobattler that runs entirely in the browser. Ro
 3. **Gauntlet** — ten hand-built boss teams climbing from a tutorial band to a final wall; the middle bands are drawn at random per run. Both sides are played by the same search AI with full knowledge of both teams, time-boxed per move, so a slow device plays weaker rather than slower.
 4. **Results** — replays, damage breakdown and MVP, and a score (band points × speed bonus × tier handicap). Signed-in players post it; the server replays the whole run in the simulator before accepting it and keeps each player's best.
 
-The in-game **? How it works** button tells the same story with the live numbers. Design notes: `docs/PRODUCT.md`, `docs/DIFFICULTY.md`, `docs/BATTLE_AI.md` (what the AI costs the player's machine and how it compares with v1); plan and status: `docs/ROADMAP.md`, `session-handoff.md`.
+The in-game **How it works?** link tells the same story with the live numbers. Design notes: `docs/PRODUCT.md`, `docs/DIFFICULTY.md`, `docs/BATTLE_AI.md` (what the AI costs the player's machine and how it compares with v1); plan and status: `docs/ROADMAP.md`, `session-handoff.md`.
 
 ## Status
 - Live at https://rollmon.vercel.app (Vercel; every push to `main` deploys). The game logic (draft, loadout, campaign, score) is TypeScript under `web/`; the Python layer under `rollmons/` remains the reference implementation and test oracle (`make test`).

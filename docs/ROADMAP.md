@@ -407,8 +407,8 @@ replay was added 2026-10-22, since the fixed button is far from where
 the player is after watching the last battle), results and the leaderboard drawer, then the topbar strip (phone
 overflow). The title page stays as it is.
 
-**How it works (2026-10-23).** A small `? How it works` button under the
-title actions (and a ☰ menu entry) opens a drawer with the rules in four
+**How it works (2026-10-23).** A `How it works?` link on the title panel's
+foot line (`Lv 100 · Gen 9 · How it works?`; also a ☰ menu entry) opens a drawer with the rules in four
 sections: draft (cell lock, candidates, visitors, slot odds, skips, start
 over), loadout (contributed + Smogon sets, Mega as a set), gauntlet (a
 table of the campaign bands with battles, pool size and points per win,
@@ -416,9 +416,10 @@ then the AI and its budgets), score (speed bonus, handicap, best run per
 player). Every number is read at render time from `DEFAULT_DRAFT_CONFIG`,
 `CAMPAIGN_STRUCTURE`, the pool, `score.ts` and `DEFAULT_BUDGET_MS`, so it
 cannot go stale; `renderHelp` in `main.ts`, rerendered on a language
-change. The three full-size title buttons did not fit one row (natural
-widths 239 + 213 + 197 px against a 645 px panel), so the help button is a
-small tertiary row rather than a third big button.
+change. Placement: a third full-size title button did not fit the row
+(natural widths 239 + 213 + 197 px against a 645 px panel) and a small
+button on its own row looked stray to the author, so it is a text link on
+the foot line (chosen 2026-10-23 over a `?` icon in the tools strip).
 
 ## 9. i18n
 

@@ -268,8 +268,9 @@ button:disabled{cursor:not-allowed;opacity:.42}
   box-shadow:0 0 0 4px var(--edge), inset 0 0 0 4px var(--edge), 6px 8px 0 rgba(8,6,18,.5)}
 .title-actions{display:flex;gap:.9rem;justify-content:center;flex-wrap:wrap}
 .title-actions .btn{width:16rem;max-width:100%;min-height:3.6rem;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
-/* the rules button is tertiary: a small row of its own under the two big ones (the three at full size do not fit one row) */
-.title-panel .help-btn{margin-top:-.3rem}
+/* the rules link rides the foot line */
+.title-foot .help-link{color:var(--gold);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.title-foot .help-link:hover{color:#fff}
 .title-foot{min-height:1.7em}
 .title-foot{margin:0;font-family:var(--font-pixel);font-size:.54rem;color:var(--muted);line-height:1.7}
 /* .title-team removed — slot-machine Gen × Type animation will replace it */
