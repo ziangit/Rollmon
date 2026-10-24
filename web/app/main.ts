@@ -108,6 +108,7 @@ function go(name: Screen): void {
   if (name === 'bosses' && !isDeveloper()) { go('loadout'); return; }
   $('corner').classList.toggle('hidden', name !== 'title');
   if (!$('board-drawer').classList.contains('hidden')) toggleBoard();
+  if (!$('menu-drawer').classList.contains('hidden')) toggleMenu();
   if (name === 'loadout') renderLoadout();
   // On the pool screen keep the step rail reflecting where Back will return to.
   updateSteps(name === 'pool' ? poolReturn : name);
@@ -986,11 +987,17 @@ let account: {name: string} | null = null;
 let authModeNow: 'login' | 'register' = 'login';
 function renderAccount(): void {
   $('dev-btn').classList.toggle('hidden', !isDeveloper());
-  const el = $('account');
-  if (!AUTH_ENABLED) { el.innerHTML = ''; return; }
-  el.innerHTML = account
+  const html = !AUTH_ENABLED ? '' : account
     ? `<span class="who" title="${esc(account.name)}">${esc(account.name)}</span><button class="btn btn-ghost btn-sm" id="signout-btn" onclick="logout()">${t('Sign out')}</button>`
     : `<button class="btn btn-ghost btn-sm" id="signin-btn" onclick="openAuth('login')">${t('Sign in')}</button>`;
+  $('account').innerHTML = html;
+  // the phone menu shows the same chip (without the ids, which the strip's copy owns)
+  $('menu-account').innerHTML = html.replace(/ id="[^"]*"/g, '').replace(/onclick="/g, 'onclick="toggleMenu(); ');
+}
+function toggleMenu(): void {
+  const open = $('menu-drawer').classList.contains('hidden');
+  $('menu-drawer').classList.toggle('hidden', !open);
+  $('menu-backdrop').classList.toggle('hidden', !open);
 }
 async function loadAccount(): Promise<void> {
   if (!AUTH_ENABLED) return;
@@ -1205,7 +1212,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, toggleMenu, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);

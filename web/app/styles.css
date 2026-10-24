@@ -137,15 +137,26 @@ button:disabled{cursor:not-allowed;opacity:.42}
 .lang{font:inherit;font-size:.8rem;padding:.35rem .5rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);cursor:pointer}
 /* ---- tools strip (leaderboard · language · account), fixed corner on the title screen ---- */
 .tools{display:flex;align-items:center;gap:.6rem;margin-right:.4rem}
-/* Same sizes in every language. */
-.tools .btn,.tools .lang{min-height:2.2rem;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center}
+/* Same sizes in every language: fixed heights and widths, so the CJK fallback font's taller metrics and the
+   label lengths do not move the row (they did: the strip shifted on every language switch). */
+.tools .btn,.tools .lang,.tools .account{height:2.2rem;line-height:1;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center}
 .tools #board-btn{width:9rem}
+.tools #feedback-btn{width:7rem}
 .tools .lang{width:6.8rem}
 .tools #signin-btn,.tools #signout-btn{width:5.6rem}
+.btn-icon{width:2.2rem;padding:0}
+.btn-icon svg{width:1.15rem;height:1.15rem;fill:currentColor}
+.tools .menu-btn{display:none;font-size:1.05rem}
 .corner{position:fixed;top:14px;right:18px;z-index:45}
 .corner .tools{flex-wrap:wrap;justify-content:flex-end;margin:0}
-/* phones: the strip wraps onto two rows (three buttons, then language + account), so the title starts below them */
-@media(max-width:560px){.corner{top:8px;right:8px}.corner .tools{gap:.4rem}#screen-title .title-inner{padding-top:6rem}}
+@media(max-width:560px){.corner{top:8px;right:8px}.corner .tools{gap:.4rem}#screen-title .title-inner{padding-top:4.4rem}}
+/* phones: Leaderboard and ☰ only; the rest lives in the menu drawer */
+@media(max-width:700px){.tools .desk{display:none!important}.tools .menu-btn{display:inline-flex}}
+.menu-list{display:grid;gap:.6rem}
+.menu-list .btn{justify-content:flex-start;text-decoration:none}
+.menu-row{display:flex;justify-content:space-between;align-items:center;gap:.6rem;margin:0;font-size:.9rem;color:var(--muted)}
+.menu-row .lang{width:8rem}
+.menu-row.account{min-height:2.4rem}
 /* Phones: the strip does not fit beside the brand, so it becomes the topbar's second row
    (otherwise the page is wider than the screen and Safari zooms the whole game out). */
 @media(max-width:700px){

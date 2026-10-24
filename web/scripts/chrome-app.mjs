@@ -38,7 +38,13 @@ try {
   // the board opens as a drawer. A local build reads the board cross-origin and has no accounts.
   const hosted = /^https:/.test(base);
   await page.waitForFunction(() => document.getElementById('board-btn').dataset.state !== 'loading', {timeout: 20_000}).catch(() => {});
-  const tools = await page.evaluate(() => ({corner: !!document.querySelector('#corner #tools'), board: document.getElementById('board-btn').dataset.state === 'ready', signin: !!document.getElementById('signin-btn'), feedback: !!document.getElementById('feedback-btn')}));
+  const tools = await page.evaluate(() => ({corner: !!document.querySelector('#corner #tools'), board: document.getElementById('board-btn').dataset.state === 'ready', signin: !!document.getElementById('signin-btn'), feedback: !!document.getElementById('feedback-btn'),
+    github: document.getElementById('github-link')?.href, menuHidden: getComputedStyle(document.getElementById('menu-btn')).display === 'none'}));
+  // the phone menu drawer (hidden ☰ at desktop width) carries the strip's secondary items
+  await page.evaluate(() => window.toggleMenu());
+  tools.menu = await page.evaluate(() => ({open: !document.getElementById('menu-drawer').classList.contains('hidden'), entries: document.querySelectorAll('#menu-drawer .menu-list > *').length, account: document.getElementById('menu-account').children.length}));
+  await page.evaluate(() => window.toggleMenu());
+  if (!/github\.com\/ziangit\/Rollmon/.test(tools.github) || !tools.menuHidden || !tools.menu.open || tools.menu.entries !== 5 || tools.menu.account !== (hosted ? 1 : 0)) { console.error('GitHub link or phone menu missing: ' + JSON.stringify(tools)); process.exitCode = 1; }
   if (tools.board) {
     await click('#board-btn');
     await page.waitForFunction(() => !document.getElementById('board-drawer').classList.contains('hidden') && document.querySelector('#board-card .board-list li'));
