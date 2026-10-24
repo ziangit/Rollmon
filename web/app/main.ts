@@ -42,7 +42,8 @@ const params = new URLSearchParams(location.search);
    same-origin only, so accounts are enabled only on the hosted site. */
 // ?gate=0 lets the next battle start before the previous replay has been watched (scripts only).
 const GATE = params.get('gate') !== '0';
-const API_BASE = params.get('api') ?? (/\.vercel\.app$/.test(location.hostname) ? '' : 'https://rollmon.vercel.app');
+// Any https host is the hosted site (rollmon.gg, the vercel.app names): same-origin API, accounts on.
+const API_BASE = params.get('api') ?? (location.protocol === 'https:' ? '' : 'https://rollmon.gg');
 const AUTH_ENABLED = API_BASE === '';
 /** The boss-ladder page is a developer tool: players go from the loadout straight into the campaign. Open for the author's accounts (and locally, where there are no accounts). */
 const isDeveloper = () => !AUTH_ENABLED || isDevAccount(account?.name);
