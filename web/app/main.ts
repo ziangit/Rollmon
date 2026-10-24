@@ -336,7 +336,23 @@ function askConfirm(message: string, yes: string): Promise<boolean> {
 }
 /** Discard the draft in progress and roll a new run (a reload did the same; this makes it honest). A `?seed=` URL repeats the seed. */
 async function startOver(): Promise<void> {
-  if (await askConfirm(t('Discard this draft and start a new run?'), t('Start over'))) newRun();
+  if (!(await askConfirm(t('Discard this draft and start a new run?'), t('Start over')))) return;
+  if (draftBusy || reducedMotion()) { newRun(); return; }
+  // the whole draft leaves: drafted party slots shrink away first, then the cell header, the tiles and the detail
+  // panel drop out in sequence; the new run then plays the usual enter animation
+  draftBusy = true;
+  try {
+    const party = Array.from(document.querySelectorAll<HTMLElement>('#party .pslot.filled'));
+    const rest = [$('encounter'), ...Array.from(document.querySelectorAll<HTMLElement>('#candidates .cand')), $('cand-detail')];
+    const runs = [
+      ...party.map((el, i) => el.animate([{transform: 'none', opacity: 1}, {transform: 'scale(.3) rotate(-20deg)', opacity: 0}], {duration: 280, delay: i * 50, easing: 'ease-in', fill: 'forwards'})),
+      ...rest.map((el, i) => el.animate([{opacity: 1, transform: 'none'}, {opacity: 0, transform: 'translateY(34px) scale(.9)'}], {duration: 300, delay: 120 + i * 45, easing: 'ease-in', fill: 'forwards'})),
+    ];
+    await Promise.all(runs.map((a) => a.finished));
+    runs.forEach((a) => a.cancel()); // #encounter, #cand-detail and the slot list survive the re-render: do not leave them hidden
+    draftUi.enter = true;
+    newRun();
+  } finally { draftBusy = false; }
 }
 
 async function copyExport(): Promise<void> {

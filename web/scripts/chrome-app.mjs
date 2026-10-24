@@ -90,9 +90,14 @@ try {
   await page.evaluate(() => { void window.startOver(); });
   await page.waitForSelector('#confirm-dialog[open]');
   await click('#confirm-yes');
+  // the exit animation runs first; the re-render then marks the new offer with the enter animation
+  await page.waitForFunction(() => document.getElementById('encounter').classList.contains('enter'), {timeout: 5000});
   await page.waitForSelector('#cand-detail .pick');
-  const restarted = await page.evaluate(() => ({round: document.querySelector('#encounter .eyebrow').textContent, button: !!document.getElementById('start-over')}));
-  if (kept !== before || !/1/.test(restarted.round) || !restarted.button) throw new Error(`start over: ${JSON.stringify({before, kept, restarted})}`);
+  // once the enter animation ends everything must be fully visible again (the exit animations are cancelled, not left filling)
+  await page.waitForFunction(() => getComputedStyle(document.getElementById('encounter')).opacity === '1' && getComputedStyle(document.querySelector('#party .pslot')).opacity === '1', {timeout: 5000}).catch(() => {});
+  const restarted = await page.evaluate(() => ({round: document.querySelector('#encounter .eyebrow').textContent, button: !!document.getElementById('start-over'),
+    visible: getComputedStyle(document.getElementById('encounter')).opacity === '1' && getComputedStyle(document.querySelector('#party .pslot')).opacity === '1'}));
+  if (kept !== before || !/1/.test(restarted.round) || !restarted.button || !restarted.visible) throw new Error(`start over: ${JSON.stringify({before, kept, restarted})}`);
   for (let round = 1; round <= 6; round++) {
     await page.waitForSelector('#cand-detail .pick');
     const label = await page.$eval('#encounter .eyebrow', (e) => e.textContent.replace(/\s+/g, ' ').trim());
