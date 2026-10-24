@@ -93,6 +93,10 @@ Three separate causes, only one of which the set scrape (§6) could touch:
   two manual skips cover "not this cell". A thin cell (fewer than
   `thinCellThreshold` = 3 undrafted natives) only shows a note saying the
   rest are visitors; the pool inspector still marks it.
+- **Start over** (2026-10-23, author's call): a button beside Skip cell
+  discards the draft after a confirm and rolls a new run. A reload already
+  did that, so there is no further friction; a daily-seed mode, if built,
+  should not offer it, since that is where restart-fishing would matter.
 - **No pity counter** (author's choice: simpler to explain; the score
   handicap in §7 already punishes a legendary-heavy team on the board).
 - The cell roll stays uniform and the 18×9 grid keeps its identity.
