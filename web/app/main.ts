@@ -956,7 +956,7 @@ function openFeedback(kind: FeedbackKind = 'feedback', speciesId = '', focus = t
   const note = $<HTMLInputElement>('feedback-note');
   note.value = ''; note.required = kind !== 'feedback';
   note.placeholder = kind === 'set' ? t('What the set does, e.g. Scarf attacker, defensive pivot')
-    : kind === 'boss' ? t('Which level and why, e.g. Level 7: sand offense, punishes slow teams') : '';
+    : kind === 'boss' ? t('Which level and why, e.g. Level 7: sand offense') : '';
   $('feedback-error').textContent = '';
   $('feedback-status').textContent = AUTH_ENABLED ? '' : t('Feedback can only be sent from the hosted site.');
   $<HTMLButtonElement>('feedback-send').disabled = !AUTH_ENABLED;

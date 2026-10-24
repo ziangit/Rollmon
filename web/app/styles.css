@@ -33,7 +33,7 @@
      headings, but every digit is distinct (Pixelify's 2/5 and 1/7 are near
      mirror images). CJK falls back to the system font. */
   --font-body:'Jersey 15','Pixelify Sans',system-ui,sans-serif;
-  --font-pixel:'Press Start 2P','Pixelify Sans',monospace;
+  --font-pixel:'Press Start 2P','Pixel CJK','Pixelify Sans',monospace;
   --font-mono:'Jersey 15',ui-monospace,Menlo,monospace;
   color-scheme:dark;
 }
@@ -52,6 +52,14 @@ body{
   min-height:100vh;
   image-rendering:pixelated;
 }
+/* Press Start 2P fills its em box, so the .5–.6rem sizes used for it come out tiny in the system CJK font
+   that renders Chinese and Japanese glyphs. This face is that system font scaled up to match. */
+@font-face{font-family:'Pixel CJK';size-adjust:150%;
+  /* Chrome matches local() on the PostScript or full name, WebKit on the family name too: list both forms */
+  src:local('PingFangSC-Regular'),local('PingFang SC Regular'),local('PingFang SC'),local('HiraginoSans-W3'),local('Hiragino Sans W3'),local('Hiragino Sans'),
+    local('HiraKakuProN-W3'),local('Hiragino Kaku Gothic ProN'),local('NotoSansCJKsc-Regular'),local('Noto Sans CJK SC Regular'),local('Noto Sans CJK SC'),
+    local('NotoSansCJKjp-Regular'),local('Noto Sans CJK JP'),local('NotoSansSC-Regular'),local('Noto Sans SC'),local('MicrosoftYaHei'),local('Microsoft YaHei'),
+    local('YuGothic-Regular'),local('Yu Gothic Regular'),local('Yu Gothic'),local('Meiryo')}
 img{image-rendering:pixelated}
 h1,h2,h3,h4{font-family:var(--font-display);font-weight:700;margin:0;letter-spacing:.5px;
   text-shadow:0 2px 0 var(--edge)}
