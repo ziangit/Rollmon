@@ -144,6 +144,8 @@ button:disabled{cursor:not-allowed;opacity:.42}
 .tools #feedback-btn{width:7rem}
 .tools .lang{width:6.8rem}
 .tools #signin-btn,.tools #signout-btn{width:5.6rem}
+/* the account chip keeps one width whether it shows "Sign in" or a name + "Sign out", so the strip never reflows */
+.tools .account{width:15rem;justify-content:flex-end}
 .btn-icon{width:2.2rem;padding:0}
 .btn-icon svg{width:1.15rem;height:1.15rem;fill:currentColor}
 .tools .menu-btn{display:none;font-size:1.05rem}
@@ -496,9 +498,16 @@ button:disabled{cursor:not-allowed;opacity:.42}
 .score-status{margin:.5rem 0 0;font-size:.82rem;color:var(--muted);min-height:1.2em}
 .board-card{text-align:left}
 .board-list{list-style:none;margin:0;padding:0;display:grid;gap:.3rem}
-.board-list li{display:grid;grid-template-columns:2rem 1fr auto;gap:.6rem;align-items:baseline;font-size:.9rem}
+.board-list li{display:grid;grid-template-columns:2rem 1fr auto;gap:.6rem;align-items:center;font-size:.9rem;padding:.45rem .5rem;border-radius:var(--r-sm);border:2px solid transparent}
+.board-list li.me{border-color:var(--gold);background:var(--surface-2)}
 .board-list .rank{font-family:var(--font-pixel);font-size:.55rem;color:var(--faint)}
+.board-list li:nth-child(1) .rank{color:var(--gold)}
 .board-list .score{font-family:var(--font-pixel);font-size:.6rem;color:var(--gold)}
+.board-who{display:grid;gap:.15rem;min-width:0}
+.board-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board-team{display:flex;gap:.1rem;flex-wrap:wrap}
+.board-team img{width:36px;height:36px;image-rendering:pixelated;margin:-4px 0}
+.board-noicon{width:36px;height:36px}
 .board-list small{display:block;color:var(--faint);font-size:.72rem}
 .mvp-body{display:flex;align-items:center;gap:.9rem;margin-top:.5rem}
 .asset-host.mvp-sprite{width:84px;height:84px;flex:0 0 84px;display:grid;place-items:center}

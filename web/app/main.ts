@@ -853,8 +853,18 @@ function renderBoard(): void {
   btn.classList.toggle('hidden', entries === null);
   btn.dataset.state = entries === undefined ? 'loading' : entries ? 'ready' : 'off';
   if (!entries) { $('board-card').innerHTML = `<p class="panel-note">${t('Loading…')}</p>`; return; }
+  // a row: rank, name (the signed-in player's row highlighted), the team as pixel sprites named on hover, record, points
+  const byId = new Map((state.pool ?? []).map((p) => [p.id, p]));
+  const member = (id: string) => {
+    const p = byId.get(id);
+    const name = monName({id, name: state.ctx?.legality.species[id]?.name ?? id});
+    return p ? `<img class="asset" src="${p.pixelSpriteUrl}" alt="${esc(name)}" title="${esc(name)}" loading="lazy">` : `<span class="board-noicon" title="${esc(name)}"></span>`;
+  };
+  const rows = entries.map((e, i) => `<li${account && e.name === account.name ? ' class="me"' : ''}><span class="rank">#${i + 1}</span>
+      <span class="board-who"><span class="board-name">${esc(e.name)}</span><span class="board-team">${e.team.map(member).join('')}</span><small>${t('{w}/{b} wins', {w: e.wins, b: e.battles})}</small></span>
+      <span class="score">${e.score}</span></li>`);
   $('board-card').innerHTML = `<p class="panel-note">${t('top {n} · best run per player', {n: entries.length})}</p>
-    <ol class="board-list">${entries.map((e, i) => `<li><span class="rank">#${i + 1}</span><span>${esc(e.name)}<small>${t('{w}/{b} wins', {w: e.wins, b: e.battles})} · ${e.team.map((id) => monName({id, name: id})).join(', ')}</small></span><span class="score">${e.score}</span></li>`).join('') || `<li><span></span><span>${t('No runs yet. Be the first!')}</span><span></span></li>`}</ol>`;
+    <ol class="board-list">${rows.join('') || `<li><span></span><span>${t('No runs yet. Be the first!')}</span><span></span></li>`}</ol>`;
 }
 async function loadBoard(): Promise<void> {
   try {
@@ -941,7 +951,7 @@ function openFeedback(kind: FeedbackKind = 'feedback', speciesId = '', focus = t
   $('feedback-note-label').textContent = kind === 'boss' ? t('Fits level') : t('Summary');
   const note = $<HTMLInputElement>('feedback-note');
   note.value = ''; note.required = kind !== 'feedback';
-  note.placeholder = kind === 'set' ? t('What the set does, e.g. Scarf revenge killer; Knock Off for Chansey')
+  note.placeholder = kind === 'set' ? t('What the set does, e.g. Scarf attacker, defensive pivot')
     : kind === 'boss' ? t('Which level and why, e.g. Level 7: sand offense, punishes slow teams') : '';
   $('feedback-error').textContent = '';
   $('feedback-status').textContent = AUTH_ENABLED ? '' : t('Feedback can only be sent from the hosted site.');
@@ -991,6 +1001,7 @@ function renderAccount(): void {
     ? `<span class="who" title="${esc(account.name)}">${esc(account.name)}</span><button class="btn btn-ghost btn-sm" id="signout-btn" onclick="logout()">${t('Sign out')}</button>`
     : `<button class="btn btn-ghost btn-sm" id="signin-btn" onclick="openAuth('login')">${t('Sign in')}</button>`;
   $('account').innerHTML = html;
+  try { if (account) localStorage.setItem('rollmons-account', account.name); else localStorage.removeItem('rollmons-account'); } catch { /* private mode */ }
   // the phone menu shows the same chip (without the ids, which the strip's copy owns)
   $('menu-account').innerHTML = html.replace(/ id="[^"]*"/g, '').replace(/onclick="/g, 'onclick="toggleMenu(); ');
 }
@@ -1225,6 +1236,9 @@ async function boot(): Promise<void> {
   // The tools strip is painted in its final shape right away ("Sign in" plus the
   // board button) and the two API calls run alongside the game-data load.
   renderBoard();
+  // the last known account name is painted right away (the /me round trip confirms or clears it),
+  // so a returning player does not see "Sign in" flip to their name
+  try { const cached = localStorage.getItem('rollmons-account'); if (cached && AUTH_ENABLED) account = {name: cached}; } catch { /* private mode */ }
   renderAccount();
   void loadBoard();
   void loadAccount();
