@@ -50,9 +50,15 @@ try {
   const contribute = await page.$$eval('#pool-detail .contribute', (b) => b.length);
   await click('#feedback-btn');
   await page.evaluate(() => window.feedbackTab('set'));
-  const setTab = await page.evaluate(() => ({tab: document.querySelector('#feedback-tabs .drawer-tab.active')?.dataset.kind, picker: !document.getElementById('feedback-species-field').classList.contains('hidden'),
-    options: document.getElementById('feedback-species-list').childElementCount, tabs: document.querySelectorAll('#feedback-tabs .drawer-tab').length}));
-  if (setTab.tab !== 'set' || !setTab.picker || setTab.options < 600 || setTab.tabs !== 3) throw new Error(`contribute drawer: ${JSON.stringify(setTab)}`);
+  const setTab = await page.evaluate(() => {
+    const s = document.getElementById('feedback-species'); s.value = 'garch'; window.feedbackSpeciesChanged();
+    return {tab: document.querySelector('#feedback-tabs .drawer-tab.active')?.dataset.kind, picker: !document.getElementById('feedback-species-field').classList.contains('hidden'),
+      suggestions: document.querySelectorAll('#feedback-species-suggest .suggest-item').length, tabs: document.querySelectorAll('#feedback-tabs .drawer-tab').length};
+  });
+  if (setTab.tab !== 'set' || !setTab.picker || setTab.suggestions < 1 || setTab.tabs !== 3) throw new Error(`contribute drawer: ${JSON.stringify(setTab)}`);
+  await click('#feedback-species-suggest .suggest-item');
+  const picked = await page.evaluate(() => ({title: document.getElementById('feedback-title').textContent, hidden: document.getElementById('feedback-species-suggest').classList.contains('hidden')}));
+  if (!/Garchomp/.test(picked.title) || !picked.hidden) throw new Error(`suggestion pick failed: ${JSON.stringify(picked)}`);
   await page.evaluate(() => window.openFeedback('set', 'lucario'));
   const drawer = await page.evaluate(() => ({open: !document.getElementById('feedback-drawer').classList.contains('hidden'), title: document.getElementById('feedback-title').textContent,
     picked: document.getElementById('feedback-species').value,

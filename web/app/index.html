@@ -64,8 +64,9 @@ var f=document.fonts;(f&&f.load?Promise.all(['700 1em "Pixelify Sans"','1em "Pre
   </div>
   <form class="feedback-form" id="feedback-form" onsubmit="submitFeedback(event)">
     <p class="feedback-hint" id="feedback-hint"></p>
-    <label class="field hidden" id="feedback-species-field"><span data-i18n="Pokémon">Pokémon</span><input id="feedback-species" list="feedback-species-list" maxlength="40" autocomplete="off" spellcheck="false" oninput="feedbackSpeciesChanged()"></label>
-    <datalist id="feedback-species-list"></datalist>
+    <label class="field hidden" id="feedback-species-field"><span data-i18n="Pokémon">Pokémon</span><input id="feedback-species" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" oninput="feedbackSpeciesChanged()"></label>
+    <!-- up to eight matches for the typed name (a native datalist of the whole pool stalled iOS Safari) -->
+    <div class="suggest hidden" id="feedback-species-suggest"></div>
     <label class="field hidden" id="feedback-name-field"><span data-i18n="Boss name">Boss name</span><input id="feedback-name" maxlength="40" autocomplete="off" spellcheck="false"></label>
     <label class="field hidden" id="feedback-note-field"><span id="feedback-note-label" data-i18n="Summary">Summary</span><input id="feedback-note" maxlength="200" autocomplete="off" spellcheck="false"></label>
     <textarea id="feedback-text" rows="10" maxlength="4000" required spellcheck="false"></textarea>

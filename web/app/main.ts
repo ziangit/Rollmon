@@ -881,9 +881,26 @@ function resolveFeedbackSpecies(typed: string): SpeciesView | undefined {
   const key = typed.trim().toLowerCase();
   return key ? state.pool?.find((p) => p.id === key || monName(p).toLowerCase() === key || titleCase(p.name).toLowerCase() === key) : undefined;
 }
+/** Up to eight pool species whose name (page language or English) contains the typed text, prefix matches first. */
+function renderSpeciesSuggestions(typed: string): void {
+  const key = typed.trim().toLowerCase();
+  const names = (p: SpeciesView) => [monName(p).toLowerCase(), titleCase(p.name).toLowerCase()];
+  const hits = key ? (state.pool ?? []).filter((p) => names(p).some((n) => n.includes(key))) : [];
+  hits.sort((a, b) => Number(names(b).some((n) => n.startsWith(key))) - Number(names(a).some((n) => n.startsWith(key))));
+  const box = $('feedback-species-suggest');
+  box.innerHTML = hits.slice(0, 8).map((p) => `<button type="button" class="suggest-item" onclick="pickFeedbackSpecies('${p.id}')"><img class="asset" src="${p.pixelSpriteUrl}" alt="">${esc(monName(p))}${lang() === 'en' ? '' : ` <span class="muted">${esc(titleCase(p.name))}</span>`}</button>`).join('');
+  box.classList.toggle('hidden', !hits.length);
+}
+function pickFeedbackSpecies(id: string): void {
+  const view = state.pool?.find((p) => p.id === id);
+  $<HTMLInputElement>('feedback-species').value = view ? monName(view) : '';
+  feedbackSpeciesChanged();
+}
 /** Title, hint and export placeholder of the set tab follow the species in the picker. */
 function feedbackSpeciesChanged(): void {
-  const view = resolveFeedbackSpecies($<HTMLInputElement>('feedback-species').value);
+  const typed = $<HTMLInputElement>('feedback-species').value;
+  const view = resolveFeedbackSpecies(typed);
+  renderSpeciesSuggestions(view ? '' : typed);
   feedbackSpecies = view?.id ?? '';
   const name = view ? monName(view) : '';
   $('feedback-title').textContent = view ? t('Contribute a set: {name}', {name}) : t('Contribute a set');
@@ -892,8 +909,9 @@ function feedbackSpeciesChanged(): void {
     : t('Pick the Pokémon, then paste one or more Showdown export blocks for it. A nickname becomes the set\'s label.');
   $<HTMLTextAreaElement>('feedback-text').placeholder = `${view ? titleCase(view.name) : 'Garchomp'} @ Leftovers\nAbility: …\nEVs: 252 HP / 252 Atk / 4 Spe\nAdamant Nature\n- …\n- …\n- …\n- …`;
 }
-function feedbackTab(kind: FeedbackKind): void { openFeedback(kind, kind === 'set' ? feedbackSpecies : ''); }
-function openFeedback(kind: FeedbackKind = 'feedback', speciesId = ''): void {
+function feedbackTab(kind: FeedbackKind): void { openFeedback(kind, kind === 'set' ? feedbackSpecies : '', false); }
+/** `focus`: move the caret into the first field; not on tab switches, and never on touch devices (iOS animates the keyboard on each focus). */
+function openFeedback(kind: FeedbackKind = 'feedback', speciesId = '', focus = true): void {
   feedbackKind = kind; feedbackSpecies = speciesId;
   document.querySelectorAll<HTMLElement>('#feedback-tabs .drawer-tab').forEach((b) => b.classList.toggle('active', b.dataset.kind === kind));
   $('feedback-title').textContent = kind === 'boss' ? t('Contribute a boss') : t('Feedback');
@@ -903,13 +921,13 @@ function openFeedback(kind: FeedbackKind = 'feedback', speciesId = ''): void {
   const ta = $<HTMLTextAreaElement>('feedback-text');
   ta.value = '';
   ta.placeholder = kind === 'boss' ? `Tyranitar @ Tyranitarite\nAbility: Sand Stream\nEVs: 252 Atk / 4 Def / 252 Spe\nJolly Nature\n- …\n- …\n- …\n- …\n\nExcadrill @ Leftovers\n…\n\n(six Pokémon)` : '';
-  // a set names its species: a picker over the draftable pool in the current language (English names as labels),
-  // prefilled when opened from the pool's species panel; rebuilt on each open so a language switch is reflected
+  // a set names its species: a text field with suggestions from the draftable pool in the current language,
+  // prefilled when opened from the pool's species panel
   $('feedback-species-field').classList.toggle('hidden', kind !== 'set');
+  $('feedback-species-suggest').classList.add('hidden');
   const species = $<HTMLInputElement>('feedback-species');
   species.required = kind === 'set'; species.placeholder = t('Type a Pokémon name');
   if (kind === 'set') {
-    $('feedback-species-list').innerHTML = (state.pool ?? []).map((p) => `<option value="${esc(monName(p))}">${esc(titleCase(p.name))}</option>`).join('');
     const view = state.pool?.find((p) => p.id === speciesId);
     species.value = view ? monName(view) : '';
     feedbackSpeciesChanged();
@@ -929,7 +947,7 @@ function openFeedback(kind: FeedbackKind = 'feedback', speciesId = ''): void {
   $<HTMLButtonElement>('feedback-send').disabled = !AUTH_ENABLED;
   $('feedback-drawer').classList.remove('hidden');
   $('feedback-backdrop').classList.remove('hidden');
-  if (kind === 'set' && !feedbackSpecies) species.focus(); else ta.focus();
+  if (focus && !matchMedia('(pointer: coarse)').matches) { if (kind === 'set' && !feedbackSpecies) species.focus(); else ta.focus(); }
 }
 function closeFeedback(): void {
   $('feedback-drawer').classList.add('hidden');
@@ -1187,7 +1205,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openFeedback, feedbackTab, feedbackSpeciesChanged, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
