@@ -218,6 +218,7 @@ function renderEncounter(draft: SessionView): void {
       ${o.nativeCount < o.thinCellThreshold ? `<p class="thin-note">${t('Thin cell — only {n} from this generation; the rest are visitors from nearby generations.', {n: o.nativeCount})}</p>` : ''}
     </div>
     <div class="encounter-actions">
+      <button class="btn btn-ghost btn-sm" id="start-over" onclick="startOver()">${t('Start over')}</button>
       <button class="btn btn-ghost btn-sm" onclick="skip()" ${draft.skipsRemaining ? '' : 'disabled'}>
         ${t('Skip cell ({a}/{b})', {a: draft.skipsRemaining, b: totalSkips})}
       </button>
@@ -320,6 +321,11 @@ async function draftTransition(action: () => void): Promise<void> {
 }
 function pick(id: string, setId = ''): void { void draftTransition(() => state.session!.pick(id, setId || undefined)); }
 function skip(): void { void draftTransition(() => state.session!.skip()); }
+/** Discard the draft in progress and roll a new run (a reload did the same; this makes it honest). A `?seed=` URL repeats the seed. */
+function startOver(): void {
+  if (!confirm(t('Discard this draft and start a new run?'))) return;
+  newRun();
+}
 
 async function copyExport(): Promise<void> {
   if (!state.teamExport) return;
@@ -1227,7 +1233,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, moreBoard, toggleMenu, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, startOver, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, moreBoard, toggleMenu, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
