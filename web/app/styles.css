@@ -144,7 +144,8 @@ button:disabled{cursor:not-allowed;opacity:.42}
 .tools #signin-btn,.tools #signout-btn{width:5.6rem}
 .corner{position:fixed;top:14px;right:18px;z-index:45}
 .corner .tools{flex-wrap:wrap;justify-content:flex-end;margin:0}
-@media(max-width:560px){.corner{top:8px;right:8px}.corner .tools{gap:.4rem}#screen-title .title-inner{padding-top:4.4rem}}
+/* phones: the strip wraps onto two rows (three buttons, then language + account), so the title starts below them */
+@media(max-width:560px){.corner{top:8px;right:8px}.corner .tools{gap:.4rem}#screen-title .title-inner{padding-top:6rem}}
 /* Phones: the strip does not fit beside the brand, so it becomes the topbar's second row
    (otherwise the page is wider than the screen and Safari zooms the whole game out). */
 @media(max-width:700px){
@@ -178,9 +179,9 @@ button:disabled{cursor:not-allowed;opacity:.42}
 .auth-dialog{width:min(22rem,calc(100vw - 2rem));padding:1.1rem 1.2rem;color:var(--ink);background:var(--surface);
   border:3px solid var(--frame);border-radius:var(--r-sm);box-shadow:0 0 0 3px var(--edge),inset 0 0 0 3px var(--edge),5px 6px 0 rgba(8,6,18,.5)}
 .auth-dialog::backdrop{background:rgba(8,6,18,.55)}
-.auth-tabs{display:flex;gap:.4rem;margin-bottom:.9rem}
-.auth-tab{font:inherit;font-weight:700;font-size:.85rem;padding:.4rem .7rem;border:2px solid transparent;border-radius:var(--r-sm);background:none;color:var(--muted);cursor:pointer}
-.auth-tab.active{color:#fff;background:var(--frame);border-color:var(--edge)}
+.auth-tabs,.drawer-tabs{display:flex;gap:.4rem;margin-bottom:.9rem}
+.auth-tab,.drawer-tab{font:inherit;font-weight:700;font-size:.85rem;padding:.4rem .7rem;border:2px solid transparent;border-radius:var(--r-sm);background:none;color:var(--muted);cursor:pointer}
+.auth-tab.active,.drawer-tab.active{color:#fff;background:var(--frame);border-color:var(--edge)}
 .auth-dialog label{display:block;margin:0 0 .7rem;font-size:.82rem;color:var(--muted)}
 .auth-dialog input{display:block;width:100%;margin-top:.25rem;padding:.5rem .6rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font:inherit}
 .auth-dialog input:focus{outline:3px solid var(--gold);outline-offset:0}

@@ -45,12 +45,21 @@ try {
     tools.rows = await page.$$eval('#board-card .board-list li', (r) => r.length);
     await click('#board-backdrop');
   }
-  // feedback: the button in the strip; the pool's "Contribute a set" opens the drawer for that species
+  // feedback: the strip's ✎ Contribute opens the drawer on the Set tab with the species picker; the pool's "Contribute a set"
+  // opens it with the species prefilled; the picker resolves a typed name (in the page language) to the pool id
   const contribute = await page.$$eval('#pool-detail .contribute', (b) => b.length);
+  await click('#contribute-btn');
+  const setTab = await page.evaluate(() => ({tab: document.querySelector('#feedback-tabs .drawer-tab.active')?.dataset.kind, picker: !document.getElementById('feedback-species-field').classList.contains('hidden'),
+    options: document.getElementById('feedback-species-list').childElementCount, tabs: document.querySelectorAll('#feedback-tabs .drawer-tab').length}));
+  if (setTab.tab !== 'set' || !setTab.picker || setTab.options < 600 || setTab.tabs !== 3) throw new Error(`contribute drawer: ${JSON.stringify(setTab)}`);
   await page.evaluate(() => window.openFeedback('set', 'lucario'));
   const drawer = await page.evaluate(() => ({open: !document.getElementById('feedback-drawer').classList.contains('hidden'), title: document.getElementById('feedback-title').textContent,
+    picked: document.getElementById('feedback-species').value,
     summary: !document.getElementById('feedback-note-field').classList.contains('hidden') && document.getElementById('feedback-note').required}));
   if (!drawer.summary) throw new Error('set contribution drawer has no summary field');
+  await page.evaluate(() => { window.feedbackTab('boss'); window.feedbackTab('set'); const s = document.getElementById('feedback-species'); s.value = 'Garchomp'; window.feedbackSpeciesChanged(); });
+  const typed = await page.evaluate(() => document.getElementById('feedback-title').textContent);
+  if (!/Garchomp/.test(typed)) throw new Error(`typed species not resolved: ${typed}`);
   await page.evaluate(() => window.closeFeedback());
   console.log(`[${elapsed()}] title tools:`, JSON.stringify(tools), '| contribute buttons:', contribute, '| drawer:', JSON.stringify(drawer));
   if (!tools.feedback || !contribute || !drawer.open || !/Lucario/.test(drawer.title)) { console.error('feedback button, contribute button, or drawer missing'); process.exitCode = 1; }
