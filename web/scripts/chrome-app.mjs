@@ -45,10 +45,11 @@ try {
     tools.rows = await page.$$eval('#board-card .board-list li', (r) => r.length);
     await click('#board-backdrop');
   }
-  // feedback: the strip's ✎ Contribute opens the drawer on the Set tab with the species picker; the pool's "Contribute a set"
-  // opens it with the species prefilled; the picker resolves a typed name (in the page language) to the pool id
+  // feedback: the strip's one button opens the drawer; its Set tab has the species picker; the pool's "Contribute a set"
+  // opens that tab with the species prefilled; the picker resolves a typed name (in the page language) to the pool id
   const contribute = await page.$$eval('#pool-detail .contribute', (b) => b.length);
-  await click('#contribute-btn');
+  await click('#feedback-btn');
+  await page.evaluate(() => window.feedbackTab('set'));
   const setTab = await page.evaluate(() => ({tab: document.querySelector('#feedback-tabs .drawer-tab.active')?.dataset.kind, picker: !document.getElementById('feedback-species-field').classList.contains('hidden'),
     options: document.getElementById('feedback-species-list').childElementCount, tabs: document.querySelectorAll('#feedback-tabs .drawer-tab').length}));
   if (setTab.tab !== 'set' || !setTab.picker || setTab.options < 600 || setTab.tabs !== 3) throw new Error(`contribute drawer: ${JSON.stringify(setTab)}`);
