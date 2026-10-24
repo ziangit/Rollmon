@@ -3,6 +3,8 @@
 // Screens, markup, and styles are carried over from v1.
 import {BattleClient} from '../battle/client.ts';
 import {DEFAULT_BUDGET_MS} from '../battle/runner.ts';
+import {CAMPAIGN_STRUCTURE} from '../game/pool.ts';
+import {BAND_POINTS, SPEED_BONUS_MAX, SPEED_BONUS_TURNS, TIER_COST} from '../game/score.ts';
 import type {GameData} from '../game/data.ts';
 import {esc, mountLiveReplay, mountReplay, type LiveReplay} from '../replay/embed.ts';
 import {type MatrixCellView, 
@@ -82,6 +84,7 @@ function rerenderAll(): void {
   renderPool();
   renderBoard();
   renderAccount();
+  renderHelp();
   if (state.bossBook) renderBosses(state.bosses);
   const view = state.view;
   if (!view) return;
@@ -109,6 +112,7 @@ function go(name: Screen): void {
   $('corner').classList.toggle('hidden', name !== 'title');
   if (!$('board-drawer').classList.contains('hidden')) toggleBoard();
   if (!$('menu-drawer').classList.contains('hidden')) toggleMenu();
+  if (!$('help-drawer').classList.contains('hidden')) toggleHelp();
   if (name === 'loadout') renderLoadout();
   // On the pool screen keep the step rail reflecting where Back will return to.
   updateSteps(name === 'pool' ? poolReturn : name);
@@ -921,6 +925,39 @@ function toggleBoard(): void {
   if (open && boardEntries !== null) void loadBoard();
 }
 
+/* ---- How it works drawer (title screen and ☰ menu): the rules in four sections, with the live numbers
+   read from the draft config, the campaign structure, the score constants and the search budgets, so the text cannot go stale */
+function renderHelp(): void {
+  const body = $('help-body');
+  const ctx = state.ctx;
+  if (!ctx) { body.innerHTML = `<p class="help-sec">${t('Loading…')}</p>`; return; }
+  const [c, u, r, l] = ctx.config.rarityOdds;
+  const costs = Object.values(TIER_COST);
+  const sec = (n: number, title: string, html: string) => `<section class="help-sec"><h4>${n} · ${title}</h4>${html}</section>`;
+  const bands = CAMPAIGN_STRUCTURE.map(([tier, count]) => {
+    const teams = Object.keys(ctx.data.pool[tier] ?? {}).length;
+    return `<tr><td>${t(BAND_LABEL[tier] ?? tier)}</td><td class="n">${count}</td><td class="n">${teams > count ? teams : t('fixed')}</td><td class="n">${BAND_POINTS[tier] ?? 0}</td></tr>`;
+  }).join('');
+  body.innerHTML =
+    sec(1, t('Draft'), `<p>${t('Six rounds. Each round rolls a cell: a type and the generation its Pokémon debuted in. {n} candidates come from that cell; when it is short, visitors of the same type from the nearest generations fill the offer.', {n: ctx.config.candidateCap})}</p>
+      <p>${t('Every slot rolls a rarity from the Showdown tier, so legendaries are rare but never banned:')}</p>
+      <p class="help-odds">${t('Poké Ball {c}% · Great Ball {u}% · Ultra Ball {r}% · Master Ball {l}%', {c, u, r, l})}</p>
+      <p>${t('The pool holds {n} fully evolved Pokémon with competitive sets. No duplicates; {k} skips reroll the cell; Start over begins a new draft.', {n: state.pool?.length ?? Object.keys(ctx.legality.species).length, k: ctx.config.manualSkipCount})}</p>`) +
+    sec(2, t('Loadout'), `<p>${t('Pick one set per Pokémon: sets contributed by players and Smogon analysis sets. Mega Evolution is a set choice, and one Mega per team can evolve in a battle.')}</p>`) +
+    sec(3, t('Gauntlet'), `<p>${t('Ten battles against hand-built boss teams, climbing band by band. Pool bands draw their teams at random, so every run differs:')}</p>
+      <table class="help-bands"><thead><tr><th>${t('Band')}</th><th class="n">${t('Battles')}</th><th class="n">${t('Teams')}</th><th class="n">${t('Points per win')}</th></tr></thead><tbody>${bands}</tbody></table>
+      <p>${t('Both sides are played by the same search AI (poke-engine) in your browser, with full knowledge of both teams: your side thinks {p1} ms per move, the boss {p2} ms. On a slow device the AI searches less, so it plays weaker, not slower. Level 100, Gen 9 rules, no Terastallization.', {p1: DEFAULT_BUDGET_MS.p1, p2: DEFAULT_BUDGET_MS.p2})}</p>`) +
+    sec(4, t('Score'), `<p>${t('Only wins count. Each win is worth its band\'s points, up to {s}% more for a fast battle (under {turns} turns).', {s: Math.round(SPEED_BONUS_MAX * 100), turns: SPEED_BONUS_TURNS})}</p>
+      <p>${t('The total is multiplied by a team handicap: the average tier cost of the six formes you played, from ×{lo} (Ubers) to ×{hi} (low tiers), so a cheap team is worth about one extra level.', {lo: Math.min(...costs), hi: Math.max(...costs)})}</p>
+      <p>${t('The leaderboard keeps each player\'s best run. The server replays the whole run in the simulator before accepting a score.')}</p>`);
+}
+function toggleHelp(): void {
+  const open = $('help-drawer').classList.contains('hidden');
+  if (open) renderHelp();
+  $('help-drawer').classList.toggle('hidden', !open);
+  $('help-backdrop').classList.toggle('hidden', !open);
+}
+
 /* ---- feedback drawer, three tabs: free text, a set contribution for one species (picked from the pool), or a boss team (docs/ROADMAP.md §7) */
 type FeedbackKind = 'feedback' | 'set' | 'boss';
 let feedbackKind: FeedbackKind = 'feedback';
@@ -1261,7 +1298,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, startOver, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, moreBoard, toggleMenu, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, startOver, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, moreBoard, toggleMenu, toggleHelp, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);

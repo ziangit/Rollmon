@@ -44,7 +44,13 @@ try {
   await page.evaluate(() => window.toggleMenu());
   tools.menu = await page.evaluate(() => ({open: !document.getElementById('menu-drawer').classList.contains('hidden'), entries: document.querySelectorAll('#menu-drawer .menu-list > *').length, account: document.getElementById('menu-account').children.length}));
   await page.evaluate(() => window.toggleMenu());
-  if (!/github\.com\/ziangit\/Rollmon/.test(tools.github) || !tools.menuHidden || !tools.menu.open || tools.menu.entries !== 5 || tools.menu.account !== (hosted ? 1 : 0)) { console.error('GitHub link or phone menu missing: ' + JSON.stringify(tools)); process.exitCode = 1; }
+  if (!/github\.com\/ziangit\/Rollmon/.test(tools.github) || !tools.menuHidden || !tools.menu.open || tools.menu.entries !== 6 || tools.menu.account !== (hosted ? 1 : 0)) { console.error('GitHub link or phone menu missing: ' + JSON.stringify(tools)); process.exitCode = 1; }
+  // How it works: four sections with the live numbers (slot odds, one band row per campaign band)
+  await click('#help-btn');
+  tools.help = await page.evaluate(() => ({open: !document.getElementById('help-drawer').classList.contains('hidden'), sections: document.querySelectorAll('#help-body .help-sec').length,
+    odds: document.querySelector('#help-body .help-odds')?.textContent, bands: document.querySelectorAll('#help-body .help-bands tbody tr').length}));
+  await click('#help-backdrop');
+  if (!tools.help.open || tools.help.sections !== 4 || !/40%/.test(tools.help.odds) || tools.help.bands !== 6) { console.error('How it works drawer wrong: ' + JSON.stringify(tools.help)); process.exitCode = 1; }
   if (tools.board) {
     await click('#board-btn');
     await page.waitForFunction(() => !document.getElementById('board-drawer').classList.contains('hidden') && document.querySelector('#board-card .board-list li'));

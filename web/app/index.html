@@ -61,12 +61,20 @@ var f=document.fonts;(f&&f.load?Promise.all(['700 1em "Pixelify Sans"','1em "Pre
 <aside class="drawer hidden" id="menu-drawer" aria-label="Menu">
   <div class="panel-head"><h3 data-i18n="Menu">Menu</h3><button class="btn btn-ghost btn-sm" onclick="toggleMenu()" aria-label="Close">✕</button></div>
   <div class="menu-list">
+    <button class="btn btn-ghost" onclick="toggleMenu(); toggleHelp()" data-i18n="How it works">How it works</button>
     <button class="btn btn-ghost" onclick="toggleMenu(); openFeedback('set')" data-i18n="Contribute">Contribute</button>
     <button class="btn btn-ghost" onclick="toggleMenu(); openFeedback('feedback')" data-i18n="Feedback">Feedback</button>
     <label class="menu-row"><span data-i18n="Language">Language</span><select class="lang" data-lang-select onchange="setLanguage(this.value)" aria-label="Language"><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select></label>
     <div class="menu-row account" id="menu-account"></div>
     <a class="btn btn-ghost" href="https://github.com/ziangit/Rollmon" target="_blank" rel="noopener">GitHub ↗</a>
   </div>
+</aside>
+
+<!-- How it works: the rules in four short sections, numbers read from the live config (renderHelp). -->
+<div class="drawer-backdrop hidden" id="help-backdrop" onclick="toggleHelp()"></div>
+<aside class="drawer hidden" id="help-drawer" aria-label="How it works">
+  <div class="panel-head"><h3 data-i18n="How it works">How it works</h3><button class="btn btn-ghost btn-sm" onclick="toggleHelp()" aria-label="Close">✕</button></div>
+  <div id="help-body"></div>
 </aside>
 
 <!-- Feedback drawer with three tabs: free text, a set contribution (species picked from the pool), a boss team (docs/ROADMAP.md §7). -->
@@ -130,6 +138,7 @@ var f=document.fonts;(f&&f.load?Promise.all(['700 1em "Pixelify Sans"','1em "Pre
         <button class="btn btn-primary btn-lg" onclick="newRun()" data-i18n="▶ Start a new run">▶ Start a new run</button>
         <button class="btn btn-ghost btn-lg" onclick="go('pool')" data-i18n="Browse the pool">Browse the pool</button>
       </div>
+      <button class="btn btn-ghost btn-sm help-btn" id="help-btn" onclick="toggleHelp()" data-i18n="? How it works">? How it works</button>
       <p class="title-foot" id="title-foot" data-i18n="Lv 100 · Gen 9">Lv 100 · Gen 9</p>
     </div>
   </div>

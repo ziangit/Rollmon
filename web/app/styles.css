@@ -183,6 +183,15 @@ button:disabled{cursor:not-allowed;opacity:.42}
   background:var(--surface);border-left:4px solid var(--frame);box-shadow:-4px 0 0 var(--edge);animation:slide .2s steps(4)}
 @keyframes slide{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
 .drawer .panel-head{margin-bottom:.8rem}
+/* ---- How it works drawer ---- */
+.help-sec{margin-bottom:1.1rem}
+.help-sec h4{font-size:1rem;margin:0 0 .4rem;color:var(--gold)}
+.help-sec p{margin:0 0 .5rem;font-size:.95rem;line-height:1.5}
+.help-odds{color:var(--muted)}
+.help-bands{width:100%;border-collapse:collapse;font-size:.9rem;margin:.2rem 0 .7rem}
+.help-bands th,.help-bands td{padding:.25rem .4rem;text-align:left;border-bottom:1px solid var(--border)}
+.help-bands th{color:var(--muted);font-weight:600}
+.help-bands .n{text-align:right}
 /* ---- feedback drawer ---- */
 .feedback-form{display:grid;gap:.6rem}
 .feedback-hint{margin:0;color:var(--muted);font-size:.9rem;line-height:1.5}
@@ -259,6 +268,8 @@ button:disabled{cursor:not-allowed;opacity:.42}
   box-shadow:0 0 0 4px var(--edge), inset 0 0 0 4px var(--edge), 6px 8px 0 rgba(8,6,18,.5)}
 .title-actions{display:flex;gap:.9rem;justify-content:center;flex-wrap:wrap}
 .title-actions .btn{width:16rem;max-width:100%;min-height:3.6rem;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+/* the rules button is tertiary: a small row of its own under the two big ones (the three at full size do not fit one row) */
+.title-panel .help-btn{margin-top:-.3rem}
 .title-foot{min-height:1.7em}
 .title-foot{margin:0;font-family:var(--font-pixel);font-size:.54rem;color:var(--muted);line-height:1.7}
 /* .title-team removed — slot-machine Gen × Type animation will replace it */
