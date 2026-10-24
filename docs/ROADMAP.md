@@ -407,6 +407,19 @@ replay was added 2026-10-22, since the fixed button is far from where
 the player is after watching the last battle), results and the leaderboard drawer, then the topbar strip (phone
 overflow). The title page stays as it is.
 
+**How it works (2026-10-23).** A small `? How it works` button under the
+title actions (and a ☰ menu entry) opens a drawer with the rules in four
+sections: draft (cell lock, candidates, visitors, slot odds, skips, start
+over), loadout (contributed + Smogon sets, Mega as a set), gauntlet (a
+table of the campaign bands with battles, pool size and points per win,
+then the AI and its budgets), score (speed bonus, handicap, best run per
+player). Every number is read at render time from `DEFAULT_DRAFT_CONFIG`,
+`CAMPAIGN_STRUCTURE`, the pool, `score.ts` and `DEFAULT_BUDGET_MS`, so it
+cannot go stale; `renderHelp` in `main.ts`, rerendered on a language
+change. The three full-size title buttons did not fit one row (natural
+widths 239 + 213 + 197 px against a 645 px panel), so the help button is a
+small tertiary row rather than a third big button.
+
 ## 9. i18n
 
 What Showdown offers: the server repo has `translations/zh-cn`, `zh-tw`, `ja`
@@ -414,6 +427,22 @@ What Showdown offers: the server repo has `translations/zh-cn`, `zh-tw`, `ja`
 has only an English template; the battle protocol and replay player are
 English. So the replay stays English (the player looks sprites and animations
 up by English name).
+
+**Correction (2026-10-23, explored, postponed by the author for a later
+pass):** the hosted client *does* ship localised battle text. `Dex.text`
+reads the Showdown pref `language` and `Dex.loadTextData(lang)` fetches
+`https://play.pokemonshowdown.com/data/text/<lang>.js` (`zh-cn` 844 KB,
+`ja` 1.1 MB raw; also ko/fr/de/es/it; `zh` is a 404, `zh-cn`/`zh-tw` exist)
+with species, moves, abilities, items, stat names and every battle template
+(`startBattle: "{TRAINER1}和{TRAINER2}的对战开始了！"`, Garchomp → 烈咬陆鲨,
+Earthquake → 地震); `BattleTextParser(perspective, language)` uses it. The
+plan when it is picked up: the replay bootstrap in `replay/embed.ts` sets
+the language from the page switch (zh → zh-cn, ja → ja), loads the text
+file and waits for it before `battle.play()`; measure the first-battle cost
+on a phone; the `distinctNicknames` names from the Zoroark fix ("Arceus
+Fairy") stay English unless localised; set exports stay English on purpose.
+The same files could feed move/ability/item names into the draft and
+loadout panels (extract into `data/` like `species-names.json`).
 
 Easy part, done (2026-10-18): `web/app/i18n.ts` holds the UI strings for
 zh-CN and ja keyed by the English text (`t(key, vars)`), static markup is
