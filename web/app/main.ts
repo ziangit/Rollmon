@@ -863,12 +863,16 @@ function renderBoard(): void {
   const rows = entries.map((e, i) => `<li${account && e.name === account.name ? ' class="me"' : ''}><span class="rank">#${i + 1}</span>
       <span class="board-who"><span class="board-name">${esc(e.name)}</span><span class="board-team">${e.team.map(member).join('')}</span><small>${t('{w}/{b} wins', {w: e.wins, b: e.battles})}</small></span>
       <span class="score">${e.score}</span></li>`);
+  // the board is cut at boardLimit rows; when it is full there may be more, so offer the next size (the API caps at 100)
+  const more = entries.length >= boardLimit && boardLimit < 100 ? `<p class="board-more"><button class="btn btn-ghost btn-sm" onclick="moreBoard()">${t('Show top {n}', {n: Math.min(100, boardLimit * 5)})}</button></p>` : '';
   $('board-card').innerHTML = `<p class="panel-note">${t('top {n} · best run per player', {n: entries.length})}</p>
-    <ol class="board-list">${rows.join('') || `<li><span></span><span>${t('No runs yet. Be the first!')}</span><span></span></li>`}</ol>`;
+    <ol class="board-list">${rows.join('') || `<li><span></span><span>${t('No runs yet. Be the first!')}</span><span></span></li>`}</ol>${more}`;
 }
+let boardLimit = 10;
+function moreBoard(): void { boardLimit = Math.min(100, boardLimit * 5); void loadBoard(); }
 async function loadBoard(): Promise<void> {
   try {
-    const res = await fetch(`${API_BASE}/api/leaderboard?limit=10`);
+    const res = await fetch(`${API_BASE}/api/leaderboard?limit=${boardLimit}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     boardEntries = (await res.json() as {entries: BoardEntry[]}).entries;
   } catch {
@@ -1223,7 +1227,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, toggleMenu, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, moreBoard, toggleMenu, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
