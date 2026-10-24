@@ -241,10 +241,13 @@ One **✉ Feedback & contribute** button in the tools strip opens a drawer with
 three tabs, Feedback / Set / Boss (since 2026-10-23; before that the drawer
 was one text box and sets could only be contributed from the pool; a second
 "Contribute" button was tried and merged the same day, the author wants one
-entry). The Set tab has a species picker: a datalist of
-the draftable pool in the page language with the English names as labels,
-resolved to the pool id before sending (unknown names are refused in the
-page). **Contribute a set** in the pool's species panel opens that tab with
+entry). The Set tab has a species picker: a text field that lists up to
+eight matching pool species (page-language name, English name as a label,
+pixel sprite; a native datalist of all 649 was tried first and stalled iOS
+Safari on every tab switch), resolved to the pool id before sending
+(unknown names are refused in the page). Fields are not auto-focused on
+tab switches or on touch devices, since iOS animates the keyboard on each
+programmatic focus. **Contribute a set** in the pool's species panel opens that tab with
 the species prefilled, and the paste must parse as a Showdown export for it
 (`parseShowdownExport`, every block's species checked) or it is refused
 with the parser's message. **Contribute a boss** on the results screen
