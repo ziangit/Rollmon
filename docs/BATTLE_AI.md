@@ -63,8 +63,9 @@ Nothing, today. The battle screen shows "Now battling X — turn N" while the wo
 searches. There is no notice that the AI is computing on the player's device and
 no low-power setting. Both are cheap to add: a one-line hint on the battle screen,
 and a budget toggle (the budgets are already overridable with `?p1ms=&p2ms=` for
-development). Mobile Safari performance is unmeasured; a lower default budget
-there may be needed.
+development). WebKit was measured on 2026-10-23 (`docs/ROADMAP.md` §2): desktop
+WebKit matches Chrome, and the author's iPhone keeps about 85 % of the desktop
+search, so no phone budget tier is needed.
 
 ## 2. How strong the AI is, and the foul-play question
 

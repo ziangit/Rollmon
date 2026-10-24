@@ -131,7 +131,13 @@ a four-battle campaign took 37 s with the replay animating at 60 fps on the
 throttled thread and only two long tasks. Live site on slow 4G: title usable at
 5.5 s, worker ready at 11.6 s (1.5 MB brotli: worker 1.03, data 0.26, wasm
 0.21), but play.pokemonshowdown.com sends ~4.7 MB of replay client and sprites
-per run. Heap: page 75–105 MB, worker ~25 MB. Still unmeasured: real WebKit.
+per run. Heap: page 75–105 MB, worker ~25 MB. Real WebKit measured 2026-10-23
+on the engine bench at 100 ms (Playwright WebKit 27.2 on the Mac vs Chrome 155,
+then the author's iPhone over Wi-Fi): mean 223.1k vs 221.6k on the desktop, and
+189k on the iPhone (typical states 69–104k vs 80–105k on the Mac, ~85 %); a
+full battle on the dev page in desktop WebKit ran 4.0 s with 127k iterations
+per 100 ms turn and the replay painting, no console errors. The Chrome
+throttling numbers above overstate the phone penalty; no phone budget tier.
 
 ## 3. Opponent bands (after §1)
 
