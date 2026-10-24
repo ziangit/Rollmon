@@ -114,6 +114,8 @@ export function rollMon(): void {
   const [gen, typeIndex] = key.split('|').map(Number);
   const bucket = combos.get(key)!;
   const pick = bucket[Math.floor(Math.random() * bucket.length)];
+  // fetch the animated sprite (100–170 KB) while the reels spin, so the reveal does not wait for it on a phone
+  new Image().src = pick.animatedSpriteUrl;
   // spin both reels; the type reel lands a touch later, then reveal once both freeze
   let done = 0;
   const both = () => { if (++done === 2) reveal(pick, gen, btn); };
