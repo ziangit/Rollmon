@@ -321,10 +321,22 @@ async function draftTransition(action: () => void): Promise<void> {
 }
 function pick(id: string, setId = ''): void { void draftTransition(() => state.session!.pick(id, setId || undefined)); }
 function skip(): void { void draftTransition(() => state.session!.skip()); }
+/** In-page yes/no box in the game's style (the browser's confirm() looked foreign); Esc counts as no. */
+function askConfirm(message: string, yes: string): Promise<boolean> {
+  const dlg = $<HTMLDialogElement>('confirm-dialog');
+  $('confirm-text').textContent = message;
+  $('confirm-yes').textContent = yes;
+  dlg.showModal();
+  return new Promise((resolve) => {
+    const done = (v: boolean) => { dlg.close(); resolve(v); };
+    $('confirm-yes').onclick = () => done(true);
+    $('confirm-no').onclick = () => done(false);
+    dlg.oncancel = (e) => { e.preventDefault(); done(false); };
+  });
+}
 /** Discard the draft in progress and roll a new run (a reload did the same; this makes it honest). A `?seed=` URL repeats the seed. */
-function startOver(): void {
-  if (!confirm(t('Discard this draft and start a new run?'))) return;
-  newRun();
+async function startOver(): Promise<void> {
+  if (await askConfirm(t('Discard this draft and start a new run?'), t('Start over'))) newRun();
 }
 
 async function copyExport(): Promise<void> {

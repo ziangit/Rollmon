@@ -83,9 +83,13 @@ try {
   // Start over: a declined confirm keeps the draft, an accepted one rolls a new run (same seed here, so the draft below is unchanged)
   await page.waitForSelector('#cand-detail .pick');
   const before = await page.$eval('#encounter .cell-name', (e) => e.textContent);
-  await page.evaluate(() => { window.confirm = () => false; window.startOver(); });
+  await page.evaluate(() => { void window.startOver(); });
+  await page.waitForSelector('#confirm-dialog[open]');
+  await click('#confirm-no');
   const kept = await page.$eval('#encounter .cell-name', (e) => e.textContent);
-  await page.evaluate(() => { window.confirm = () => true; window.startOver(); });
+  await page.evaluate(() => { void window.startOver(); });
+  await page.waitForSelector('#confirm-dialog[open]');
+  await click('#confirm-yes');
   await page.waitForSelector('#cand-detail .pick');
   const restarted = await page.evaluate(() => ({round: document.querySelector('#encounter .eyebrow').textContent, button: !!document.getElementById('start-over')}));
   if (kept !== before || !/1/.test(restarted.round) || !restarted.button) throw new Error(`start over: ${JSON.stringify({before, kept, restarted})}`);

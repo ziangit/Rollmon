@@ -210,6 +210,7 @@ button:disabled{cursor:not-allowed;opacity:.42}
 .auth-dialog input{display:block;width:100%;margin-top:.25rem;padding:.5rem .6rem;border:2px solid var(--edge);border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);font:inherit}
 .auth-dialog input:focus{outline:3px solid var(--gold);outline-offset:0}
 .auth-note{margin:0 0 .5rem;font-size:.76rem;color:var(--faint);line-height:1.5}
+.confirm-text{margin:.2rem 0 1.1rem;font-size:1rem;line-height:1.5}
 .auth-error{margin:0 0 .6rem;font-size:.8rem;color:var(--bad);min-height:1.2em}
 .auth-actions{display:flex;justify-content:flex-end;gap:.5rem}
 .cpu-note{color:var(--faint);font-size:.8rem;line-height:1.6;margin:.55rem 0 0;max-width:62ch}

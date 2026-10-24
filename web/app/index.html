@@ -92,6 +92,14 @@ var f=document.fonts;(f&&f.load?Promise.all(['700 1em "Pixelify Sans"','1em "Pre
 </aside>
 
 <!-- Account dialog: Showdown-style name + password, no email. -->
+<!-- In-page yes/no box (the browser's confirm() looked foreign); askConfirm() fills and opens it. -->
+<dialog class="auth-dialog" id="confirm-dialog">
+  <p class="confirm-text" id="confirm-text"></p>
+  <div class="auth-actions">
+    <button type="button" class="btn btn-ghost btn-sm" id="confirm-no" data-i18n="Cancel">Cancel</button>
+    <button type="button" class="btn btn-primary btn-sm" id="confirm-yes"></button>
+  </div>
+</dialog>
 <dialog class="auth-dialog" id="auth-dialog">
   <div class="auth-tabs" role="tablist">
     <button type="button" class="auth-tab active" data-mode="login" onclick="authMode('login')" data-i18n="Log in">Log in</button>
