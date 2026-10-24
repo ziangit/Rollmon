@@ -2,7 +2,7 @@
 
 A single-player Pokémon draft autobattler that runs entirely in the browser. Roll six Pokémon through a generation × type slot machine, pick each one's set, then watch an AI pilot your team through a ten-battle boss gauntlet and post the run to a leaderboard.
 
-**Play it:** https://rollmon.vercel.app — no install, no account needed to play (one is needed only to post a score). Works on phones; English, 中文 and 日本語.
+**Play it:** https://rollmon.gg — no install, no account needed to play (one is needed only to post a score). Works on phones; English, 中文 and 日本語.
 
 **How it is built:** the battle AI is [poke-engine](https://github.com/pmariglia/poke-engine) (Rust) compiled to WebAssembly, and [`@pkmn/sim`](https://github.com/pkmn/ps/tree/main/sim) (Pokémon Showdown's simulator) referees, both in a Web Worker on the player's machine. There is no battle server: the site is static, and the only backend is one small function for accounts, the leaderboard and feedback. v1, which ran [foul-play](https://github.com/pmariglia/foul-play) against a local Showdown server and shipped as a macOS app, is archived at [ziangit/rollmons](https://github.com/ziangit/rollmons); none of its AI client remains here.
 
@@ -23,7 +23,7 @@ A single-player Pokémon draft autobattler that runs entirely in the browser. Ro
 The in-game **How it works?** link tells the same story with the live numbers. Design notes: `docs/PRODUCT.md`, `docs/DIFFICULTY.md`, `docs/BATTLE_AI.md` (what the AI costs the player's machine and how it compares with v1); plan and status: `docs/ROADMAP.md`, `session-handoff.md`.
 
 ## Status
-- Live at https://rollmon.vercel.app (Vercel; every push to `main` deploys). The game logic (draft, loadout, campaign, score) is TypeScript under `web/`; the Python layer under `rollmons/` remains the reference implementation and test oracle (`make test`).
+- Live at https://rollmon.gg (Vercel; every push to `main` deploys; rollmon.vercel.app redirects). The game logic (draft, loadout, campaign, score) is TypeScript under `web/`; the Python layer under `rollmons/` remains the reference implementation and test oracle (`make test`).
 - Players can contribute from inside the game (**Contribute**: a set for any species, a boss team with the ladder level it fits, or free-text feedback); contributed sets land in `rollmons/sets/`.
 - Measured: a desktop core runs ~220k search iterations per 100 ms budget, an iPhone 16 Pro ~85 % of that; a battle costs about 4 s of one core.
 - Next: the screen-by-screen UI rework and draft playtesting (`docs/ROADMAP.md`); battle-replay text in the page language is explored but not built.

@@ -17,7 +17,7 @@ npm run build              # dist/: index.html, styles.css, app.js, worker.js, w
 npm run build -- --minify  # same, minified, no sourcemaps (what deploy/vercel-build.sh deploys)
 npm run dev                # watch + serve: game at /dist/index.html, worker page at /dev/battle.html (:8975)
 node scripts/chrome-app.mjs [seed] [p1ms] [p2ms]   # headless Chrome plays a whole run (draft → campaign → results → replay)
-ROLLMONS_URL=https://rollmon.vercel.app node scripts/chrome-app.mjs   # same, against the deployed site (also checks the sign-in button)
+ROLLMONS_URL=https://rollmon.gg node scripts/chrome-app.mjs   # same, against the deployed site (also checks the sign-in button)
 node scripts/chrome-battle.mjs 1     # headless Chrome runs the worker dev page end to end
 ```
 
