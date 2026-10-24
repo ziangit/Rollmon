@@ -237,10 +237,11 @@ lists what is left:
   title screen keeps only the logo and the Start panel.
 
 ### Feedback, set and boss contributions (built 2026-10-22, bosses 2026-10-23)
-**✉ Feedback** and **✎ Contribute** in the tools strip open one drawer with
-three tabs, Feedback / Set / Boss (tabs and the Contribute button since
-2026-10-23; before that the drawer was one text box and sets could only be
-contributed from the pool). The Set tab has a species picker: a datalist of
+One **✉ Feedback & contribute** button in the tools strip opens a drawer with
+three tabs, Feedback / Set / Boss (since 2026-10-23; before that the drawer
+was one text box and sets could only be contributed from the pool; a second
+"Contribute" button was tried and merged the same day, the author wants one
+entry). The Set tab has a species picker: a datalist of
 the draftable pool in the page language with the English names as labels,
 resolved to the pool id before sending (unknown names are refused in the
 page). **Contribute a set** in the pool's species panel opens that tab with
