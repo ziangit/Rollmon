@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createApi, type ApiRequest} from './leaderboard.ts';
-import {FEEDBACK_PER_IP_PER_DAY} from './feedback.ts';
+import {CONTRIBUTIONS_PER_IP_PER_DAY, FEEDBACK_PER_IP_PER_DAY} from './feedback.ts';
 import {memoryStore} from './memory.ts';
 import {createGameContext} from '../app/session.ts';
 import {loadGameData} from '../scripts/game-data.ts';
@@ -59,12 +59,20 @@ test('a boss contribution is a named team of six with the level it fits', async 
   assert.equal(store.feedback[0].note, note);
 });
 
-test('feedback is limited per network per day; without a store it is 503', async () => {
+test('feedback and contributions are limited per network per day, separately; without a store it is 503', async () => {
   const store = memoryStore();
   const api = createApi({ctx, store: async () => store, secret: 's3cret'});
+  const set = {kind: 'set', species: 'sneasler', note: 'Scarf revenge killer', text: 'Sneasler @ Choice Scarf\nAbility: Poison Touch\n- Close Combat\n- U-turn\n- Dire Claw\n- Throat Chop'};
+  const boss = {kind: 'boss', boss: 'Leon', note: 'Level 8', text: loadGameData().bosses['leon']};
   for (let i = 0; i < FEEDBACK_PER_IP_PER_DAY; i++) assert.equal((await api(post({kind: 'feedback', text: `n${i}`}))).status, 201);
-  assert.equal((await api(post({kind: 'feedback', text: 'one more'}))).status, 429);
+  const capped = await api(post({kind: 'feedback', text: 'one more'}));
+  assert.equal(capped.status, 429);
+  assert.match(errorOf(capped), /too many feedback/);
   assert.equal((await api(post({kind: 'feedback', text: 'other network'}, {ip: '198.51.100.1'}))).status, 201);
+  // sets and bosses share the other cap, untouched by the feedback above
+  for (let i = 0; i < CONTRIBUTIONS_PER_IP_PER_DAY; i++) assert.equal((await api(post(i % 2 ? boss : set))).status, 201, `contribution ${i}`);
+  assert.match(errorOf(await api(post(set))), /too many contributions/);
+  assert.equal((await api(post(boss))).status, 429);
   assert.equal((await createApi({ctx, store: async () => null})(post({kind: 'feedback', text: 'x'}))).status, 503);
   // the author's account has no cap, even from the exhausted network
   const reg = await api({method: 'POST', path: '/api/auth/register', query: new URLSearchParams(), body: JSON.stringify({name: 'Lonie Tzzz', password: 'hunter22x'}), ip: '203.0.113.9'});

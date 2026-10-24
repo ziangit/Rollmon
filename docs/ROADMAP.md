@@ -267,7 +267,8 @@ and a required "fits level" line (which ladder level, 1–10, and why; the
 folder under `rollmons/pool/` the author assigns. `POST /api/feedback` (`web/api/feedback.ts`,
 same function, Vercel route `?op=feedback`) stores kind, text, species,
 screen, language, seed, user agent, the account name when signed in, and
-the hashed address; 10 per network per day, except for the author's accounts
+the hashed address; 50 per network per day for free text and another 50 for
+contributions (sets and bosses together; was one cap of 10 until 2026-10-23), except for the author's accounts
 (`web/game/dev-accounts.ts`, shared with the page's developer gate), which
 have no cap (2026-10-23). Same-origin only, so a local
 build shows "can only be sent from the hosted site". A set contribution

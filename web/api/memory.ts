@@ -46,7 +46,7 @@ export function memoryStore(now: () => number = Date.now): MemoryStore {
       feedback.push(row);
       return {id: row.id};
     },
-    async feedbackSince(ipHash, since) { return feedback.filter((f) => f.ipHash === ipHash && new Date(f.createdAt) > since).length; },
+    async feedbackSince(ipHash, since, kinds) { return feedback.filter((f) => f.ipHash === ipHash && kinds.includes(f.kind) && new Date(f.createdAt) > since).length; },
     async feedbackList(limit) { return [...feedback].reverse().slice(0, limit).map(({id, createdAt, name, kind, species, note, screen, lang, seed, agent, text}) => ({id, createdAt, name, kind, species, note, screen, lang, seed, agent, text})); },
   };
 }

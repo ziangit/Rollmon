@@ -12,7 +12,7 @@ import {
   cleanName, cookieValue, hashPassword, ipHash, readSession, sessionCookie, sessionToken, validPassword, verifyPassword,
   type User, type UserRecord, type UserStore,
 } from './auth.ts';
-import {FEEDBACK_PER_IP_PER_DAY, validateFeedback, type FeedbackStore} from './feedback.ts';
+import {capBucket, validateFeedback, type FeedbackStore} from './feedback.ts';
 import {isDevAccount} from '../game/dev-accounts.ts';
 
 export interface Entry {
@@ -141,8 +141,9 @@ export function createApi(opts: ApiOptions): (req: ApiRequest) => Promise<ApiRes
     const ip = secret ? ipHash(secret, req.ip) : null;
     const user = session(req);
     // the author's accounts contribute without a cap
-    if (ip && !isDevAccount(user?.name) && await store.feedbackSince(ip, new Date(now() - DAY_MS)) >= FEEDBACK_PER_IP_PER_DAY) {
-      return {status: 429, body: {error: 'too much feedback from this network today; try again tomorrow'}};
+    const bucket = capBucket(checked.row.kind);
+    if (ip && !isDevAccount(user?.name) && await store.feedbackSince(ip, new Date(now() - DAY_MS), bucket.kinds) >= bucket.limit) {
+      return {status: 429, body: {error: `too many ${bucket.what} from this network today; try again tomorrow`}};
     }
     const {id} = await store.addFeedback({...checked.row, agent: req.agent?.slice(0, 200) ?? null, userId: user?.id ?? null, name: user?.name ?? null, ipHash: ip});
     return {status: 201, body: {id}};
@@ -305,8 +306,8 @@ export async function neonStore(url: string): Promise<Store> {
         [f.userId, f.name, f.kind, f.species, f.note, f.screen, f.lang, f.seed, f.agent, f.text, f.ipHash]) as {id: string | number}[];
       return {id: Number(row.id)};
     },
-    async feedbackSince(ip, since) {
-      const [{n}] = await sql.query('select count(*) as n from feedback where ip_hash = $1 and created_at > $2', [ip, since.toISOString()]) as {n: string | number}[];
+    async feedbackSince(ip, since, kinds) {
+      const [{n}] = await sql.query('select count(*) as n from feedback where ip_hash = $1 and created_at > $2 and kind = any($3)', [ip, since.toISOString(), [...kinds]]) as {n: string | number}[];
       return Number(n);
     },
     async feedbackList(limit) {

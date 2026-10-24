@@ -4,17 +4,24 @@
 // as a Showdown export for the draftable species it was opened for, and a
 // boss contribution as a full team of six with a name and the ladder level
 // its author thinks it fits (in `note`), so every row is usable as is.
-// Limited per network like sign-ups.
+// Limited per network like sign-ups: one daily cap for free text, another for
+// contributions (sets and bosses together), so a stream of sets never blocks a
+// bug report and vice versa.
 import type {GameContext} from '../app/session.ts';
 import {parseShowdownExport, SubmissionError} from '../game/submissions.ts';
 
-export const FEEDBACK_PER_IP_PER_DAY = 10;
+export const FEEDBACK_PER_IP_PER_DAY = 50;
+export const CONTRIBUTIONS_PER_IP_PER_DAY = 50;
 export const FEEDBACK_MAX_CHARS = 4000;
 /** the one-line summary a set contribution comes with; a boss contribution's "fits level N because …" */
 export const FEEDBACK_NOTE_MAX_CHARS = 200;
 export const BOSS_TEAM_SIZE = 6;
 export const BOSS_NAME_MAX_CHARS = 40;
 export type FeedbackKind = 'feedback' | 'set' | 'boss';
+/** The kinds that share a daily cap with `kind`, and that cap. */
+export function capBucket(kind: FeedbackKind): {kinds: readonly FeedbackKind[]; limit: number; what: string} {
+  return kind === 'feedback' ? {kinds: ['feedback'], limit: FEEDBACK_PER_IP_PER_DAY, what: 'feedback'} : {kinds: ['set', 'boss'], limit: CONTRIBUTIONS_PER_IP_PER_DAY, what: 'contributions'};
+}
 
 export interface FeedbackRow {
   kind: FeedbackKind;
@@ -42,7 +49,8 @@ export interface StoredFeedback extends FeedbackRow {
 }
 export interface FeedbackStore {
   addFeedback(f: NewFeedback): Promise<{id: number}>;
-  feedbackSince(ipHash: string, since: Date): Promise<number>;
+  /** rows of these kinds from the network since `since` */
+  feedbackSince(ipHash: string, since: Date, kinds: readonly FeedbackKind[]): Promise<number>;
   /** newest first */
   feedbackList(limit: number): Promise<StoredFeedback[]>;
 }
