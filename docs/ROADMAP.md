@@ -237,11 +237,15 @@ lists what is left:
   title screen keeps only the logo and the Start panel.
 
 ### Feedback, set and boss contributions (built 2026-10-22, bosses 2026-10-23)
-One **✉ Feedback & contribute** button in the tools strip opens a drawer with
-three tabs, Feedback / Set / Boss (since 2026-10-23; before that the drawer
-was one text box and sets could only be contributed from the pool; a second
-"Contribute" button was tried and merged the same day, the author wants one
-entry). The Set tab has a species picker: a text field that lists up to
+One **Contribute** button in the tools strip opens a drawer with three
+tabs, Set / Boss / Feedback (since 2026-10-23; before that the drawer was
+one "✉ Feedback" text box and sets could only be contributed from the pool;
+"✉ Feedback & contribute" and a separate Contribute button were tried the
+same day, the author wants one short entry). The strip also has a GitHub
+icon link; on phones (≤ 700 px) everything but Leaderboard collapses into a
+☰ menu drawer (Contribute, Feedback, language, account, GitHub), and every
+strip item has a fixed height and width so the row no longer shifts between
+languages (the CJK fallback font is taller than Pixelify). The Set tab has a species picker: a text field that lists up to
 eight matching pool species (page-language name, English name as a label,
 pixel sprite; a native datalist of all 649 was tried first and stalled iOS
 Safari on every tab switch), resolved to the pool id before sending
