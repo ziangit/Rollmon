@@ -49,3 +49,25 @@ test('two formes of one species get distinct nicknames so their replay idents di
   assert.ok(out.log.some((l) => l.startsWith('|switch|p1a: Arceus Fairy|')), 'the replay names the forme');
   assert.ok(!out.log.some((l) => /^\|(switch|drag)\|p1a: Arceus\|/.test(l)), 'no bare "Arceus" ident');
 });
+
+test('revival blessing: the runner picks the fainted target itself and the battle goes on', () => {
+  // Magikarp faints turn 1; Pawmot then uses Revival Blessing, which pauses the
+  // turn with a switch-shaped request whose only legal target is the fainted
+  // teammate. Before the fix the legal map held the healthy bench instead, the
+  // sim rejected every retry, and the battle aborted (found by a player).
+  // six per side (the engine state mapper requires full teams); the filler never acts
+  const filler = (names: string[]) => names.map((n) => `${n}\nAbility: Run Away\n- Splash`).join('\n\n');
+  const p1 = Teams.import('Magikarp\nAbility: Swift Swim\n- Splash\n\nPawmot @ Leppa Berry\nAbility: Iron Fist\n- Revival Blessing\n- Mach Punch\n- Close Combat\n- Thunder Punch\n\n' + filler(['Sentret', 'Zigzagoon', 'Bidoof', 'Lillipup']))!;
+  const p2 = Teams.import('Garchomp\nAbility: Rough Skin\n- Earthquake\n- Dragon Claw\n- Stone Edge\n- Swords Dance\n\n' + filler(['Rattata', 'Patrat', 'Yungoos', 'Skwovet', 'Wooper']))!;
+  // slot-0 move with every visit: Pawmot revives whenever the move is usable
+  const firstMove: Engine = {engine_version: () => 'stub', mcts: () => JSON.stringify({iterations: 1, s1: [{choice: {kind: 'move', index: 0, label: 'm0'}, score: 0, visits: 100}, {choice: {kind: 'switch', index: 0, label: 's0'}, score: 0, visits: 1}, {choice: {kind: 'switch', index: 1, label: 's1'}, score: 0, visits: 1}], s2: [{choice: {kind: 'move', index: 0, label: 'm0'}, score: 0, visits: 100}]})};
+  const events: string[] = [];
+  const outcome = runBattle({engine: firstMove, p1: {name: 'P', team: p1}, p2: {name: 'B', team: p2}, seed: 5, budgetMs: {p1: 1, p2: 1}, onTurn: (e) => { if (e.source === 'forced') events.push(`${e.side} ${e.choice}`); }});
+  assert.ok(outcome.log.some((l) => l.includes('[from] move: Revival Blessing')), 'the revive resolved');
+  assert.deepEqual(events, ['p1 switch 2'], 'the revive target was decided without the engine, exactly once');
+  assert.ok(!outcome.problems.some((p) => p.includes('rejected') || p.includes('aborting')), `no rejected choices: ${outcome.problems}`);
+  assert.equal(outcome.winner, 'B');
+  // the recorded choices replay cleanly, revive included (leaderboard proofs)
+  const again = replayBattle({p1: {name: 'P', team: p1}, p2: {name: 'B', team: p2}, seed: 5, choices: outcome.choices});
+  assert.equal(again.turns, outcome.turns);
+});

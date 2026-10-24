@@ -19,7 +19,7 @@ interface Request {
   teamPreview?: boolean;
   forceSwitch?: boolean[];
   active?: ActiveReq[];
-  side: {pokemon: {active: boolean; condition: string; moves: string[]}[]};
+  side: {pokemon: {active: boolean; condition: string; moves: string[]; reviving?: boolean}[]};
 }
 
 export const CANDIDATE_VISIT_RATIO = 0.75;
@@ -30,6 +30,15 @@ export function legalChoices(req: Request): Map<string, string> {
   const bench = req.side.pokemon;
   const canSwitchTo = (i: number) => bench[i] && !bench[i].active && !bench[i].condition.endsWith(' fnt');
   if (req.forceSwitch) {
+    // Revival Blessing pauses the turn with a switch-shaped request whose only
+    // legal targets are *fainted* party members (the mon to revive). The sim
+    // marks the user with `reviving`; `revive:` keys never match an engine
+    // choice, so the runner decides the target itself (the engine's model has
+    // no mid-turn revive decision).
+    if (bench.some((p) => p.reviving)) {
+      for (let i = 0; i < bench.length; i++) if (!bench[i].active && bench[i].condition.endsWith(' fnt')) legal.set(`revive:${i}`, `switch ${i + 1}`);
+      return legal;
+    }
     for (let i = 0; i < bench.length; i++) if (canSwitchTo(i)) legal.set(`switch:${i}`, `switch ${i + 1}`);
     return legal;
   }

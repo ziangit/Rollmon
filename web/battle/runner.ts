@@ -47,7 +47,8 @@ export interface TurnEvent {
   choice: string;
   iterations: number;
   candidates: SideResult[];
-  source: 'mcts' | 'fallback';
+  /** 'forced' = decided without the engine (single legal choice, or a Revival Blessing target) */
+  source: 'mcts' | 'fallback' | 'forced';
 }
 
 export interface BattleConfig {
@@ -199,6 +200,16 @@ export function runBattle(cfg: BattleConfig): Outcome {
     decide(id, legal, state, battle) {
       let out: {choice: string; fallback: boolean; problem?: string};
       let event: TurnEvent;
+      // A Revival Blessing target is not a decision the engine models: revive
+      // the strongest fainted teammate (base stat total) instead of searching.
+      const revives = [...legal.keys()].filter((k) => k.startsWith('revive:'));
+      if (revives.length) {
+        const side = battle.sides[id === 'p1' ? 0 : 1];
+        const best = revives.reduce((a, b) => (side.pokemon[Number(a.slice(7))].species.bst >= side.pokemon[Number(b.slice(7))].species.bst ? a : b));
+        const choice = legal.get(best)!;
+        cfg.onTurn?.({state: '', turn: battle.turn, side: id, choice, iterations: 0, candidates: [], source: 'forced'});
+        return {choice, fallback: false};
+      }
       try {
         const result: MctsResult = JSON.parse(cfg.engine.mcts(state(), budget[id], 0));
         const pick = pickChoice(id === 'p1' ? result.s1 : result.s2, legal, rng);

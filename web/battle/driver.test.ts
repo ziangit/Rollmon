@@ -54,3 +54,17 @@ test('pick falls back to a random legal choice when the engine offers nothing us
   assert.match(pick.reason!, /engine offered \[none=10\]/);
   assert.equal(choiceKey({kind: 'switch', index: 4, label: ''}), 'switch:4');
 });
+
+test('revival blessing request: only fainted bench members, never the engine', () => {
+  // the sim marks the user with `reviving`; legal targets invert (fainted only)
+  const revive = [
+    {active: true, condition: '207/270', moves: ['revivalblessing'], reviving: true},
+    {active: false, condition: '0 fnt', moves: []},
+    {active: false, condition: '144/301', moves: []},
+    {active: false, condition: '0 fnt', moves: []},
+  ];
+  const legal = legalChoices({forceSwitch: [true], side: {pokemon: revive}} as never);
+  assert.deepEqual([...legal.entries()], [['revive:1', 'switch 2'], ['revive:3', 'switch 4']]);
+  // every engine choice misses the revive keys, so pickChoice can only fall back
+  assert.equal(pickChoice([r('switch:2', 100)], legal, () => 0).source, 'fallback');
+});
