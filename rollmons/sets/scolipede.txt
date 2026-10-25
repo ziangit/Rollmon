@@ -1,0 +1,8 @@
+SD Scolipede (Scolipede) @ Life Orb
+Ability: Speed Boost
+EVs: 252 Atk / 4 SpD / 252 Spe
+Jolly Nature
+- Swords Dance
+- Megahorn
+- Earthquake
+- Rock Slide

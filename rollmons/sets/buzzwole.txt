@@ -1,0 +1,8 @@
+Scarf Buzzwole (Buzzwole) @ Choice Scarf
+Ability: Beast Boost
+EVs: 4 HP / 252 Atk / 252 Spe
+Jolly Nature
+- Ice Punch
+- Close Combat
+- Earthquake
+- Stone Edge
