@@ -33,7 +33,7 @@ cat > "$out/config.json" <<'JSON'
     {"src": "^/api/leaderboard/?$", "dest": "/api/leaderboard"},
     {"src": "^/api/auth/([a-z]+)/?$", "dest": "/api/leaderboard?auth=$1"},
     {"src": "^/api/feedback/?$", "dest": "/api/leaderboard?op=feedback"},
-    {"src": "^/data/(.*)$", "headers": {"cache-control": "public, max-age=3600"}, "continue": true},
+    {"src": "^/data/(.*)$", "headers": {"cache-control": "public, max-age=0, must-revalidate"}, "continue": true},
     {"src": "^/(.*)\\.wasm$", "headers": {"content-type": "application/wasm"}, "continue": true},
     {"handle": "filesystem"}
   ]
