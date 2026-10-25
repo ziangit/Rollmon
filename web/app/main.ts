@@ -1321,7 +1321,8 @@ async function boot(): Promise<void> {
   $<HTMLInputElement>('low-power').checked = lowPower;
   $('title-foot-text').textContent = t('Loading game data…');
   try {
-    const res = await fetch(new URL('./data/game-data.json', import.meta.url));
+    // cache: 'no-cache' = always revalidate (ETag 304 when unchanged), so a landed contribution shows on the next reload
+    const res = await fetch(new URL('./data/game-data.json', import.meta.url), {cache: 'no-cache'});
     if (!res.ok) throw new Error(`game data: HTTP ${res.status}`);
     const data = (await res.json()) as GameData;
     state.ctx = createGameContext(data);
