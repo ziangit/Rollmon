@@ -1,0 +1,8 @@
+Sun Punch Dusknoir (Dusknoir) @ Leftovers
+Ability: Pressure
+EVs: 252 HP / 252 Atk / 4 SpD
+Adamant Nature
+- Poltergeist
+- Focus Punch
+- Substitute
+- Pain Split

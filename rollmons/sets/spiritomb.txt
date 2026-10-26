@@ -1,0 +1,8 @@
+Choice Band Spiritomb (Spiritomb) @ Choice Band
+Ability: Infiltrator
+EVs: 252 HP / 252 Atk / 4 SpD
+Adamant Nature
+- Poltergeist
+- Sucker Punch
+- Shadow Sneak
+- Foul Play

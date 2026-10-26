@@ -1,0 +1,8 @@
+Substitute CM Raikou (Raikou) @ Leftovers
+Ability: Pressure
+Timid Nature
+EVs: 4 Def / 252 SpA / 252 Spe
+- Thunderbolt
+- Scald
+- Substitute
+- Calm Mind

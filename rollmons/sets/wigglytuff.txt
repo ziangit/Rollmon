@@ -1,0 +1,8 @@
+Calm Mind Wigglytuff (Wigglytuff) @ Leftovers
+Ability: Competitive
+EVs: 252 HP / 252 Def / 4 SpA
+Bold Nature
+- Alluring Voice
+- Flamethrower
+- Ice Beam
+- Calm Mind

@@ -1,0 +1,8 @@
+Defensive Drampa (Drampa) @ Leftovers
+Ability: Berserk
+EVs: 252 HP / 252 Def / 4 SpA
+Bold Nature
+- Draco Meteor
+- Flamethrower
+- Glare
+- Roost

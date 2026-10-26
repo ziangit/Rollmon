@@ -1,0 +1,8 @@
+Coil Sweeper Sandaconda (Sandaconda) @ Loaded Dice
+Ability: Shed Skin
+EVs: 252 Atk / 4 SpD / 252 Spe
+Adamant Nature
+- Earthquake
+- Rock Blast
+- Scale Shot
+- Coil

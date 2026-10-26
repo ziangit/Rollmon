@@ -1,0 +1,8 @@
+Iron Defense Regirock (Regirock) @ Leftovers
+Ability: Clear Body
+EVs: 252 HP / 4 Def / 252 SpD
+Careful Nature
+- Stone Edge
+- Body Press
+- Iron Defense
+- Thunder Wave
