@@ -1,7 +1,7 @@
 // What's new: player-facing release notes, newest first, shown by the title
 // screen's "What's new" link (docs/ROADMAP.md §8). Hand-written in player
 // language, never generated from commits; add an entry here when something a
-// player can feel ships. Contributed sets credit the contributor by name.
+// player can feel ships. No contributor names (the author's call, 2026-10-26).
 import type {Lang} from './i18n.ts';
 
 export interface NewsEntry { date: string; bullets: Record<Lang, string[]> }
@@ -9,15 +9,15 @@ export interface NewsEntry { date: string; bullets: Record<Lang, string[]> }
 export const CHANGELOG: readonly NewsEntry[] = [
   {date: '2026-10-26', bullets: {
     en: [
-      '7 new player-contributed sets: Substitute CM Raikou, and six by GleepGlop — Sun Punch Dusknoir, Choice Band Spiritomb, Coil Sweeper Sandaconda, Iron Defense Regirock, Defensive Drampa, Calm Mind Wigglytuff.',
+      '7 new player-contributed sets: Substitute CM Raikou, Sun Punch Dusknoir, Choice Band Spiritomb, Coil Sweeper Sandaconda, Iron Defense Regirock, Defensive Drampa, Calm Mind Wigglytuff.',
       '50 player sets are now in the pool.',
     ],
     zh: [
-      '新增 7 套玩家投稿配置：Substitute CM Raikou，以及 GleepGlop 投稿的六套（Sun Punch Dusknoir、Choice Band Spiritomb、Coil Sweeper Sandaconda、Iron Defense Regirock、Defensive Drampa、Calm Mind Wigglytuff）。',
+      '新增 7 套玩家投稿配置：Substitute CM Raikou、Sun Punch Dusknoir、Choice Band Spiritomb、Coil Sweeper Sandaconda、Iron Defense Regirock、Defensive Drampa、Calm Mind Wigglytuff。',
       '抽选池中的玩家配置已达 50 套。',
     ],
     ja: [
-      'プレイヤー投稿の型を7つ追加：Substitute CM Raikou、そして GleepGlop 投稿の6つ（Sun Punch Dusknoir、Choice Band Spiritomb、Coil Sweeper Sandaconda、Iron Defense Regirock、Defensive Drampa、Calm Mind Wigglytuff）。',
+      'プレイヤー投稿の型を7つ追加：Substitute CM Raikou、Sun Punch Dusknoir、Choice Band Spiritomb、Coil Sweeper Sandaconda、Iron Defense Regirock、Defensive Drampa、Calm Mind Wigglytuff。',
       'プールのプレイヤー投稿型は50になりました。',
     ],
   }},
