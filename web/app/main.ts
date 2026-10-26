@@ -16,6 +16,7 @@ import type {SelectableSet} from '../game/team-assembly.ts';
 import {isDevAccount} from '../game/dev-accounts.ts';
 import {initRoller, rollMon, setRollerPool} from './roller.ts';
 import {applyStatic, initLang, lang, localSpeciesName, setLang, t, type Lang} from './i18n.ts';
+import {CHANGELOG} from './changelog.ts';
 
 /* =====================================================================
    STATE
@@ -86,6 +87,7 @@ function rerenderAll(): void {
   renderBoard();
   renderAccount();
   renderHelp();
+  renderNews();
   if (state.bossBook) renderBosses(state.bosses);
   const view = state.view;
   if (!view) return;
@@ -114,6 +116,7 @@ function go(name: Screen): void {
   if (!$('board-drawer').classList.contains('hidden')) toggleBoard();
   if (!$('menu-drawer').classList.contains('hidden')) toggleMenu();
   if (!$('help-drawer').classList.contains('hidden')) toggleHelp();
+  if (!$('news-drawer').classList.contains('hidden')) toggleNews();
   if (name === 'loadout') renderLoadout();
   // On the pool screen keep the step rail reflecting where Back will return to.
   updateSteps(name === 'pool' ? poolReturn : name);
@@ -952,6 +955,16 @@ function renderHelp(): void {
       <p>${t('The total is multiplied by a team handicap: the average tier cost of the six formes you played, from ×{lo} (Ubers) to ×{hi} (low tiers), so a cheap team is worth about one extra level.', {lo: Math.min(...costs), hi: Math.max(...costs)})}</p>
       <p>${t('The leaderboard keeps each player\'s best run. The server replays the whole run in the simulator before accepting a score.')}</p>`);
 }
+/* ---- What's new drawer: dated, player-facing notes from changelog.ts, newest first */
+function renderNews(): void {
+  $('news-body').innerHTML = CHANGELOG.map((e) => `<section class="news-entry"><h4>${e.date}</h4><ul>${e.bullets[lang()].map((b) => `<li>${esc(b)}</li>`).join('')}</ul></section>`).join('');
+}
+function toggleNews(): void {
+  const open = $('news-drawer').classList.contains('hidden');
+  if (open) renderNews();
+  $('news-drawer').classList.toggle('hidden', !open);
+  $('news-backdrop').classList.toggle('hidden', !open);
+}
 function toggleHelp(): void {
   const open = $('help-drawer').classList.contains('hidden');
   if (open) renderHelp();
@@ -1299,7 +1312,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, startOver, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, moreBoard, toggleMenu, toggleHelp, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, startOver, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, moreBoard, toggleMenu, toggleHelp, toggleNews, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);

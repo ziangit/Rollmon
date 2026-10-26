@@ -44,7 +44,12 @@ try {
   await page.evaluate(() => window.toggleMenu());
   tools.menu = await page.evaluate(() => ({open: !document.getElementById('menu-drawer').classList.contains('hidden'), entries: document.querySelectorAll('#menu-drawer .menu-list > *').length, account: document.getElementById('menu-account').children.length}));
   await page.evaluate(() => window.toggleMenu());
-  if (!/github\.com\/ziangit\/Rollmon/.test(tools.github) || !tools.menuHidden || !tools.menu.open || tools.menu.entries !== 6 || tools.menu.account !== (hosted ? 1 : 0)) { console.error('GitHub link or phone menu missing: ' + JSON.stringify(tools)); process.exitCode = 1; }
+  if (!/github\.com\/ziangit\/Rollmon/.test(tools.github) || !tools.menuHidden || !tools.menu.open || tools.menu.entries !== 7 || tools.menu.account !== (hosted ? 1 : 0)) { console.error('GitHub link or phone menu missing: ' + JSON.stringify(tools)); process.exitCode = 1; }
+  // What's new: dated player-facing entries from changelog.ts
+  await page.evaluate(() => window.toggleNews());
+  const news = await page.evaluate(() => ({open: !document.getElementById('news-drawer').classList.contains('hidden'), entries: document.querySelectorAll('#news-body .news-entry').length, dated: /^\d{4}-\d{2}-\d{2}$/.test(document.querySelector('#news-body .news-entry h4')?.textContent ?? '')}));
+  await page.evaluate(() => window.toggleNews());
+  if (!news.open || news.entries < 3 || !news.dated) { console.error('What\'s new drawer wrong: ' + JSON.stringify(news)); process.exitCode = 1; }
   // How it works: four sections with the live numbers (slot odds, one band row per campaign band)
   await page.waitForFunction(() => !document.getElementById('help-foot').classList.contains('hidden'));
   await click('#help-btn');

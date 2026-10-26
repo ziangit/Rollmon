@@ -62,6 +62,7 @@ var f=document.fonts;(f&&f.load?Promise.all(['700 1em "Pixelify Sans"','1em "Pre
   <div class="panel-head"><h3 data-i18n="Menu">Menu</h3><button class="btn btn-ghost btn-sm" onclick="toggleMenu()" aria-label="Close">✕</button></div>
   <div class="menu-list">
     <button class="btn btn-ghost" onclick="toggleMenu(); toggleHelp()" data-i18n="How it works">How it works</button>
+    <button class="btn btn-ghost" onclick="toggleMenu(); toggleNews()" data-i18n="What's new">What's new</button>
     <button class="btn btn-ghost" onclick="toggleMenu(); openFeedback('set')" data-i18n="Contribute">Contribute</button>
     <button class="btn btn-ghost" onclick="toggleMenu(); openFeedback('feedback')" data-i18n="Feedback">Feedback</button>
     <label class="menu-row"><span data-i18n="Language">Language</span><select class="lang" data-lang-select onchange="setLanguage(this.value)" aria-label="Language"><option value="en">English</option><option value="zh">中文</option><option value="ja">日本語</option></select></label>
@@ -75,6 +76,13 @@ var f=document.fonts;(f&&f.load?Promise.all(['700 1em "Pixelify Sans"','1em "Pre
 <aside class="drawer hidden" id="help-drawer" aria-label="How it works">
   <div class="panel-head"><h3 data-i18n="How it works">How it works</h3><button class="btn btn-ghost btn-sm" onclick="toggleHelp()" aria-label="Close">✕</button></div>
   <div id="help-body"></div>
+</aside>
+
+<!-- What's new: hand-written player-facing release notes (web/app/changelog.ts). -->
+<div class="drawer-backdrop hidden" id="news-backdrop" onclick="toggleNews()"></div>
+<aside class="drawer hidden" id="news-drawer" aria-label="What's new">
+  <div class="panel-head"><h3 data-i18n="What's new">What's new</h3><button class="btn btn-ghost btn-sm" onclick="toggleNews()" aria-label="Close">✕</button></div>
+  <div id="news-body"></div>
 </aside>
 
 <!-- Feedback drawer with three tabs: free text, a set contribution (species picked from the pool), a boss team (docs/ROADMAP.md §7). -->
@@ -139,7 +147,7 @@ var f=document.fonts;(f&&f.load?Promise.all(['700 1em "Pixelify Sans"','1em "Pre
         <button class="btn btn-ghost btn-lg" onclick="go('pool')" data-i18n="Browse the pool">Browse the pool</button>
       </div>
       <!-- the rules link rides the foot line (a third button did not fit the row and a small one alone looked stray) -->
-      <p class="title-foot" id="title-foot"><span id="title-foot-text" data-i18n="Lv 100 · Gen 9">Lv 100 · Gen 9</span><span class="hidden" id="help-foot"> · <a href="#" class="help-link" id="help-btn" onclick="toggleHelp(); return false" data-i18n="How it works?">How it works?</a></span></p>
+      <p class="title-foot" id="title-foot"><span id="title-foot-text" data-i18n="Lv 100 · Gen 9">Lv 100 · Gen 9</span><span class="hidden" id="help-foot"> · <a href="#" class="help-link" id="help-btn" onclick="toggleHelp(); return false" data-i18n="How it works?">How it works?</a> · <a href="#" class="help-link" id="news-btn" onclick="toggleNews(); return false" data-i18n="What's new">What's new</a></span></p>
     </div>
   </div>
   <div class="roller" id="roller">
