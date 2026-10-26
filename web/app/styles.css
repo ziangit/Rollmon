@@ -197,6 +197,7 @@ button:disabled{cursor:not-allowed;opacity:.42}
 .news-entry h4{font-family:var(--font-pixel);font-size:.62rem;color:var(--gold);margin:0 0 .45rem}
 .news-entry ul{margin:0;padding-left:1.1rem}
 .news-entry li{font-size:.95rem;line-height:1.5;margin-bottom:.35rem}
+.news-more{margin:.2rem 0 0;text-align:center}
 /* ---- feedback drawer ---- */
 .feedback-form{display:grid;gap:.6rem}
 .feedback-hint{margin:0;color:var(--muted);font-size:.9rem;line-height:1.5}

@@ -955,13 +955,20 @@ function renderHelp(): void {
       <p>${t('The total is multiplied by a team handicap: the average tier cost of the six formes you played, from ×{lo} (Ubers) to ×{hi} (low tiers), so a cheap team is worth about one extra level.', {lo: Math.min(...costs), hi: Math.max(...costs)})}</p>
       <p>${t('The leaderboard keeps each player\'s best run. The server replays the whole run in the simulator before accepting a score.')}</p>`);
 }
-/* ---- What's new drawer: dated, player-facing notes from changelog.ts, newest first */
+/* ---- What's new drawer: dated, player-facing notes from changelog.ts, newest first;
+   opens on the newest three, the rest behind "Show older updates" */
+const NEWS_PAGE = 3;
+let newsLimit = NEWS_PAGE;
 function renderNews(): void {
-  $('news-body').innerHTML = CHANGELOG.map((e) => `<section class="news-entry"><h4>${e.date}</h4><ul>${e.bullets[lang()].map((b) => `<li>${esc(b)}</li>`).join('')}</ul></section>`).join('');
+  const shown = CHANGELOG.slice(0, newsLimit);
+  const more = CHANGELOG.length - shown.length;
+  $('news-body').innerHTML = shown.map((e) => `<section class="news-entry"><h4>${e.date}</h4><ul>${e.bullets[lang()].map((b) => `<li>${esc(b)}</li>`).join('')}</ul></section>`).join('')
+    + (more > 0 ? `<p class="news-more"><button class="btn btn-ghost btn-sm" onclick="moreNews()">${t('Show older updates ({n})', {n: more})}</button></p>` : '');
 }
+function moreNews(): void { newsLimit = CHANGELOG.length; renderNews(); }
 function toggleNews(): void {
   const open = $('news-drawer').classList.contains('hidden');
-  if (open) renderNews();
+  if (open) { newsLimit = NEWS_PAGE; renderNews(); }
   $('news-drawer').classList.toggle('hidden', !open);
   $('news-backdrop').classList.toggle('hidden', !open);
 }
@@ -1312,7 +1319,7 @@ function feedRoller(): void {
    ===================================================================== */
 // The markup uses inline onclick handlers (carried over from v1), so the
 // handlers it names are published on window.
-Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, startOver, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, moreBoard, toggleMenu, toggleHelp, toggleNews, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
+Object.assign(window, {go, togglePool, jumpToReplay, newRun, pick, skip, startOver, draftSelect, draftSet, copyExport, poolFilter, poolSelect, poolSet, poolCell, chooseSet, editBoss, discardBoss, resetBossForm, startRun, startCampaign, battleOne, rollMon, setLowPower, submitScore, setLanguage, toggleBoard, moreBoard, toggleMenu, toggleHelp, toggleNews, moreNews, openFeedback, feedbackTab, feedbackSpeciesChanged, pickFeedbackSpecies, closeFeedback, submitFeedback, openAuth, authMode, closeAuth, submitAuth, logout});
 declare global { interface Window { __rollmons: {view: () => SessionView | null; screen: () => string; ready: Promise<string>} } }
 
 $('boss-form').addEventListener('submit', saveBoss);
