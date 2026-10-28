@@ -1,7 +1,8 @@
 // What's new: player-facing release notes, newest first, shown by the title
 // screen's "What's new" link (docs/ROADMAP.md §8). Hand-written in player
 // language, never generated from commits; add an entry here when something a
-// player can feel ships. No contributor names (the author's call, 2026-10-26).
+// player can feel ships. No contributor names, and no running "N player sets
+// are now in the pool" bullet (the author's calls, 2026-10-26/27).
 import type {Lang} from './i18n.ts';
 
 export interface NewsEntry { date: string; bullets: Record<Lang, string[]> }
