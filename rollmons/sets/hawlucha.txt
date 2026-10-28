@@ -1,0 +1,17 @@
+Unburden Sweeper (Liechi Berry) (Hawlucha) @ Liechi Berry
+Ability: Unburden
+EVs: 252 Atk / 4 Def / 252 Spe
+Adamant Nature
+- Swords Dance
+- Close Combat
+- Acrobatics
+- Endure
+
+Unburden Sweeper (Sitrus Berry) (Hawlucha) @ Sitrus Berry
+Ability: Unburden
+EVs: 248 HP / 252 Atk / 8 Spe
+Jolly Nature
+- Swords Dance
+- Close Combat
+- Acrobatics
+- Roost

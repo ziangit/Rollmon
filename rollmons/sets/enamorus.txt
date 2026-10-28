@@ -7,3 +7,12 @@ IVs: 0 Atk
 - Moonblast  
 - Earth Power  
 - Mystical Fire
+
+Contrary Bulk Sweeper (Enamorus) (F) @ Leftovers
+Ability: Contrary
+EVs: 252 HP / 252 Atk / 4 Spe
+Adamant Nature
+- Play Rough
+- Superpower
+- Sleep Talk
+- Rest

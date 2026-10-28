@@ -1,0 +1,8 @@
+Scarf Wall Breaker (Pangoro) @ Choice Scarf
+Ability: Scrappy
+EVs: 4 HP / 252 Atk / 252 Spe
+Adamant Nature
+- Close Combat
+- Knock Off
+- Ice Punch
+- Parting Shot
