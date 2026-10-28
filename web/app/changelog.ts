@@ -7,6 +7,20 @@ import type {Lang} from './i18n.ts';
 export interface NewsEntry { date: string; bullets: Record<Lang, string[]> }
 
 export const CHANGELOG: readonly NewsEntry[] = [
+  {date: '2026-10-27', bullets: {
+    en: [
+      '5 new player-contributed sets: Scarf Wall Breaker Pangoro, Contrary Bulk Sweeper Enamorus, Victory Dance Sweeper Lilligant-Hisui, and two Unburden Sweeper Hawlucha (Liechi and Sitrus Berry).',
+      '55 player sets are now in the pool.',
+    ],
+    zh: [
+      '新增 5 套玩家投稿配置：Scarf Wall Breaker Pangoro、Contrary Bulk Sweeper Enamorus、Victory Dance Sweeper Lilligant-Hisui，以及两套 Unburden Sweeper Hawlucha（枝荔果与文柚果）。',
+      '抽选池中的玩家配置已达 55 套。',
+    ],
+    ja: [
+      'プレイヤー投稿の型を5つ追加：Scarf Wall Breaker Pangoro、Contrary Bulk Sweeper Enamorus、Victory Dance Sweeper Lilligant-Hisui、Unburden Sweeper Hawlucha ×2（チイラのみ／オボンのみ）。',
+      'プールのプレイヤー投稿型は55になりました。',
+    ],
+  }},
   {date: '2026-10-26', bullets: {
     en: [
       '7 new player-contributed sets: Substitute CM Raikou, Sun Punch Dusknoir, Choice Band Spiritomb, Coil Sweeper Sandaconda, Iron Defense Regirock, Defensive Drampa, Calm Mind Wigglytuff.',
