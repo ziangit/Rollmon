@@ -1,0 +1,8 @@
+UU Scarf Moxie (Krookodile) @ Choice Scarf
+Ability: Moxie
+EVs: 252 Atk / 4 Def / 252 Spe
+Jolly Nature
+- Earthquake
+- Crunch
+- Stone Edge
+- Close Combat
