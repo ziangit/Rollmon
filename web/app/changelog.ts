@@ -8,6 +8,17 @@ import type {Lang} from './i18n.ts';
 export interface NewsEntry { date: string; bullets: Record<Lang, string[]> }
 
 export const CHANGELOG: readonly NewsEntry[] = [
+  {date: '2026-10-28', bullets: {
+    en: [
+      'New player-contributed set: UU Scarf Moxie Krookodile.',
+    ],
+    zh: [
+      '新增玩家投稿配置：UU Scarf Moxie Krookodile。',
+    ],
+    ja: [
+      'プレイヤー投稿の型を追加：UU Scarf Moxie Krookodile。',
+    ],
+  }},
   {date: '2026-10-27', bullets: {
     en: [
       '5 new player-contributed sets: Scarf Wall Breaker Pangoro, Contrary Bulk Sweeper Enamorus, Victory Dance Sweeper Lilligant-Hisui, and two Unburden Sweeper Hawlucha (Liechi and Sitrus Berry).',
