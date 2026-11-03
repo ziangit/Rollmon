@@ -1,0 +1,9 @@
+Utility Trapper (Wobbuffet) @ Custap Berry
+Ability: Shadow Tag
+EVs: 80 HP / 176 Def / 252 SpD
+IVs: 0 Atk
+Calm Nature
+- Encore
+- Mirror Coat
+- Counter
+- Destiny Bond
