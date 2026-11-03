@@ -18,6 +18,9 @@ test('move request: enabled moves, mega only when allowed, no switches when trap
   assert.equal(free.get('move:2:mega'), 'move 3 mega');
   const trapped = legalChoices({active: [{moves, trapped: true}], side: {pokemon: bench}} as never);
   assert.deepEqual([...trapped.keys()], ['move:0', 'move:2', 'move:3']);
+  // ability trapping (Shadow Tag) only sets maybeTrapped on the request
+  const maybeTrapped = legalChoices({active: [{moves, maybeTrapped: true}], side: {pokemon: bench}} as never);
+  assert.deepEqual([...maybeTrapped.keys()], ['move:0', 'move:2', 'move:3']);
 });
 
 test('locked moves map request index to slot index; recharge maps to none', () => {

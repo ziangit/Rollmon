@@ -179,7 +179,8 @@ function serializeSide(side: Side, opponent: Side, ctx: SideCtx): string {
   const forceSwitch = ctx.forceSwitch && !!active && active.hp > 0;
   // `pokemon.trapped` is only refreshed when the sim builds a move request,
   // so it is stale on a switch request (and meaningless once fainted).
-  const trapped = !!active && active.hp > 0 && active.trapped === true && !ctx.forceSwitch;
+  // 'hidden' is ability trapping (Shadow Tag): just as trapped, only unrevealed.
+  const trapped = !!active && active.hp > 0 && !!active.trapped && !ctx.forceSwitch;
 
   return [
     ...side.pokemon.map(serializePokemon),

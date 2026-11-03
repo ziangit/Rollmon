@@ -13,7 +13,7 @@ export interface SideResult { choice: EngineChoice; score: number; visits: numbe
 export interface MctsResult { iterations: number; s1: SideResult[]; s2: SideResult[] }
 
 interface MoveReq { id: string; disabled?: boolean | string }
-interface ActiveReq { moves: MoveReq[]; trapped?: boolean; canMegaEvo?: boolean }
+interface ActiveReq { moves: MoveReq[]; trapped?: boolean; maybeTrapped?: boolean; canMegaEvo?: boolean }
 interface Request {
   wait?: boolean;
   teamPreview?: boolean;
@@ -60,7 +60,11 @@ export function legalChoices(req: Request): Map<string, string> {
     // Recharge/Struggle are not in any slot; the engine reports them as "none".
     if (single) legal.set('none', cmd);
   });
-  if (!active.trapped) {
+  // Ability trapping (Shadow Tag, Arena Trap) is "hidden" in the sim: the
+  // request only says maybeTrapped, and an attempted switch is rejected —
+  // fatal under strictChoices. Both sides play with perfect information, so
+  // treat maybeTrapped as trapped rather than probe the sim.
+  if (!active.trapped && !active.maybeTrapped) {
     for (let i = 0; i < bench.length; i++) if (canSwitchTo(i)) legal.set(`switch:${i}`, `switch ${i + 1}`);
   }
   return legal;
