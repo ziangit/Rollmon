@@ -8,6 +8,20 @@ import type {Lang} from './i18n.ts';
 export interface NewsEntry { date: string; bullets: Record<Lang, string[]> }
 
 export const CHANGELOG: readonly NewsEntry[] = [
+  {date: '2026-11-02', bullets: {
+    en: [
+      'New player-contributed set: Utility Trapper Wobbuffet.',
+      'Fixed: battles could abort when a trapping ability (Shadow Tag) blocked switching — the AI now knows it cannot switch.',
+    ],
+    zh: [
+      '新增玩家投稿配置：Utility Trapper Wobbuffet。',
+      '修复：踩影等禁止换人的特性可能导致对战中断——AI 现在知道自己无法换人。',
+    ],
+    ja: [
+      'プレイヤー投稿の型を追加：Utility Trapper Wobbuffet。',
+      '修正：かげふみなど交代を封じる特性でバトルが中断することがある問題——AIが交代不可を認識するようになりました。',
+    ],
+  }},
   {date: '2026-10-28', bullets: {
     en: [
       'New player-contributed set: UU Scarf Moxie Krookodile.',
